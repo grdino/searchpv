@@ -1,65 +1,144 @@
-import Image from "next/image";
+import { supabase } from "@/lib/supabase";
 
-export default function Home() {
+type CommunitySnapshot = {
+  community_name: string;
+  snapshot_date: string | null;
+  active_count: number | null;
+  pending_count: number | null;
+  sales_12mo: number | null;
+  median_sold_price: number | null;
+  avg_sold_price_ft2: number | null;
+  sold_avg_dom_12mo: number | null;
+  months_inventory: number | null;
+};
+
+export default async function Home() {
+  const { data, error } = await supabase
+    .from("community_snapshot")
+    .select("*")
+    .order("sales_12mo", { ascending: false });
+
+  if (error) {
+    return (
+      <main className="min-h-screen p-8">
+        <h1 className="text-3xl font-bold">SearchPV</h1>
+        <p className="mt-4 text-red-600">Error loading market data.</p>
+        <pre className="mt-4 text-sm">{error.message}</pre>
+      </main>
+    );
+  }
+
+  const rows = (data ?? []) as CommunitySnapshot[];
+
+  const snapshotDate =
+  rows.length > 0 && rows[0].snapshot_date
+    ? new Date(rows[0].snapshot_date).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "Unknown";
+
+  const totalActive = rows.reduce((sum, r) => sum + Number(r.active_count ?? 0), 0);
+  const totalPending = rows.reduce((sum, r) => sum + Number(r.pending_count ?? 0), 0);
+  const totalSales = rows.reduce((sum, r) => sum + Number(r.sales_12mo ?? 0), 0);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="h-screen overflow-hidden bg-slate-50 text-slate-900">
+      <section className="bg-slate-950 px-4 py-10 text-white md:px-8 md:py-16">
+        <div className="mx-auto max-w-6xl">
+          <p className="text-sm uppercase tracking-widest text-slate-300">
+            Puerto Vallarta Market Intelligence
+          </p>
+          <h1 className="mt-3 text-4xl font-bold md:text-5xl">SearchPV</h1>
+          <p className="mt-4 max-w-2xl text-slate-300">
+            Real estate market snapshots by community, powered by MLS inventory
+            and closed sales data.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      <section className="mx-auto flex h-[calc(100vh-300px)] max-w-6xl flex-col px-4 py-6 md:px-8 md:py-10">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <MetricCard label="Active Listings" value={totalActive} />
+          <MetricCard label="Pending Listings" value={totalPending} />
+          <MetricCard label="Closed Sales - 12 Mo" value={totalSales} />
         </div>
-      </main>
+
+        <h2 className="mt-12 text-2xl font-bold">Community Snapshot</h2>
+
+        <p className="mt-1 text-sm text-slate-500">
+          Snapshot Date: {snapshotDate}
+        </p>
+
+        <div className="mt-6 flex-1 overflow-auto rounded-xl bg-white shadow">
+          <table className="min-w-full text-sm">
+            <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700 shadow-sm">
+              <tr>
+                <Th>Community</Th>
+                <Th>Active</Th>
+                <Th>Pending</Th>
+                <Th>Sales 12 Mo</Th>
+                <Th>Median Sold</Th>
+                <Th>Avg Sold $/ft²</Th>
+                <Th>DOM</Th>
+                <Th>MOI</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.community_name} className="border-t">
+                  <Td>{row.community_name}</Td>
+                  <Td>{row.active_count ?? 0}</Td>
+                  <Td>{row.pending_count ?? 0}</Td>
+                  <Td>{row.sales_12mo ?? 0}</Td>
+                  <Td>{formatMoney(row.median_sold_price)}</Td>
+                  <Td>{formatMoney(row.avg_sold_price_ft2)}</Td>
+                  <Td>{row.sold_avg_dom_12mo ?? "-"}</Td>
+                  <Td>{row.months_inventory ?? "-"}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="rounded-xl bg-white p-6 shadow">
+      <p className="text-sm text-slate-500">{label}</p>
+      <p className="mt-2 text-4xl font-bold">{value.toLocaleString()}</p>
     </div>
   );
+}
+
+function Th({ children }: { children: React.ReactNode }) {
+  return (
+    <th className="whitespace-nowrap px-4 py-3 text-left font-semibold">
+      {children}
+    </th>
+  );
+}
+
+function Td({ children }: { children: React.ReactNode }) {
+  return <td className="whitespace-nowrap px-4 py-3">{children}</td>;
+}
+
+function formatMoney(value: number | null) {
+  if (!value) return "-";
+
+  return Number(value).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  });
 }
