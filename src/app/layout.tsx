@@ -31,3 +31,12 @@ export default function RootLayout({
     </html>
   );
 }
+
+export const metadata = {
+  title: "SearchPV",
+  description: "Puerto Vallarta real estate market intelligence by community.",
+  icons: {
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
+  },
+};
