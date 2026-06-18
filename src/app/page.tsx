@@ -47,7 +47,7 @@ export default async function Home() {
   const totalSales = rows.reduce((sum, r) => sum + Number(r.sales_12mo ?? 0), 0);
 
   return (
-    <main className="h-screen overflow-hidden bg-slate-50 text-slate-900">
+    <main className="min-h-screen bg-slate-50 text-slate-900">
       <section className="bg-slate-950 px-4 py-10 text-white md:px-8 md:py-16">
         <div className="mx-auto max-w-6xl">
           <p className="text-sm uppercase tracking-widest text-slate-300">
@@ -61,7 +61,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="mx-auto flex h-[calc(100vh-300px)] max-w-6xl flex-col px-4 py-6 md:px-8 md:py-10">
+      <section className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <MetricCard label="Active Listings" value={totalActive} />
           <MetricCard label="Pending Listings" value={totalPending} />
@@ -74,7 +74,7 @@ export default async function Home() {
           Snapshot Date: {snapshotDate}
         </p>
 
-        <div className="mt-6 flex-1 overflow-auto rounded-xl bg-white shadow">
+        <div className="mt-6 overflow-x-auto rounded-xl bg-white shadow">
           <table className="min-w-full text-sm">
             <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700 shadow-sm">
               <tr>
