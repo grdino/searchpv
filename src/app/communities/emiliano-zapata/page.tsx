@@ -110,15 +110,16 @@ export default async function EmilianoZapataPage({
 
             <h1
               style={{
-                marginTop: "12px",
-                fontSize: "48px",
-                lineHeight: "1.1",
+                marginTop: "10px",
+                fontSize: "28px",
+                lineHeight: "1.2",
                 fontWeight: 800,
                 color: "#ffffff",
               }}
             >
               Emiliano Zapata Market Report
             </h1>
+
 
             <p
               style={{
@@ -326,14 +327,14 @@ function MarketSelector({
               : unselectedStyle
           }
         >
-          Pre-Construction
+          Pre-Construction Only
         </a>
 
         <a
           href="/communities/emiliano-zapata?market=resale"
           style={selectedMarket === "resale" ? selectedStyle : unselectedStyle}
         >
-          Resale
+          Resale Only
         </a>
       </div>
     </div>
