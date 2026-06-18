@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase";
 
+import Link from "next/link";
+
 type CommunitySnapshot = {
   community_name: string;
   snapshot_date: string | null;
@@ -16,6 +18,7 @@ export default async function Home() {
   const { data, error } = await supabase
     .from("community_snapshot")
     .select("*")
+    .eq("market_segment", "all")
     .order("sales_12mo", { ascending: false });
 
   if (error) {
@@ -88,7 +91,18 @@ export default async function Home() {
             <tbody>
               {rows.map((row) => (
                 <tr key={row.community_name} className="border-t">
-                  <Td>{row.community_name}</Td>
+                  <Td>
+                    {row.community_name === "Emiliano Zapata" ? (
+                      <Link
+                        href="/communities/emiliano-zapata"
+                        className="font-semibold text-blue-700 hover:underline"
+                      >
+                        {row.community_name}
+                      </Link>
+                    ) : (
+                      row.community_name
+                    )}
+                  </Td>
                   <Td>{row.active_count ?? 0}</Td>
                   <Td>{row.pending_count ?? 0}</Td>
                   <Td>{row.sales_12mo ?? 0}</Td>
