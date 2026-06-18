@@ -15,6 +15,10 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "SearchPV",
   description: "Puerto Vallarta real estate market intelligence by community.",
+  icons: {
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({
@@ -32,11 +36,3 @@ export default function RootLayout({
   );
 }
 
-export const metadata = {
-  title: "SearchPV",
-  description: "Puerto Vallarta real estate market intelligence by community.",
-  icons: {
-    icon: "/icon.png",
-    apple: "/apple-icon.png",
-  },
-};
