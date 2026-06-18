@@ -74,7 +74,7 @@ export default async function Home() {
           Snapshot Date: {snapshotDate}
         </p>
 
-        <div className="mt-6 overflow-x-auto rounded-xl bg-white shadow md:max-h-[65vh] md:overflow-auto">
+        <div className="mt-6 max-h-[70vh] overflow-auto rounded-xl bg-white shadow md:max-h-[65vh]">
           <table className="min-w-full text-sm">
             <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700 shadow-sm">
               <tr>
