@@ -34,13 +34,9 @@ export default async function Home() {
   const rows = (data ?? []) as CommunitySnapshot[];
 
   const snapshotDate =
-  rows.length > 0 && rows[0].snapshot_date
-    ? new Date(rows[0].snapshot_date).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "Unknown";
+    rows.length > 0 && rows[0].snapshot_date
+      ? formatDateOnly(rows[0].snapshot_date)
+      : "Unknown";
 
   const totalActive = rows.reduce((sum, r) => sum + Number(r.active_count ?? 0), 0);
   const totalPending = rows.reduce((sum, r) => sum + Number(r.pending_count ?? 0), 0);
@@ -154,5 +150,15 @@ function formatMoney(value: number | null) {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
+  });
+}
+
+function formatDateOnly(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 }
