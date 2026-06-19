@@ -19,6 +19,7 @@ export default async function Home() {
     .from("community_snapshot")
     .select("*")
     .eq("market_segment", "all")
+    .eq("property_type_segment", "all")
     .order("sales_12mo", { ascending: false });
 
   if (error) {
@@ -52,8 +53,8 @@ export default async function Home() {
           <h1 className="mt-3 text-4xl font-bold md:text-5xl">SearchPV</h1>
           <p className="mt-4 max-w-2xl text-slate-300">
              Explore Puerto Vallarta & Riviera Nayarit Markets
-             Compare inventory, pricing, sales activity, and months of 
-             inventory by community.
+             Compare condo and house inventory, pricing, sales activity, and months 
+             of inventory by community.
           </p>
         </div>
       </section>

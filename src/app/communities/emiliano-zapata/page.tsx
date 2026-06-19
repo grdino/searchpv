@@ -2,11 +2,13 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 type MarketSegment = "all" | "pre_construction" | "resale";
+type PropertyTypeSegment = "all" | "condos" | "houses";
 
 type CommunitySnapshot = {
   community_name: string;
   snapshot_date: string | null;
   market_segment: MarketSegment;
+  property_type_segment: PropertyTypeSegment;
 
   active_count: number | null;
   active_0br: number | null;
@@ -60,6 +62,7 @@ export default async function EmilianoZapataPage({
     .select("*")
     .eq("community_name", "Emiliano Zapata")
     .eq("market_segment", selectedMarket)
+    .eq("property_type_segment", "all")
     .single();
 
   if (error) {
