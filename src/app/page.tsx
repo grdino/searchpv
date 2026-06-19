@@ -51,8 +51,9 @@ export default async function Home() {
           </p>
           <h1 className="mt-3 text-4xl font-bold md:text-5xl">SearchPV</h1>
           <p className="mt-4 max-w-2xl text-slate-300">
-            Real estate market snapshots by community, powered by MLS inventory
-            and closed sales data.
+             Explore Puerto Vallarta & Riviera Nayarit Markets
+             Compare inventory, pricing, sales activity, and months of 
+             inventory by community.
           </p>
         </div>
       </section>
