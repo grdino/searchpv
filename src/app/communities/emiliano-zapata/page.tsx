@@ -94,7 +94,7 @@ export default async function EmilianoZapataPage({
             style={{
               maxWidth: "900px",
               margin: "32px auto 0",
-              textAlign: "center",
+              textAlign: "left",
             }}
           >
             <p
@@ -117,22 +117,20 @@ export default async function EmilianoZapataPage({
                 color: "#ffffff",
               }}
             >
-              Emiliano Zapata Market Report
+              Emiliano Zapata
             </h1>
 
 
             <p
               style={{
                 maxWidth: "720px",
-                margin: "18px auto 0",
+                margin: "18px 0 0",
                 color: "#cbd5e1",
                 fontSize: "16px",
                 lineHeight: "1.6",
               }}
             >
-              Current MLS market snapshot for Emiliano Zapata in Puerto Vallarta,
-              including active listings, pending listings, closed sales, pricing,
-              days on market, and months of inventory.
+              
             </p>
 
             <p
@@ -286,15 +284,15 @@ function MarketSelector({
       style={{
         margin: "24px auto 0",
         maxWidth: "760px",
-        paddingTop: "20px",
-        borderTop: "1px solid #475569",
+        paddingTop: "5px",
+        // borderTop: "1px solid #475569",
         textAlign: "center",
       }}
     >
       <h2
         style={{
           color: "#e2e8f0",
-          fontSize: "14px",
+          fontSize: "12px",
           fontWeight: 800,
           letterSpacing: "0.12em",
           textTransform: "uppercase",
@@ -374,12 +372,12 @@ function MetricCard({
       {breakdown && (
         <div className="mt-5 border-t border-slate-200 pt-4 text-sm text-slate-600">
           0🛏️: <strong>{breakdown.studio}</strong>
-          {" | "}
+          {" ┃ "}
           1🛏️: <strong>{breakdown.oneBed}</strong>
-          {" | "}
+          {" ┃ "}
           2🛏️: <strong>{breakdown.twoBed}</strong>
-          {" | "}
-          3🛏️+: <strong>{breakdown.threeBedPlus}</strong>
+          {" ┃ "}
+          3+🛏️: <strong>{breakdown.threeBedPlus}</strong>
         </div>
       )}
     </div>
