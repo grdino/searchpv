@@ -373,14 +373,20 @@ function MetricCard({
       </p>
 
       {breakdown && (
-        <div className="mt-5 border-t border-slate-200 pt-4 text-sm text-slate-600">
-          0🛏️: <strong>{breakdown.studio}</strong>
-          {" ┃ "}
-          1🛏️: <strong>{breakdown.oneBed}</strong>
-          {" ┃ "}
-          2🛏️: <strong>{breakdown.twoBed}</strong>
-          {" ┃ "}
-          3+🛏️: <strong>{breakdown.threeBedPlus}</strong>
+        <div className="mt-4 border-t border-slate-200 pt-3">
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            By Bedroom
+          </div>
+
+          <div className="text-sm text-slate-600">
+            Studio <strong>{breakdown.studio}</strong>
+            {" │ "}
+            1BR <strong>{breakdown.oneBed}</strong>
+            {" │ "}
+            2BR <strong>{breakdown.twoBed}</strong>
+            {" │ "}
+            3BR+ <strong>{breakdown.threeBedPlus}</strong>
+          </div>
         </div>
       )}
     </div>
