@@ -259,13 +259,22 @@ function CommunitySelectors({
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minWidth: "95px",
-    padding: "6px 12px",
+    width: "100%",
+    padding: "6px 6px",
     borderRadius: "999px",
     border: "1px solid #94a3b8",
-    fontSize: "12px",
+    fontSize: "11px",
     fontWeight: 700,
     textDecoration: "none",
+    whiteSpace: "nowrap",
+  };
+
+  const rowStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: "8px",
+    width: "100%",
+    maxWidth: "360px",
   };
 
   const selectedStyle: React.CSSProperties = {
@@ -283,13 +292,7 @@ function CommunitySelectors({
 
   return (
     <div style={{ marginTop: "18px" }}>
-      <div
-        style={{
-          display: "flex",
-          gap: "10px",
-          flexWrap: "wrap",
-        }}
-      >
+      <div style={rowStyle}>
         <a
           href={communityHref(selectedMarket, "all")}
           style={selectedPropertyType === "all" ? selectedStyle : unselectedStyle}
@@ -318,10 +321,8 @@ function CommunitySelectors({
 
       <div
         style={{
+          ...rowStyle,
           marginTop: "10px",
-          display: "flex",
-          gap: "10px",
-          flexWrap: "wrap",
         }}
       >
         <a
