@@ -52,17 +52,22 @@ type CommunitySnapshot = {
 export default async function EmilianoZapataPage({
   searchParams,
 }: {
-  searchParams: Promise<{ market?: string }>;
+  searchParams: Promise<{
+    market?: string;
+    propertyType?: string;
+  }>;
 }) {
   const params = await searchParams;
+
   const selectedMarket = getMarketSegment(params.market);
+  const selectedPropertyType = getPropertyTypeSegment(params.propertyType);
 
   const { data, error } = await supabase
     .from("community_snapshot")
     .select("*")
     .eq("community_name", "Emiliano Zapata")
     .eq("market_segment", selectedMarket)
-    .eq("property_type_segment", "all")
+    .eq("property_type_segment", selectedPropertyType)
     .single();
 
   if (error) {
@@ -87,12 +92,14 @@ export default async function EmilianoZapataPage({
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <section className="bg-slate-950 px-4 py-8 text-white md:px-8 md:py-10">
-        
         <div className="mx-auto max-w-6xl">
-          <Link href="/" className="text-sm text-slate-300 hover:underline">
+          <Link
+            href={`/?market=${selectedMarket}&propertyType=${selectedPropertyType}`}
+            className="text-sm text-slate-300 hover:underline"
+          >
             ← Back to SearchPV
           </Link>
-          
+
           <div
             style={{
               maxWidth: "900px",
@@ -123,19 +130,6 @@ export default async function EmilianoZapataPage({
               Emiliano Zapata
             </h1>
 
-
-            <p
-              style={{
-                maxWidth: "720px",
-                margin: "18px 0 0",
-                color: "#cbd5e1",
-                fontSize: "16px",
-                lineHeight: "1.6",
-              }}
-            >
-              
-            </p>
-
             <p
               style={{
                 marginTop: "18px",
@@ -145,9 +139,12 @@ export default async function EmilianoZapataPage({
             >
               Snapshot Date: {snapshotDate}
             </p>
-          </div>
 
-          <MarketSelector selectedMarket={selectedMarket} />
+            <CommunitySelectors
+              selectedMarket={selectedMarket}
+              selectedPropertyType={selectedPropertyType}
+            />
+          </div>
         </div>
       </section>
 
@@ -236,10 +233,10 @@ export default async function EmilianoZapataPage({
               Emiliano Zapata currently has{" "}
               <strong>{row.active_count ?? 0}</strong> active listings,{" "}
               <strong>{row.pending_count ?? 0}</strong> pending listings, and{" "}
-              <strong>{row.sales_12mo ?? 0}</strong> closed sales over the past 12
-              months. The median sold price is{" "}
-              <strong>{formatMoney(row.median_sold_price)}</strong>, with average
-              sold pricing around{" "}
+              <strong>{row.sales_12mo ?? 0}</strong> closed sales over the past
+              12 months. The median sold price is{" "}
+              <strong>{formatMoney(row.median_sold_price)}</strong>, with
+              average sold pricing around{" "}
               <strong>{formatMoney(row.avg_sold_price_ft2)}</strong> per square
               foot. Current months of inventory is{" "}
               <strong>{formatNumber(row.months_inventory)}</strong>.
@@ -251,20 +248,22 @@ export default async function EmilianoZapataPage({
   );
 }
 
-function MarketSelector({
+function CommunitySelectors({
   selectedMarket,
+  selectedPropertyType,
 }: {
   selectedMarket: MarketSegment;
+  selectedPropertyType: PropertyTypeSegment;
 }) {
   const baseStyle: React.CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minWidth: "190px",
-    padding: "10px 18px",
+    minWidth: "95px",
+    padding: "6px 12px",
     borderRadius: "999px",
     border: "1px solid #94a3b8",
-    fontSize: "14px",
+    fontSize: "12px",
     fontWeight: 700,
     textDecoration: "none",
   };
@@ -283,45 +282,57 @@ function MarketSelector({
   };
 
   return (
-    <div
-      style={{
-        margin: "24px auto 0",
-        maxWidth: "760px",
-        paddingTop: "5px",
-        // borderTop: "1px solid #475569",
-        textAlign: "center",
-      }}
-    >
-      <h2
-        style={{
-          color: "#e2e8f0",
-          fontSize: "12px",
-          fontWeight: 800,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-        }}
-      >
-        View Market By
-      </h2>
-
+    <div style={{ marginTop: "18px" }}>
       <div
         style={{
-          marginTop: "18px",
           display: "flex",
-          justifyContent: "center",
-          gap: "12px",
+          gap: "10px",
           flexWrap: "wrap",
         }}
       >
         <a
-          href="/communities/emiliano-zapata"
+          href={communityHref(selectedMarket, "all")}
+          style={selectedPropertyType === "all" ? selectedStyle : unselectedStyle}
+        >
+          All
+        </a>
+
+        <a
+          href={communityHref(selectedMarket, "condos")}
+          style={
+            selectedPropertyType === "condos" ? selectedStyle : unselectedStyle
+          }
+        >
+          Condos
+        </a>
+
+        <a
+          href={communityHref(selectedMarket, "houses")}
+          style={
+            selectedPropertyType === "houses" ? selectedStyle : unselectedStyle
+          }
+        >
+          Houses
+        </a>
+      </div>
+
+      <div
+        style={{
+          marginTop: "10px",
+          display: "flex",
+          gap: "10px",
+          flexWrap: "wrap",
+        }}
+      >
+        <a
+          href={communityHref("all", selectedPropertyType)}
           style={selectedMarket === "all" ? selectedStyle : unselectedStyle}
         >
           All Market Activity
         </a>
 
         <a
-          href="/communities/emiliano-zapata?market=pre_construction"
+          href={communityHref("pre_construction", selectedPropertyType)}
           style={
             selectedMarket === "pre_construction"
               ? selectedStyle
@@ -332,7 +343,7 @@ function MarketSelector({
         </a>
 
         <a
-          href="/communities/emiliano-zapata?market=resale"
+          href={communityHref("resale", selectedPropertyType)}
           style={selectedMarket === "resale" ? selectedStyle : unselectedStyle}
         >
           Resale Only
@@ -393,9 +404,36 @@ function MetricCard({
   );
 }
 
+function communityHref(
+  market: MarketSegment,
+  propertyType: PropertyTypeSegment
+) {
+  const params = new URLSearchParams();
+
+  if (market !== "all") {
+    params.set("market", market);
+  }
+
+  if (propertyType !== "all") {
+    params.set("propertyType", propertyType);
+  }
+
+  const queryString = params.toString();
+
+  return queryString
+    ? `/communities/emiliano-zapata?${queryString}`
+    : "/communities/emiliano-zapata";
+}
+
 function getMarketSegment(value?: string): MarketSegment {
   if (value === "pre_construction") return "pre_construction";
   if (value === "resale") return "resale";
+  return "all";
+}
+
+function getPropertyTypeSegment(value?: string): PropertyTypeSegment {
+  if (value === "condos") return "condos";
+  if (value === "houses") return "houses";
   return "all";
 }
 
