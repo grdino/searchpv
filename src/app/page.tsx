@@ -166,7 +166,7 @@ export default async function Home({
 
                 return (
                   <tr key={row.community_name} className="border-t">
-                    <Td className="sticky left-0 z-10 bg-white shadow-[4px_0_6px_-4px_rgba(0,0,0,0.15)]">
+                    <Td className="sticky left-0 z-10 bg-white border-r border-slate-200">
                       {row.community_name === "Emiliano Zapata" ? (
                         <Link
                           href={communityHref(
