@@ -135,18 +135,18 @@ export default async function Home({
 
         <div className="mt-6 max-h-[70vh] overflow-auto rounded-xl bg-white shadow md:max-h-[65vh]">
           <table className="min-w-[900px] text-sm">
-            <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700 shadow-sm">
+            <thead className="bg-slate-100 text-slate-700 shadow-sm">
               <tr>
                 <Th className="sticky top-0 left-0 z-30 bg-slate-100">
                   Community
                 </Th>
-                <Th>Active</Th>
-                <Th>Pending</Th>
-                <Th>Sales 12 Mo</Th>
-                <Th>Median Sold</Th>
-                <Th>Avg Sold $/ft²</Th>
-                <Th>DOM</Th>
-                <Th>MOI</Th>
+                <Th className="sticky top-0 z-20 bg-slate-100">Active</Th>
+                <Th className="sticky top-0 z-20 bg-slate-100">Pending</Th>
+                <Th className="sticky top-0 z-20 bg-slate-100">Sales 12 Mo</Th>
+                <Th className="sticky top-0 z-20 bg-slate-100">Median Sold</Th>
+                <Th className="sticky top-0 z-20 bg-slate-100">Avg Sold $/ft²</Th>
+                <Th className="sticky top-0 z-20 bg-slate-100">DOM</Th>
+                <Th className="sticky top-0 z-20 bg-slate-100">MOI</Th>
               </tr>
             </thead>
 
