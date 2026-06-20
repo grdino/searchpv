@@ -68,7 +68,7 @@ export default async function EmilianoZapataPage({
     .eq("community_name", "Emiliano Zapata")
     .eq("market_segment", selectedMarket)
     .eq("property_type_segment", selectedPropertyType)
-    .single();
+    .maybeSingle();
 
   if (error) {
     return (
@@ -79,9 +79,9 @@ export default async function EmilianoZapataPage({
     );
   }
 
-  const row = data as CommunitySnapshot;
+  const row = data as CommunitySnapshot | null;
 
-  const snapshotDate = row.snapshot_date
+  const snapshotDate = row?.snapshot_date
     ? new Date(row.snapshot_date).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
@@ -94,7 +94,7 @@ export default async function EmilianoZapataPage({
       <section className="bg-slate-950 px-4 py-8 text-white md:px-8 md:py-10">
         <div className="mx-auto max-w-6xl">
           <Link
-            href={`/?market=${selectedMarket}&propertyType=${selectedPropertyType}`}
+            href={homeHref(selectedMarket, selectedPropertyType)}
             className="text-sm text-slate-300 hover:underline"
           >
             ← Back to SearchPV
@@ -148,102 +148,114 @@ export default async function EmilianoZapataPage({
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-10 md:px-8">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <MetricCard
-            label="Active Listings"
-            value={row.active_count ?? 0}
-            breakdown={{
-              studio: row.active_0br ?? 0,
-              oneBed: row.active_1br ?? 0,
-              twoBed: row.active_2br ?? 0,
-              threeBedPlus: row.active_3br_plus ?? 0,
-            }}
-          />
-
-          <MetricCard
-            label="Pending Listings"
-            value={row.pending_count ?? 0}
-            breakdown={{
-              studio: row.pending_0br ?? 0,
-              oneBed: row.pending_1br ?? 0,
-              twoBed: row.pending_2br ?? 0,
-              threeBedPlus: row.pending_3br_plus ?? 0,
-            }}
-          />
-
-          <MetricCard
-            label="Closed Sales - 12 Mo"
-            value={row.sales_12mo ?? 0}
-            breakdown={{
-              studio: row.sales_0br_12mo ?? 0,
-              oneBed: row.sales_1br_12mo ?? 0,
-              twoBed: row.sales_2br_12mo ?? 0,
-              threeBedPlus: row.sales_3br_plus_12mo ?? 0,
-            }}
-          />
-
-          <MetricCard
-            label="Median Sold Price"
-            value={formatMoney(row.median_sold_price)}
-            breakdown={{
-              studio: formatMoney(row.median_sold_price_0br),
-              oneBed: formatMoney(row.median_sold_price_1br),
-              twoBed: formatMoney(row.median_sold_price_2br),
-              threeBedPlus: formatMoney(row.median_sold_price_3br_plus),
-            }}
-          />
-
-          <MetricCard
-            label="Avg Sold $/ft²"
-            value={formatMoney(row.avg_sold_price_ft2)}
-            breakdown={{
-              studio: formatMoney(row.avg_sold_price_ft2_0br),
-              oneBed: formatMoney(row.avg_sold_price_ft2_1br),
-              twoBed: formatMoney(row.avg_sold_price_ft2_2br),
-              threeBedPlus: formatMoney(row.avg_sold_price_ft2_3br_plus),
-            }}
-          />
-
-          <MetricCard
-            label="Months Inventory"
-            value={formatNumber(row.months_inventory)}
-            breakdown={{
-              studio: formatNumber(row.months_inventory_0br),
-              oneBed: formatNumber(row.months_inventory_1br),
-              twoBed: formatNumber(row.months_inventory_2br),
-              threeBedPlus: formatNumber(row.months_inventory_3br_plus),
-            }}
-          />
-        </div>
-
-        <div style={{ paddingTop: "48px" }}>
-          <div
-            style={{
-              backgroundColor: "#ffffff",
-              borderRadius: "24px",
-              padding: "32px",
-              boxShadow: "0 1px 3px rgba(15, 23, 42, 0.12)",
-              border: "1px solid #f1f5f9",
-            }}
-          >
-            <h2 className="text-2xl font-bold">Market Summary</h2>
-
-            <p className="mt-4 leading-7 text-slate-700">
-              Emiliano Zapata currently has{" "}
-              <strong>{row.active_count ?? 0}</strong> active listings,{" "}
-              <strong>{row.pending_count ?? 0}</strong> pending listings, and{" "}
-              <strong>{row.sales_12mo ?? 0}</strong> closed sales over the past
-              12 months. The median sold price is{" "}
-              <strong>{formatMoney(row.median_sold_price)}</strong>, with
-              average sold pricing around{" "}
-              <strong>{formatMoney(row.avg_sold_price_ft2)}</strong> per square
-              foot. Current months of inventory is{" "}
-              <strong>{formatNumber(row.months_inventory)}</strong>.
+      {!row ? (
+        <section className="mx-auto max-w-6xl px-4 py-10 md:px-8">
+          <div className="rounded-xl bg-white p-8 shadow">
+            <h2 className="text-xl font-bold">No data available</h2>
+            <p className="mt-2 text-slate-600">
+              There are no Emiliano Zapata records for this combination of
+              filters.
             </p>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <section className="mx-auto max-w-6xl px-4 py-10 md:px-8">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <MetricCard
+              label="Active Listings"
+              value={row.active_count ?? 0}
+              breakdown={{
+                studio: row.active_0br ?? 0,
+                oneBed: row.active_1br ?? 0,
+                twoBed: row.active_2br ?? 0,
+                threeBedPlus: row.active_3br_plus ?? 0,
+              }}
+            />
+
+            <MetricCard
+              label="Pending Listings"
+              value={row.pending_count ?? 0}
+              breakdown={{
+                studio: row.pending_0br ?? 0,
+                oneBed: row.pending_1br ?? 0,
+                twoBed: row.pending_2br ?? 0,
+                threeBedPlus: row.pending_3br_plus ?? 0,
+              }}
+            />
+
+            <MetricCard
+              label="Closed Sales - 12 Mo"
+              value={row.sales_12mo ?? 0}
+              breakdown={{
+                studio: row.sales_0br_12mo ?? 0,
+                oneBed: row.sales_1br_12mo ?? 0,
+                twoBed: row.sales_2br_12mo ?? 0,
+                threeBedPlus: row.sales_3br_plus_12mo ?? 0,
+              }}
+            />
+
+            <MetricCard
+              label="Median Sold Price"
+              value={formatMoney(row.median_sold_price)}
+              breakdown={{
+                studio: formatMoney(row.median_sold_price_0br),
+                oneBed: formatMoney(row.median_sold_price_1br),
+                twoBed: formatMoney(row.median_sold_price_2br),
+                threeBedPlus: formatMoney(row.median_sold_price_3br_plus),
+              }}
+            />
+
+            <MetricCard
+              label="Avg Sold $/ft²"
+              value={formatMoney(row.avg_sold_price_ft2)}
+              breakdown={{
+                studio: formatMoney(row.avg_sold_price_ft2_0br),
+                oneBed: formatMoney(row.avg_sold_price_ft2_1br),
+                twoBed: formatMoney(row.avg_sold_price_ft2_2br),
+                threeBedPlus: formatMoney(row.avg_sold_price_ft2_3br_plus),
+              }}
+            />
+
+            <MetricCard
+              label="Months Inventory"
+              value={formatNumber(row.months_inventory)}
+              breakdown={{
+                studio: formatNumber(row.months_inventory_0br),
+                oneBed: formatNumber(row.months_inventory_1br),
+                twoBed: formatNumber(row.months_inventory_2br),
+                threeBedPlus: formatNumber(row.months_inventory_3br_plus),
+              }}
+            />
+          </div>
+
+          <div style={{ paddingTop: "48px" }}>
+            <div
+              style={{
+                backgroundColor: "#ffffff",
+                borderRadius: "24px",
+                padding: "32px",
+                boxShadow: "0 1px 3px rgba(15, 23, 42, 0.12)",
+                border: "1px solid #f1f5f9",
+              }}
+            >
+              <h2 className="text-2xl font-bold">Market Summary</h2>
+
+              <p className="mt-4 leading-7 text-slate-700">
+                Emiliano Zapata currently has{" "}
+                <strong>{row.active_count ?? 0}</strong> active listings,{" "}
+                <strong>{row.pending_count ?? 0}</strong> pending listings, and{" "}
+                <strong>{row.sales_12mo ?? 0}</strong> closed sales over the past
+                12 months. The median sold price is{" "}
+                <strong>{formatMoney(row.median_sold_price)}</strong>, with
+                average sold pricing around{" "}
+                <strong>{formatMoney(row.avg_sold_price_ft2)}</strong> per square
+                foot. Current months of inventory is{" "}
+                <strong>{formatNumber(row.months_inventory)}</strong>.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
     </main>
   );
 }
@@ -424,6 +436,22 @@ function communityHref(
   return queryString
     ? `/communities/emiliano-zapata?${queryString}`
     : "/communities/emiliano-zapata";
+}
+
+function homeHref(market: MarketSegment, propertyType: PropertyTypeSegment) {
+  const params = new URLSearchParams();
+
+  if (market !== "all") {
+    params.set("market", market);
+  }
+
+  if (propertyType !== "all") {
+    params.set("propertyType", propertyType);
+  }
+
+  const queryString = params.toString();
+
+  return queryString ? `/?${queryString}` : "/";
 }
 
 function getMarketSegment(value?: string): MarketSegment {
