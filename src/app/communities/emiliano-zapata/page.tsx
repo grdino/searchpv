@@ -102,8 +102,7 @@ export default async function EmilianoZapataPage({
 
           <div
             style={{
-              maxWidth: "900px",
-              margin: "32px auto 0",
+              marginTop: "32px",
               textAlign: "left",
             }}
           >
