@@ -137,7 +137,7 @@ export default async function Home({
           <table className="min-w-[900px] text-sm">
             <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700 shadow-sm">
               <tr>
-                <Th className="sticky left-0 z-20 bg-slate-100">
+                <Th className="sticky top-0 left-0 z-30 bg-slate-100">
                   Community
                 </Th>
                 <Th>Active</Th>
