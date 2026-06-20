@@ -148,7 +148,9 @@ export default async function Home({
           <MetricCard label="Closed Sales - 12 Mo" value={totalSales} />
         </div>
 
-        <h2 className="mt-12 text-2xl font-bold">Community Snapshot</h2>
+        <h2 id="community-snapshot" className="mt-12 text-2xl font-bold">
+          Community Snapshot
+        </h2>
 
         <p className="mt-1 text-sm text-slate-500">
           Snapshot Date: {snapshotDate}
@@ -452,7 +454,7 @@ function SortableTh({
   return (
     <Th className={`sticky top-0 z-20 bg-slate-100 ${className}`}>
       <Link
-        href={homeHref(selectedMarket, selectedPropertyType, sortKey, nextDir)}
+        href={sortHref(selectedMarket, selectedPropertyType, sortKey, nextDir)}
         className="hover:underline"
       >
         {label}
@@ -671,4 +673,13 @@ function formatDateOnly(value: string) {
     month: "long",
     day: "numeric",
   });
+}
+
+function sortHref(
+  market: MarketSegment,
+  propertyType: PropertyTypeSegment,
+  sort: SortKey,
+  dir: SortDir
+) {
+  return `${homeHref(market, propertyType, sort, dir)}#community-snapshot`;
 }
