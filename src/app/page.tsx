@@ -1,6 +1,8 @@
 import { supabase } from "@/lib/supabase";
-
 import Link from "next/link";
+
+type MarketSegment = "all" | "pre_construction" | "resale";
+type PropertyTypeSegment = "all" | "condos" | "houses";
 
 type CommunitySnapshot = {
   community_name: string;
@@ -14,12 +16,31 @@ type CommunitySnapshot = {
   months_inventory: number | null;
 };
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    market?: string;
+    propertyType?: string;
+  }>;
+}) {
+  const params = await searchParams;
+
+  const selectedMarket: MarketSegment =
+    params.market === "pre_construction" || params.market === "resale"
+      ? params.market
+      : "all";
+
+  const selectedPropertyType: PropertyTypeSegment =
+    params.propertyType === "condos" || params.propertyType === "houses"
+      ? params.propertyType
+      : "all";
+
   const { data, error } = await supabase
     .from("community_snapshot")
     .select("*")
-    .eq("market_segment", "all")
-    .eq("property_type_segment", "all")
+    .eq("market_segment", selectedMarket)
+    .eq("property_type_segment", selectedPropertyType)
     .order("sales_12mo", { ascending: false });
 
   if (error) {
@@ -45,17 +66,24 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
-      <section className="bg-slate-950 px-4 py-10 text-white md:px-8 md:py-16">
+      <section className="bg-slate-950 px-4 py-10 text-white md:px-8 md:py-14">
         <div className="mx-auto max-w-6xl">
           <p className="text-sm uppercase tracking-widest text-slate-300">
             Puerto Vallarta Market Intelligence
           </p>
+
           <h1 className="mt-3 text-4xl font-bold md:text-5xl">SearchPV</h1>
+
           <p className="mt-4 max-w-2xl text-slate-300">
-             Explore Puerto Vallarta & Riviera Nayarit Markets
-             Compare condo and house inventory, pricing, sales activity, and months 
-             of inventory by community.
+            Explore Puerto Vallarta & Riviera Nayarit Markets. Compare condo and
+            house inventory, pricing, sales activity, and months of inventory by
+            community.
           </p>
+
+          <PropertyTypeSelector
+            selectedMarket={selectedMarket}
+            selectedPropertyType={selectedPropertyType}
+          />
         </div>
       </section>
 
@@ -86,13 +114,14 @@ export default async function Home() {
                 <Th>MOI</Th>
               </tr>
             </thead>
+
             <tbody>
               {rows.map((row) => (
                 <tr key={row.community_name} className="border-t">
                   <Td>
                     {row.community_name === "Emiliano Zapata" ? (
                       <Link
-                        href="/communities/emiliano-zapata"
+                        href={`/communities/emiliano-zapata?market=${selectedMarket}&propertyType=${selectedPropertyType}`}
                         className="font-semibold text-blue-700 hover:underline"
                       >
                         {row.community_name}
@@ -118,13 +147,77 @@ export default async function Home() {
   );
 }
 
-function MetricCard({
-  label,
-  value,
+function PropertyTypeSelector({
+  selectedMarket,
+  selectedPropertyType,
 }: {
-  label: string;
-  value: number;
+  selectedMarket: MarketSegment;
+  selectedPropertyType: PropertyTypeSegment;
 }) {
+  const baseStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: "95px",
+    padding: "6px 12px",
+    borderRadius: "999px",
+    border: "1px solid #94a3b8",
+    fontSize: "12px",
+    fontWeight: 700,
+    textDecoration: "none",
+  };
+
+  const selectedStyle: React.CSSProperties = {
+    ...baseStyle,
+    backgroundColor: "#ffffff",
+    color: "#020617",
+    borderColor: "#ffffff",
+  };
+
+  const unselectedStyle: React.CSSProperties = {
+    ...baseStyle,
+    backgroundColor: "transparent",
+    color: "#ffffff",
+  };
+
+  return (
+    <div
+      style={{
+        marginTop: "18px",
+        display: "flex",
+        gap: "10px",
+        flexWrap: "wrap",
+      }}
+    >
+      <a
+        href={`/?market=${selectedMarket}`}
+        style={selectedPropertyType === "all" ? selectedStyle : unselectedStyle}
+      >
+        All
+      </a>
+
+      <a
+        href={`/?market=${selectedMarket}&propertyType=condos`}
+        style={
+          selectedPropertyType === "condos" ? selectedStyle : unselectedStyle
+        }
+      >
+        Condos
+      </a>
+
+      <a
+        href={`/?market=${selectedMarket}&propertyType=houses`}
+        style={
+          selectedPropertyType === "houses" ? selectedStyle : unselectedStyle
+        }
+      >
+        Houses
+      </a>
+    </div>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-xl bg-white p-6 shadow">
       <p className="text-sm text-slate-500">{label}</p>
