@@ -343,8 +343,6 @@ function IdxListingLink({
   return (
     <a
       href={buildIdxUrl(listingIds)}
-      target="_blank"
-      rel="noopener noreferrer"
       className="font-semibold text-blue-700 hover:underline"
     >
       {children}
