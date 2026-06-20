@@ -20,18 +20,23 @@ type SortDir = "asc" | "desc";
 
 type CommunitySnapshot = {
   community_name: string;
+  community_slug: string;
   snapshot_date: string | null;
+
   active_count: number | null;
   pending_count: number | null;
   sales_12mo: number | null;
+
   median_sold_price: number | null;
   avg_sold_price_ft2: number | null;
   sold_avg_dom_12mo: number | null;
+
   months_inventory: number | null;
 };
 
 type CommunityListingDrilldown = {
   community_name: string;
+  community_slug: string;
   market_segment: MarketSegment;
   property_type_segment: PropertyTypeSegment;
   metric_group: MetricGroup;
@@ -252,20 +257,15 @@ export default async function Home({
                 return (
                   <tr key={row.community_name} className="border-t">
                     <Td className="sticky left-0 z-10 bg-white border-r border-slate-200">
-                      {row.community_name === "Emiliano Zapata" ? (
-                        <Link
-                          href={communityHref(
-                            "emiliano-zapata",
-                            selectedMarket,
-                            selectedPropertyType
-                          )}
-                          className="font-semibold text-blue-700 hover:underline"
-                        >
-                          {row.community_name}
-                        </Link>
-                      ) : (
-                        row.community_name
-                      )}
+                      <Link
+                        href={`/communities/${row.community_slug}?${buildQueryString(
+                          selectedMarket,
+                          selectedPropertyType
+                        )}`}
+                        className="font-semibold text-blue-700 hover:underline"
+                      >
+                        {row.community_name}
+                      </Link>
                     </Td>
 
                     <Td>
