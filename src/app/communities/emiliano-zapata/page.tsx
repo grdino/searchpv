@@ -339,14 +339,14 @@ function CommunitySelectors({
               : unselectedStyle
           }
         >
-          Pre-Construction Only
+          Pre-Construction
         </a>
 
         <a
           href={communityHref("resale", selectedPropertyType)}
           style={selectedMarket === "resale" ? selectedStyle : unselectedStyle}
         >
-          Resale Only
+          Resale
         </a>
       </div>
     </div>
