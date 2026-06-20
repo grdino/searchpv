@@ -1,6 +1,11 @@
 export const IDX_SEARCH_URL =
-  "https://ronmorgan.net/idx/search/?Limit=400&ListingId=";
+  "https://ronmorgan.net/idx/search/?Limit=150&ListingId=";
 
 export function buildIdxUrl(listingIds: string) {
-  return `${IDX_SEARCH_URL}${listingIds}`;
+  const limitedIds = listingIds
+    .split(",")
+    .slice(0, 75)
+    .join(",");
+
+  return `${IDX_SEARCH_URL}${limitedIds}`;
 }
