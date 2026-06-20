@@ -328,7 +328,7 @@ function CommunitySelectors({
           href={communityHref("all", selectedPropertyType)}
           style={selectedMarket === "all" ? selectedStyle : unselectedStyle}
         >
-          All Market Activity
+          Pre-Con & Resale
         </a>
 
         <a
