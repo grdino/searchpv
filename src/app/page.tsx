@@ -134,10 +134,12 @@ export default async function Home({
         </p>
 
         <div className="mt-6 max-h-[70vh] overflow-auto rounded-xl bg-white shadow md:max-h-[65vh]">
-          <table className="min-w-full text-sm">
+          <table className="min-w-[900px] text-sm">
             <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700 shadow-sm">
               <tr>
-                <Th>Community</Th>
+                <Th className="sticky left-0 z-20 bg-slate-100">
+                  Community
+                </Th>
                 <Th>Active</Th>
                 <Th>Pending</Th>
                 <Th>Sales 12 Mo</Th>
@@ -164,7 +166,7 @@ export default async function Home({
 
                 return (
                   <tr key={row.community_name} className="border-t">
-                    <Td>
+                    <Td className="sticky left-0 z-10 bg-white">
                       {row.community_name === "Emiliano Zapata" ? (
                         <Link
                           href={communityHref(
@@ -456,16 +458,34 @@ function getPropertyTypeSegment(value?: string): PropertyTypeSegment {
   return "all";
 }
 
-function Th({ children }: { children: React.ReactNode }) {
+function Th({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <th className="whitespace-nowrap px-4 py-3 text-left font-semibold">
+    <th
+      className={`whitespace-nowrap px-4 py-3 text-left font-semibold ${className}`}
+    >
       {children}
     </th>
   );
 }
 
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="whitespace-nowrap px-4 py-3">{children}</td>;
+function Td({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <td className={`whitespace-nowrap px-4 py-3 ${className}`}>
+      {children}
+    </td>
+  );
 }
 
 function formatMoney(value: number | null) {
