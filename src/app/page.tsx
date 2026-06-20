@@ -1,8 +1,10 @@
+import { buildIdxUrl } from "@/lib/idx";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
+type MetricGroup = "active" | "pending" | "sold_12mo";
 
 type CommunitySnapshot = {
   community_name: string;
@@ -14,6 +16,16 @@ type CommunitySnapshot = {
   avg_sold_price_ft2: number | null;
   sold_avg_dom_12mo: number | null;
   months_inventory: number | null;
+};
+
+type CommunityListingDrilldown = {
+  community_name: string;
+  market_segment: MarketSegment;
+  property_type_segment: PropertyTypeSegment;
+  metric_group: MetricGroup;
+  bedroom_segment: string;
+  listing_count: number | null;
+  listing_ids: string | null;
 };
 
 export default async function Home({
@@ -36,26 +48,54 @@ export default async function Home({
     .eq("property_type_segment", selectedPropertyType)
     .order("sales_12mo", { ascending: false });
 
-  if (error) {
+  const { data: drilldownData, error: drilldownError } = await supabase
+    .from("community_listing_drilldown")
+    .select("*")
+    .eq("market_segment", selectedMarket)
+    .eq("property_type_segment", selectedPropertyType)
+    .eq("bedroom_segment", "all")
+    .in("metric_group", ["active", "pending", "sold_12mo"]);
+
+  if (error || drilldownError) {
     return (
       <main className="min-h-screen p-8">
         <h1 className="text-3xl font-bold">SearchPV</h1>
         <p className="mt-4 text-red-600">Error loading market data.</p>
-        <pre className="mt-4 text-sm">{error.message}</pre>
+        <pre className="mt-4 text-sm">
+          {error?.message ?? drilldownError?.message}
+        </pre>
       </main>
     );
   }
 
   const rows = (data ?? []) as CommunitySnapshot[];
+  const drilldownRows = (drilldownData ?? []) as CommunityListingDrilldown[];
+
+  const drilldownLookup = new Map<string, CommunityListingDrilldown>();
+
+  for (const row of drilldownRows) {
+    drilldownLookup.set(drilldownKey(row.community_name, row.metric_group), row);
+  }
 
   const snapshotDate =
     rows.length > 0 && rows[0].snapshot_date
       ? formatDateOnly(rows[0].snapshot_date)
       : "Unknown";
 
-  const totalActive = rows.reduce((sum, r) => sum + Number(r.active_count ?? 0), 0);
-  const totalPending = rows.reduce((sum, r) => sum + Number(r.pending_count ?? 0), 0);
-  const totalSales = rows.reduce((sum, r) => sum + Number(r.sales_12mo ?? 0), 0);
+  const totalActive = rows.reduce(
+    (sum, r) => sum + Number(r.active_count ?? 0),
+    0
+  );
+
+  const totalPending = rows.reduce(
+    (sum, r) => sum + Number(r.pending_count ?? 0),
+    0
+  );
+
+  const totalSales = rows.reduce(
+    (sum, r) => sum + Number(r.sales_12mo ?? 0),
+    0
+  );
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -109,32 +149,72 @@ export default async function Home({
             </thead>
 
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.community_name} className="border-t">
-                  <Td>
-                    {row.community_name === "Emiliano Zapata" ? (
-                      <Link
-                        href={`/communities/emiliano-zapata?${buildQueryString(
-                          selectedMarket,
-                          selectedPropertyType
-                        )}`}
-                        className="font-semibold text-blue-700 hover:underline"
+              {rows.map((row) => {
+                const activeDrilldown = drilldownLookup.get(
+                  drilldownKey(row.community_name, "active")
+                );
+
+                const pendingDrilldown = drilldownLookup.get(
+                  drilldownKey(row.community_name, "pending")
+                );
+
+                const soldDrilldown = drilldownLookup.get(
+                  drilldownKey(row.community_name, "sold_12mo")
+                );
+
+                return (
+                  <tr key={row.community_name} className="border-t">
+                    <Td>
+                      {row.community_name === "Emiliano Zapata" ? (
+                        <Link
+                          href={communityHref(
+                            "emiliano-zapata",
+                            selectedMarket,
+                            selectedPropertyType
+                          )}
+                          className="font-semibold text-blue-700 hover:underline"
+                        >
+                          {row.community_name}
+                        </Link>
+                      ) : (
+                        row.community_name
+                      )}
+                    </Td>
+
+                    <Td>
+                      <IdxListingLink listingIds={activeDrilldown?.listing_ids}>
+                        {row.active_count ?? 0}
+                      </IdxListingLink>
+                    </Td>
+
+                    <Td>
+                      <IdxListingLink listingIds={pendingDrilldown?.listing_ids}>
+                        {row.pending_count ?? 0}
+                      </IdxListingLink>
+                    </Td>
+
+                    <Td>
+                      <ContactListingLink
+                        communityName={row.community_name}
+                        market={selectedMarket}
+                        propertyType={selectedPropertyType}
+                        metricGroup="sold_12mo"
+                        bedroomSegment="all"
+                        listingCount={
+                          soldDrilldown?.listing_count ?? row.sales_12mo ?? 0
+                        }
                       >
-                        {row.community_name}
-                      </Link>
-                    ) : (
-                      row.community_name
-                    )}
-                  </Td>
-                  <Td>{row.active_count ?? 0}</Td>
-                  <Td>{row.pending_count ?? 0}</Td>
-                  <Td>{row.sales_12mo ?? 0}</Td>
-                  <Td>{formatMoney(row.median_sold_price)}</Td>
-                  <Td>{formatMoney(row.avg_sold_price_ft2)}</Td>
-                  <Td>{row.sold_avg_dom_12mo ?? "-"}</Td>
-                  <Td>{row.months_inventory ?? "-"}</Td>
-                </tr>
-              ))}
+                        {row.sales_12mo ?? 0}
+                      </ContactListingLink>
+                    </Td>
+
+                    <Td>{formatMoney(row.median_sold_price)}</Td>
+                    <Td>{formatMoney(row.avg_sold_price_ft2)}</Td>
+                    <Td>{row.sold_avg_dom_12mo ?? "-"}</Td>
+                    <Td>{row.months_inventory ?? "-"}</Td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -249,6 +329,65 @@ function HomeSelectors({
   );
 }
 
+function IdxListingLink({
+  listingIds,
+  children,
+}: {
+  listingIds: string | null | undefined;
+  children: React.ReactNode;
+}) {
+  if (!listingIds) {
+    return <>{children}</>;
+  }
+
+  return (
+    <a
+      href={buildIdxUrl(listingIds)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-semibold text-blue-700 hover:underline"
+    >
+      {children}
+    </a>
+  );
+}
+
+function ContactListingLink({
+  communityName,
+  market,
+  propertyType,
+  metricGroup,
+  bedroomSegment,
+  listingCount,
+  children,
+}: {
+  communityName: string;
+  market: MarketSegment;
+  propertyType: PropertyTypeSegment;
+  metricGroup: MetricGroup;
+  bedroomSegment: string;
+  listingCount: number;
+  children: React.ReactNode;
+}) {
+  const params = new URLSearchParams();
+
+  params.set("community", communityName);
+  params.set("market", market);
+  params.set("propertyType", propertyType);
+  params.set("metric", metricGroup);
+  params.set("bedroom", bedroomSegment);
+  params.set("count", String(listingCount));
+
+  return (
+    <Link
+      href={`/contact?${params.toString()}`}
+      className="font-semibold text-blue-700 hover:underline"
+    >
+      {children}
+    </Link>
+  );
+}
+
 function MetricCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-xl bg-white p-6 shadow">
@@ -274,6 +413,18 @@ function homeHref(market: MarketSegment, propertyType: PropertyTypeSegment) {
   return queryString ? `/?${queryString}` : "/";
 }
 
+function communityHref(
+  communitySlug: string,
+  market: MarketSegment,
+  propertyType: PropertyTypeSegment
+) {
+  const queryString = buildQueryString(market, propertyType);
+
+  return queryString
+    ? `/communities/${communitySlug}?${queryString}`
+    : `/communities/${communitySlug}`;
+}
+
 function buildQueryString(
   market: MarketSegment,
   propertyType: PropertyTypeSegment
@@ -289,6 +440,10 @@ function buildQueryString(
   }
 
   return params.toString();
+}
+
+function drilldownKey(communityName: string, metricGroup: MetricGroup) {
+  return `${communityName}|${metricGroup}`;
 }
 
 function getMarketSegment(value?: string): MarketSegment {
