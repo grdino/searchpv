@@ -1,8 +1,11 @@
+import { buildIdxUrl } from "@/lib/idx";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
+type MetricGroup = "active" | "pending" | "sold_12mo";
+type BedroomSegment = "all" | "0br" | "1br" | "2br" | "3br_plus";
 
 type CommunitySnapshot = {
   community_name: string;
@@ -49,6 +52,16 @@ type CommunitySnapshot = {
   months_inventory_3br_plus: number | null;
 };
 
+type CommunityListingDrilldown = {
+  community_name: string;
+  market_segment: MarketSegment;
+  property_type_segment: PropertyTypeSegment;
+  metric_group: MetricGroup;
+  bedroom_segment: BedroomSegment;
+  listing_count: number | null;
+  listing_ids: string | null;
+};
+
 export default async function EmilianoZapataPage({
   searchParams,
 }: {
@@ -61,25 +74,46 @@ export default async function EmilianoZapataPage({
 
   const selectedMarket = getMarketSegment(params.market);
   const selectedPropertyType = getPropertyTypeSegment(params.propertyType);
+  const communityName = "Emiliano Zapata";
 
   const { data, error } = await supabase
     .from("community_snapshot")
     .select("*")
-    .eq("community_name", "Emiliano Zapata")
+    .eq("community_name", communityName)
     .eq("market_segment", selectedMarket)
     .eq("property_type_segment", selectedPropertyType)
     .maybeSingle();
 
-  if (error) {
+  const { data: drilldownData, error: drilldownError } = await supabase
+    .from("community_listing_drilldown")
+    .select("*")
+    .eq("community_name", communityName)
+    .eq("market_segment", selectedMarket)
+    .eq("property_type_segment", selectedPropertyType)
+    .in("metric_group", ["active", "pending", "sold_12mo"]);
+
+  if (error || drilldownError) {
     return (
       <main className="min-h-screen p-8">
         <p className="text-red-600">Error loading Emiliano Zapata data.</p>
-        <pre className="mt-4 text-sm">{error.message}</pre>
+        <pre className="mt-4 text-sm">
+          {error?.message ?? drilldownError?.message}
+        </pre>
       </main>
     );
   }
 
   const row = data as CommunitySnapshot | null;
+  const drilldownRows = (drilldownData ?? []) as CommunityListingDrilldown[];
+
+  const drilldownLookup = new Map<string, CommunityListingDrilldown>();
+
+  for (const drilldownRow of drilldownRows) {
+    drilldownLookup.set(
+      drilldownKey(drilldownRow.metric_group, drilldownRow.bedroom_segment),
+      drilldownRow
+    );
+  }
 
   const snapshotDate = row?.snapshot_date
     ? new Date(row.snapshot_date).toLocaleDateString("en-US", {
@@ -162,34 +196,169 @@ export default async function EmilianoZapataPage({
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <MetricCard
               label="Active Listings"
-              value={row.active_count ?? 0}
+              value={
+                <IdxListingLink
+                  listingIds={getListingIds(drilldownLookup, "active", "all")}
+                >
+                  {row.active_count ?? 0}
+                </IdxListingLink>
+              }
               breakdown={{
-                studio: row.active_0br ?? 0,
-                oneBed: row.active_1br ?? 0,
-                twoBed: row.active_2br ?? 0,
-                threeBedPlus: row.active_3br_plus ?? 0,
+                studio: (
+                  <IdxListingLink
+                    listingIds={getListingIds(drilldownLookup, "active", "0br")}
+                  >
+                    {row.active_0br ?? 0}
+                  </IdxListingLink>
+                ),
+                oneBed: (
+                  <IdxListingLink
+                    listingIds={getListingIds(drilldownLookup, "active", "1br")}
+                  >
+                    {row.active_1br ?? 0}
+                  </IdxListingLink>
+                ),
+                twoBed: (
+                  <IdxListingLink
+                    listingIds={getListingIds(drilldownLookup, "active", "2br")}
+                  >
+                    {row.active_2br ?? 0}
+                  </IdxListingLink>
+                ),
+                threeBedPlus: (
+                  <IdxListingLink
+                    listingIds={getListingIds(
+                      drilldownLookup,
+                      "active",
+                      "3br_plus"
+                    )}
+                  >
+                    {row.active_3br_plus ?? 0}
+                  </IdxListingLink>
+                ),
               }}
             />
 
             <MetricCard
               label="Pending Listings"
-              value={row.pending_count ?? 0}
+              value={
+                <IdxListingLink
+                  listingIds={getListingIds(drilldownLookup, "pending", "all")}
+                >
+                  {row.pending_count ?? 0}
+                </IdxListingLink>
+              }
               breakdown={{
-                studio: row.pending_0br ?? 0,
-                oneBed: row.pending_1br ?? 0,
-                twoBed: row.pending_2br ?? 0,
-                threeBedPlus: row.pending_3br_plus ?? 0,
+                studio: (
+                  <IdxListingLink
+                    listingIds={getListingIds(
+                      drilldownLookup,
+                      "pending",
+                      "0br"
+                    )}
+                  >
+                    {row.pending_0br ?? 0}
+                  </IdxListingLink>
+                ),
+                oneBed: (
+                  <IdxListingLink
+                    listingIds={getListingIds(
+                      drilldownLookup,
+                      "pending",
+                      "1br"
+                    )}
+                  >
+                    {row.pending_1br ?? 0}
+                  </IdxListingLink>
+                ),
+                twoBed: (
+                  <IdxListingLink
+                    listingIds={getListingIds(
+                      drilldownLookup,
+                      "pending",
+                      "2br"
+                    )}
+                  >
+                    {row.pending_2br ?? 0}
+                  </IdxListingLink>
+                ),
+                threeBedPlus: (
+                  <IdxListingLink
+                    listingIds={getListingIds(
+                      drilldownLookup,
+                      "pending",
+                      "3br_plus"
+                    )}
+                  >
+                    {row.pending_3br_plus ?? 0}
+                  </IdxListingLink>
+                ),
               }}
             />
 
             <MetricCard
               label="Closed Sales - 12 Mo"
-              value={row.sales_12mo ?? 0}
+              value={
+                <ContactListingLink
+                  communityName={communityName}
+                  market={selectedMarket}
+                  propertyType={selectedPropertyType}
+                  metricGroup="sold_12mo"
+                  bedroomSegment="all"
+                  listingCount={row.sales_12mo ?? 0}
+                >
+                  {row.sales_12mo ?? 0}
+                </ContactListingLink>
+              }
               breakdown={{
-                studio: row.sales_0br_12mo ?? 0,
-                oneBed: row.sales_1br_12mo ?? 0,
-                twoBed: row.sales_2br_12mo ?? 0,
-                threeBedPlus: row.sales_3br_plus_12mo ?? 0,
+                studio: (
+                  <ContactListingLink
+                    communityName={communityName}
+                    market={selectedMarket}
+                    propertyType={selectedPropertyType}
+                    metricGroup="sold_12mo"
+                    bedroomSegment="0br"
+                    listingCount={row.sales_0br_12mo ?? 0}
+                  >
+                    {row.sales_0br_12mo ?? 0}
+                  </ContactListingLink>
+                ),
+                oneBed: (
+                  <ContactListingLink
+                    communityName={communityName}
+                    market={selectedMarket}
+                    propertyType={selectedPropertyType}
+                    metricGroup="sold_12mo"
+                    bedroomSegment="1br"
+                    listingCount={row.sales_1br_12mo ?? 0}
+                  >
+                    {row.sales_1br_12mo ?? 0}
+                  </ContactListingLink>
+                ),
+                twoBed: (
+                  <ContactListingLink
+                    communityName={communityName}
+                    market={selectedMarket}
+                    propertyType={selectedPropertyType}
+                    metricGroup="sold_12mo"
+                    bedroomSegment="2br"
+                    listingCount={row.sales_2br_12mo ?? 0}
+                  >
+                    {row.sales_2br_12mo ?? 0}
+                  </ContactListingLink>
+                ),
+                threeBedPlus: (
+                  <ContactListingLink
+                    communityName={communityName}
+                    market={selectedMarket}
+                    propertyType={selectedPropertyType}
+                    metricGroup="sold_12mo"
+                    bedroomSegment="3br_plus"
+                    listingCount={row.sales_3br_plus_12mo ?? 0}
+                  >
+                    {row.sales_3br_plus_12mo ?? 0}
+                  </ContactListingLink>
+                ),
               }}
             />
 
@@ -371,12 +540,12 @@ function MetricCard({
   breakdown,
 }: {
   label: string;
-  value: string | number;
+  value: React.ReactNode;
   breakdown?: {
-    studio: string | number;
-    oneBed: string | number;
-    twoBed: string | number;
-    threeBedPlus: string | number;
+    studio: React.ReactNode;
+    oneBed: React.ReactNode;
+    twoBed: React.ReactNode;
+    threeBedPlus: React.ReactNode;
   };
 }) {
   return (
@@ -391,9 +560,7 @@ function MetricCard({
     >
       <p className="text-sm text-slate-500">{label}</p>
 
-      <p className="mt-3 text-4xl font-bold text-slate-900">
-        {typeof value === "number" ? value.toLocaleString() : value}
-      </p>
+      <p className="mt-3 text-4xl font-bold text-slate-900">{value}</p>
 
       {breakdown && (
         <div className="mt-4 border-t border-slate-200 pt-3">
@@ -414,6 +581,76 @@ function MetricCard({
       )}
     </div>
   );
+}
+
+function IdxListingLink({
+  listingIds,
+  children,
+}: {
+  listingIds: string | null | undefined;
+  children: React.ReactNode;
+}) {
+  if (!listingIds) {
+    return <>{children}</>;
+  }
+
+  return (
+    <a
+      href={buildIdxUrl(listingIds)}
+      className="font-semibold text-blue-700 hover:underline"
+    >
+      {children}
+    </a>
+  );
+}
+
+function ContactListingLink({
+  communityName,
+  market,
+  propertyType,
+  metricGroup,
+  bedroomSegment,
+  listingCount,
+  children,
+}: {
+  communityName: string;
+  market: MarketSegment;
+  propertyType: PropertyTypeSegment;
+  metricGroup: MetricGroup;
+  bedroomSegment: BedroomSegment;
+  listingCount: number;
+  children: React.ReactNode;
+}) {
+  const params = new URLSearchParams();
+
+  params.set("community", communityName);
+  params.set("market", market);
+  params.set("propertyType", propertyType);
+  params.set("metric", metricGroup);
+  params.set("bedroom", bedroomSegment);
+  params.set("count", String(listingCount));
+
+  return (
+    <Link
+      href={`/contact?${params.toString()}`}
+      className="font-semibold text-blue-700 hover:underline"
+    >
+      {children}
+    </Link>
+  );
+}
+
+function getListingIds(
+  drilldownLookup: Map<string, CommunityListingDrilldown>,
+  metricGroup: MetricGroup,
+  bedroomSegment: BedroomSegment
+) {
+  return drilldownLookup.get(drilldownKey(metricGroup, bedroomSegment))
+    ?.listing_ids;
+}
+
+function drilldownKey(metricGroup: MetricGroup, bedroomSegment: BedroomSegment) {
+  return `${metricGroup}|${bedroomSegment}`;
 }
 
 function communityHref(
