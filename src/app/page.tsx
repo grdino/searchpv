@@ -26,15 +26,8 @@ export default async function Home({
 }) {
   const params = await searchParams;
 
-  const selectedMarket: MarketSegment =
-    params.market === "pre_construction" || params.market === "resale"
-      ? params.market
-      : "all";
-
-  const selectedPropertyType: PropertyTypeSegment =
-    params.propertyType === "condos" || params.propertyType === "houses"
-      ? params.propertyType
-      : "all";
+  const selectedMarket = getMarketSegment(params.market);
+  const selectedPropertyType = getPropertyTypeSegment(params.propertyType);
 
   const { data, error } = await supabase
     .from("community_snapshot")
@@ -80,7 +73,7 @@ export default async function Home({
             community.
           </p>
 
-          <PropertyTypeSelector
+          <HomeSelectors
             selectedMarket={selectedMarket}
             selectedPropertyType={selectedPropertyType}
           />
@@ -121,7 +114,10 @@ export default async function Home({
                   <Td>
                     {row.community_name === "Emiliano Zapata" ? (
                       <Link
-                        href={`/communities/emiliano-zapata?market=${selectedMarket}&propertyType=${selectedPropertyType}`}
+                        href={`/communities/emiliano-zapata?${buildQueryString(
+                          selectedMarket,
+                          selectedPropertyType
+                        )}`}
                         className="font-semibold text-blue-700 hover:underline"
                       >
                         {row.community_name}
@@ -147,7 +143,7 @@ export default async function Home({
   );
 }
 
-function PropertyTypeSelector({
+function HomeSelectors({
   selectedMarket,
   selectedPropertyType,
 }: {
@@ -158,13 +154,22 @@ function PropertyTypeSelector({
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minWidth: "95px",
-    padding: "6px 12px",
+    width: "100%",
+    padding: "6px 6px",
     borderRadius: "999px",
     border: "1px solid #94a3b8",
-    fontSize: "12px",
+    fontSize: "11px",
     fontWeight: 700,
     textDecoration: "none",
+    whiteSpace: "nowrap",
+  };
+
+  const rowStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: "8px",
+    width: "100%",
+    maxWidth: "360px",
   };
 
   const selectedStyle: React.CSSProperties = {
@@ -181,38 +186,65 @@ function PropertyTypeSelector({
   };
 
   return (
-    <div
-      style={{
-        marginTop: "18px",
-        display: "flex",
-        gap: "10px",
-        flexWrap: "wrap",
-      }}
-    >
-      <a
-        href={`/?market=${selectedMarket}`}
-        style={selectedPropertyType === "all" ? selectedStyle : unselectedStyle}
-      >
-        All
-      </a>
+    <div style={{ marginTop: "18px" }}>
+      <div style={rowStyle}>
+        <a
+          href={homeHref(selectedMarket, "all")}
+          style={selectedPropertyType === "all" ? selectedStyle : unselectedStyle}
+        >
+          All
+        </a>
 
-      <a
-        href={`/?market=${selectedMarket}&propertyType=condos`}
-        style={
-          selectedPropertyType === "condos" ? selectedStyle : unselectedStyle
-        }
-      >
-        Condos
-      </a>
+        <a
+          href={homeHref(selectedMarket, "condos")}
+          style={
+            selectedPropertyType === "condos" ? selectedStyle : unselectedStyle
+          }
+        >
+          Condos
+        </a>
 
-      <a
-        href={`/?market=${selectedMarket}&propertyType=houses`}
-        style={
-          selectedPropertyType === "houses" ? selectedStyle : unselectedStyle
-        }
+        <a
+          href={homeHref(selectedMarket, "houses")}
+          style={
+            selectedPropertyType === "houses" ? selectedStyle : unselectedStyle
+          }
+        >
+          Houses
+        </a>
+      </div>
+
+      <div
+        style={{
+          ...rowStyle,
+          marginTop: "10px",
+        }}
       >
-        Houses
-      </a>
+        <a
+          href={homeHref("all", selectedPropertyType)}
+          style={selectedMarket === "all" ? selectedStyle : unselectedStyle}
+        >
+          All
+        </a>
+
+        <a
+          href={homeHref("pre_construction", selectedPropertyType)}
+          style={
+            selectedMarket === "pre_construction"
+              ? selectedStyle
+              : unselectedStyle
+          }
+        >
+          Pre-Construction
+        </a>
+
+        <a
+          href={homeHref("resale", selectedPropertyType)}
+          style={selectedMarket === "resale" ? selectedStyle : unselectedStyle}
+        >
+          Resale
+        </a>
+      </div>
     </div>
   );
 }
@@ -224,6 +256,51 @@ function MetricCard({ label, value }: { label: string; value: number }) {
       <p className="mt-2 text-4xl font-bold">{value.toLocaleString()}</p>
     </div>
   );
+}
+
+function homeHref(market: MarketSegment, propertyType: PropertyTypeSegment) {
+  const params = new URLSearchParams();
+
+  if (market !== "all") {
+    params.set("market", market);
+  }
+
+  if (propertyType !== "all") {
+    params.set("propertyType", propertyType);
+  }
+
+  const queryString = params.toString();
+
+  return queryString ? `/?${queryString}` : "/";
+}
+
+function buildQueryString(
+  market: MarketSegment,
+  propertyType: PropertyTypeSegment
+) {
+  const params = new URLSearchParams();
+
+  if (market !== "all") {
+    params.set("market", market);
+  }
+
+  if (propertyType !== "all") {
+    params.set("propertyType", propertyType);
+  }
+
+  return params.toString();
+}
+
+function getMarketSegment(value?: string): MarketSegment {
+  if (value === "pre_construction") return "pre_construction";
+  if (value === "resale") return "resale";
+  return "all";
+}
+
+function getPropertyTypeSegment(value?: string): PropertyTypeSegment {
+  if (value === "condos") return "condos";
+  if (value === "houses") return "houses";
+  return "all";
 }
 
 function Th({ children }: { children: React.ReactNode }) {
