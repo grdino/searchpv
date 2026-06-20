@@ -131,7 +131,7 @@ export default async function EmilianoZapataPage({
             href={homeHref(selectedMarket, selectedPropertyType)}
             className="text-sm text-slate-300 hover:underline"
           >
-            ← Back to SearchPV
+            ← BACK TO COMMUNITY LIST
           </Link>
 
           <div
