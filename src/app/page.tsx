@@ -6,6 +6,18 @@ type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
 type MetricGroup = "active" | "pending" | "sold_12mo";
 
+type SortKey =
+  | "community_name"
+  | "active_count"
+  | "pending_count"
+  | "sales_12mo"
+  | "median_sold_price"
+  | "avg_sold_price_ft2"
+  | "sold_avg_dom_12mo"
+  | "months_inventory";
+
+type SortDir = "asc" | "desc";
+
 type CommunitySnapshot = {
   community_name: string;
   snapshot_date: string | null;
@@ -34,19 +46,26 @@ export default async function Home({
   searchParams: Promise<{
     market?: string;
     propertyType?: string;
+    sort?: string;
+    dir?: string;
   }>;
 }) {
   const params = await searchParams;
 
   const selectedMarket = getMarketSegment(params.market);
   const selectedPropertyType = getPropertyTypeSegment(params.propertyType);
+  const selectedSort = getSortKey(params.sort);
+  const selectedDir = getSortDir(params.dir);
 
   const { data, error } = await supabase
     .from("community_snapshot")
     .select("*")
     .eq("market_segment", selectedMarket)
     .eq("property_type_segment", selectedPropertyType)
-    .order("sales_12mo", { ascending: false });
+    .order(selectedSort, {
+      ascending: selectedDir === "asc",
+      nullsFirst: false,
+    });
 
   const { data: drilldownData, error: drilldownError } = await supabase
     .from("community_listing_drilldown")
@@ -116,6 +135,8 @@ export default async function Home({
           <HomeSelectors
             selectedMarket={selectedMarket}
             selectedPropertyType={selectedPropertyType}
+            selectedSort={selectedSort}
+            selectedDir={selectedDir}
           />
         </div>
       </section>
@@ -137,16 +158,78 @@ export default async function Home({
           <table className="min-w-[900px] text-sm">
             <thead className="bg-slate-100 text-slate-700 shadow-sm">
               <tr>
-                <Th className="sticky top-0 left-0 z-30 bg-slate-100">
-                  Community
-                </Th>
-                <Th className="sticky top-0 z-20 bg-slate-100">Active</Th>
-                <Th className="sticky top-0 z-20 bg-slate-100">Pending</Th>
-                <Th className="sticky top-0 z-20 bg-slate-100">Sales 12 Mo</Th>
-                <Th className="sticky top-0 z-20 bg-slate-100">Median Sold</Th>
-                <Th className="sticky top-0 z-20 bg-slate-100">Avg Sold $/ft²</Th>
-                <Th className="sticky top-0 z-20 bg-slate-100">DOM</Th>
-                <Th className="sticky top-0 z-20 bg-slate-100">MOI</Th>
+                <SortableTh
+                  label="Community"
+                  sortKey="community_name"
+                  selectedSort={selectedSort}
+                  selectedDir={selectedDir}
+                  selectedMarket={selectedMarket}
+                  selectedPropertyType={selectedPropertyType}
+                  className="sticky top-0 left-0 z-30 bg-slate-100"
+                />
+
+                <SortableTh
+                  label="Active"
+                  sortKey="active_count"
+                  selectedSort={selectedSort}
+                  selectedDir={selectedDir}
+                  selectedMarket={selectedMarket}
+                  selectedPropertyType={selectedPropertyType}
+                />
+
+                <SortableTh
+                  label="Pending"
+                  sortKey="pending_count"
+                  selectedSort={selectedSort}
+                  selectedDir={selectedDir}
+                  selectedMarket={selectedMarket}
+                  selectedPropertyType={selectedPropertyType}
+                />
+
+                <SortableTh
+                  label="Sales 12 Mo"
+                  sortKey="sales_12mo"
+                  selectedSort={selectedSort}
+                  selectedDir={selectedDir}
+                  selectedMarket={selectedMarket}
+                  selectedPropertyType={selectedPropertyType}
+                />
+
+                <SortableTh
+                  label="Median Sold"
+                  sortKey="median_sold_price"
+                  selectedSort={selectedSort}
+                  selectedDir={selectedDir}
+                  selectedMarket={selectedMarket}
+                  selectedPropertyType={selectedPropertyType}
+                />
+
+                <SortableTh
+                  label="Avg Sold $/ft²"
+                  sortKey="avg_sold_price_ft2"
+                  selectedSort={selectedSort}
+                  selectedDir={selectedDir}
+                  selectedMarket={selectedMarket}
+                  selectedPropertyType={selectedPropertyType}
+                />
+
+                <SortableTh
+                  label="DOM"
+                  sortKey="sold_avg_dom_12mo"
+                  selectedSort={selectedSort}
+                  selectedDir={selectedDir}
+                  selectedMarket={selectedMarket}
+                  selectedPropertyType={selectedPropertyType}
+                />
+
+                <SortableTh
+                  label="MOI"
+                  sortKey="months_inventory"
+                  selectedSort={selectedSort}
+                  selectedDir={selectedDir}
+                  selectedMarket={selectedMarket}
+                  selectedPropertyType={selectedPropertyType}
+                />
               </tr>
             </thead>
 
@@ -228,9 +311,13 @@ export default async function Home({
 function HomeSelectors({
   selectedMarket,
   selectedPropertyType,
+  selectedSort,
+  selectedDir,
 }: {
   selectedMarket: MarketSegment;
   selectedPropertyType: PropertyTypeSegment;
+  selectedSort: SortKey;
+  selectedDir: SortDir;
 }) {
   const baseStyle: React.CSSProperties = {
     display: "inline-flex",
@@ -271,14 +358,14 @@ function HomeSelectors({
     <div style={{ marginTop: "18px" }}>
       <div style={rowStyle}>
         <a
-          href={homeHref(selectedMarket, "all")}
+          href={homeHref(selectedMarket, "all", selectedSort, selectedDir)}
           style={selectedPropertyType === "all" ? selectedStyle : unselectedStyle}
         >
           All
         </a>
 
         <a
-          href={homeHref(selectedMarket, "condos")}
+          href={homeHref(selectedMarket, "condos", selectedSort, selectedDir)}
           style={
             selectedPropertyType === "condos" ? selectedStyle : unselectedStyle
           }
@@ -287,7 +374,7 @@ function HomeSelectors({
         </a>
 
         <a
-          href={homeHref(selectedMarket, "houses")}
+          href={homeHref(selectedMarket, "houses", selectedSort, selectedDir)}
           style={
             selectedPropertyType === "houses" ? selectedStyle : unselectedStyle
           }
@@ -303,14 +390,19 @@ function HomeSelectors({
         }}
       >
         <a
-          href={homeHref("all", selectedPropertyType)}
+          href={homeHref("all", selectedPropertyType, selectedSort, selectedDir)}
           style={selectedMarket === "all" ? selectedStyle : unselectedStyle}
         >
           All
         </a>
 
         <a
-          href={homeHref("pre_construction", selectedPropertyType)}
+          href={homeHref(
+            "pre_construction",
+            selectedPropertyType,
+            selectedSort,
+            selectedDir
+          )}
           style={
             selectedMarket === "pre_construction"
               ? selectedStyle
@@ -321,13 +413,52 @@ function HomeSelectors({
         </a>
 
         <a
-          href={homeHref("resale", selectedPropertyType)}
+          href={homeHref(
+            "resale",
+            selectedPropertyType,
+            selectedSort,
+            selectedDir
+          )}
           style={selectedMarket === "resale" ? selectedStyle : unselectedStyle}
         >
           Resale
         </a>
       </div>
     </div>
+  );
+}
+
+function SortableTh({
+  label,
+  sortKey,
+  selectedSort,
+  selectedDir,
+  selectedMarket,
+  selectedPropertyType,
+  className = "",
+}: {
+  label: string;
+  sortKey: SortKey;
+  selectedSort: SortKey;
+  selectedDir: SortDir;
+  selectedMarket: MarketSegment;
+  selectedPropertyType: PropertyTypeSegment;
+  className?: string;
+}) {
+  const isSelected = selectedSort === sortKey;
+  const nextDir: SortDir = isSelected && selectedDir === "desc" ? "asc" : "desc";
+  const arrow = isSelected ? (selectedDir === "asc" ? " ↑" : " ↓") : "";
+
+  return (
+    <Th className={`sticky top-0 z-20 bg-slate-100 ${className}`}>
+      <Link
+        href={homeHref(selectedMarket, selectedPropertyType, sortKey, nextDir)}
+        className="hover:underline"
+      >
+        {label}
+        {arrow}
+      </Link>
+    </Th>
   );
 }
 
@@ -397,7 +528,12 @@ function MetricCard({ label, value }: { label: string; value: number }) {
   );
 }
 
-function homeHref(market: MarketSegment, propertyType: PropertyTypeSegment) {
+function homeHref(
+  market: MarketSegment,
+  propertyType: PropertyTypeSegment,
+  sort: SortKey,
+  dir: SortDir
+) {
   const params = new URLSearchParams();
 
   if (market !== "all") {
@@ -406,6 +542,14 @@ function homeHref(market: MarketSegment, propertyType: PropertyTypeSegment) {
 
   if (propertyType !== "all") {
     params.set("propertyType", propertyType);
+  }
+
+  if (sort !== "sales_12mo") {
+    params.set("sort", sort);
+  }
+
+  if (!(sort === "sales_12mo" && dir === "desc")) {
+    params.set("dir", dir);
   }
 
   const queryString = params.toString();
@@ -456,6 +600,27 @@ function getPropertyTypeSegment(value?: string): PropertyTypeSegment {
   if (value === "condos") return "condos";
   if (value === "houses") return "houses";
   return "all";
+}
+
+function getSortKey(value?: string): SortKey {
+  const allowed: SortKey[] = [
+    "community_name",
+    "active_count",
+    "pending_count",
+    "sales_12mo",
+    "median_sold_price",
+    "avg_sold_price_ft2",
+    "sold_avg_dom_12mo",
+    "months_inventory",
+  ];
+
+  return allowed.includes(value as SortKey)
+    ? (value as SortKey)
+    : "sales_12mo";
+}
+
+function getSortDir(value?: string): SortDir {
+  return value === "asc" ? "asc" : "desc";
 }
 
 function Th({
