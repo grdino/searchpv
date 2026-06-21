@@ -204,6 +204,16 @@ export default async function CommunityPage({
         </div>
       </section>
 
+            {row && (
+              <div className="sticky top-0 z-40 border-b border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm md:px-8">
+                <div className="mx-auto max-w-6xl text-center text-sm font-semibold text-slate-700">
+                  {[row.zone_name, row.area_name, row.community_name]
+                    .filter(Boolean)
+                    .join(" > ")}
+                </div>
+              </div>
+            )}
+
       {!row ? (
         <section className="mx-auto max-w-6xl px-4 py-10 md:px-8">
           <div className="rounded-xl bg-white p-8 shadow">
