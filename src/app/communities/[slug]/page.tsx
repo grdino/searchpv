@@ -201,6 +201,8 @@ export default async function CommunityPage({
               slug={slug}
               selectedMarket={selectedMarket}
               selectedPropertyType={selectedPropertyType}
+              selectedZone={selectedZone}
+              selectedArea={selectedArea}
             />
           </div>
         </div>
@@ -472,10 +474,14 @@ function CommunitySelectors({
   slug,
   selectedMarket,
   selectedPropertyType,
+  selectedZone,
+  selectedArea,
 }: {
   slug: string;
   selectedMarket: MarketSegment;
   selectedPropertyType: PropertyTypeSegment;
+  selectedZone?: string;
+  selectedArea?: string;
 }) {
   const baseStyle: React.CSSProperties = {
     display: "inline-flex",
@@ -516,14 +522,14 @@ function CommunitySelectors({
     <div style={{ marginTop: "18px" }}>
       <div style={rowStyle}>
         <a
-          href={communityHref(slug, selectedMarket, "all")}
+          href={communityHref(slug, selectedMarket, "all", selectedZone, selectedArea)}
           style={selectedPropertyType === "all" ? selectedStyle : unselectedStyle}
         >
           All
         </a>
 
         <a
-          href={communityHref(slug, selectedMarket, "condos")}
+          href={communityHref(slug, selectedMarket, "condos", selectedZone, selectedArea)}
           style={
             selectedPropertyType === "condos" ? selectedStyle : unselectedStyle
           }
@@ -532,7 +538,7 @@ function CommunitySelectors({
         </a>
 
         <a
-          href={communityHref(slug, selectedMarket, "houses")}
+          href={communityHref(slug, selectedMarket, "houses", selectedZone, selectedArea)}
           style={
             selectedPropertyType === "houses" ? selectedStyle : unselectedStyle
           }
@@ -548,14 +554,14 @@ function CommunitySelectors({
         }}
       >
         <a
-          href={communityHref(slug, "all", selectedPropertyType)}
+          href={communityHref(slug, "all", selectedPropertyType, selectedZone, selectedArea)}
           style={selectedMarket === "all" ? selectedStyle : unselectedStyle}
         >
           All
         </a>
 
         <a
-          href={communityHref(slug, "pre_construction", selectedPropertyType)}
+          href={communityHref(slug, "pre_construction", selectedPropertyType, selectedZone, selectedArea)}
           style={
             selectedMarket === "pre_construction"
               ? selectedStyle
@@ -566,7 +572,7 @@ function CommunitySelectors({
         </a>
 
         <a
-          href={communityHref(slug, "resale", selectedPropertyType)}
+          href={communityHref(slug, "resale", selectedPropertyType, selectedZone, selectedArea)}
           style={selectedMarket === "resale" ? selectedStyle : unselectedStyle}
         >
           Resale
@@ -698,17 +704,16 @@ function drilldownKey(metricGroup: MetricGroup, bedroomSegment: BedroomSegment) 
 function communityHref(
   slug: string,
   market: MarketSegment,
-  propertyType: PropertyTypeSegment
+  propertyType: PropertyTypeSegment,
+  zone?: string,
+  area?: string
 ) {
   const params = new URLSearchParams();
 
-  if (market !== "all") {
-    params.set("market", market);
-  }
-
-  if (propertyType !== "all") {
-    params.set("propertyType", propertyType);
-  }
+  if (market !== "all") params.set("market", market);
+  if (propertyType !== "all") params.set("propertyType", propertyType);
+  if (zone) params.set("zone", zone);
+  if (area) params.set("area", area);
 
   const queryString = params.toString();
 
