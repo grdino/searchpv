@@ -202,7 +202,65 @@ const areas = Array.from(
           <MetricCard label="Closed Sales - 12 Mo" value={totalSales} />
         </div>
 
-        <h2 id="community-snapshot" className="mt-12 text-2xl font-bold">
+        <div className="mt-8 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+          <div className="font-semibold text-slate-700">
+            Current Filters
+          </div>    
+
+            <div className="mt-1 text-slate-600">
+              {(selectedZone !== "all" || selectedArea !== "all") && (
+                <>
+                  <span>
+                    {selectedZone !== "all" ? selectedZone : "All Zones"}
+                  </span>
+
+                  {selectedArea !== "all" && (
+                    <>
+                      {" > "}
+                      <span>{selectedArea}</span>
+                    </>
+                  )}
+                </>
+              )}
+
+              {(selectedZone !== "all" || selectedArea !== "all") &&
+                (selectedMarket !== "all" ||
+                  selectedPropertyType !== "all") && " • "}
+
+              {selectedMarket !== "all" && (
+                <span>
+                  {selectedMarket === "pre_construction"
+                    ? "Pre-Construction"
+                    : "Resale"}
+                </span>
+              )}
+
+              {selectedMarket !== "all" &&
+                selectedPropertyType !== "all" &&
+                " • "}
+
+              {selectedPropertyType !== "all" && (
+                <span>
+                  {selectedPropertyType === "condos"
+                    ? "Condos"
+                    : "Houses"}
+                </span>
+              )}
+
+              {selectedZone === "all" &&
+                selectedArea === "all" &&
+                selectedMarket === "all" &&
+                selectedPropertyType === "all" && (
+                  <span>All Markets</span>
+                )}
+            </div>
+
+            <div className="mt-1 text-slate-500">
+              {rows.length.toLocaleString()} communities shown
+            </div>
+          </div>
+
+        <h2 id="community-snapshot" className="mt-6 text-2xl font-bold">
           Community Snapshot
         </h2>
 
