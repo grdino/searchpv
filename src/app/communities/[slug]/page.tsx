@@ -449,15 +449,15 @@ export default async function CommunityPage({
               <h2 className="text-2xl font-bold">Market Summary</h2>
 
               <p className="mt-4 leading-7 text-slate-700">
-                {communityName} currently has{" "}
-                <strong>{row.active_count ?? 0}</strong> active listings,{" "}
+                For {formatMarketDescription(selectedMarket)}{" "}
+                {formatPropertyTypeDescription(selectedPropertyType)} in {communityName},{" "}
+                there are currently <strong>{row.active_count ?? 0}</strong> active listings,{" "}
                 <strong>{row.pending_count ?? 0}</strong> pending listings, and{" "}
-                <strong>{row.sales_12mo ?? 0}</strong> closed sales over the past
-                12 months. The median sold price is{" "}
-                <strong>{formatMoney(row.median_sold_price)}</strong>, with
-                average sold pricing around{" "}
-                <strong>{formatMoney(row.avg_sold_price_ft2)}</strong> per square
-                foot. Current months of inventory is{" "}
+                <strong>{row.sales_12mo ?? 0}</strong> closed sales over the past 12 months.
+                The median sold price is <strong>{formatMoney(row.median_sold_price)}</strong>,
+                with average sold pricing around{" "}
+                <strong>{formatMoney(row.avg_sold_price_ft2)}</strong> per square foot.
+                Current months of inventory is{" "}
                 <strong>{formatNumber(row.months_inventory)}</strong>.
               </p>
             </div>
@@ -768,4 +768,16 @@ function formatNumber(value: number | null) {
   return Number(value).toLocaleString("en-US", {
     maximumFractionDigits: 1,
   });
+}
+
+function formatMarketDescription(value: MarketSegment) {
+  if (value === "pre_construction") return "pre-construction";
+  if (value === "resale") return "resale";
+  return "all market";
+}
+
+function formatPropertyTypeDescription(value: PropertyTypeSegment) {
+  if (value === "condos") return "condos";
+  if (value === "houses") return "houses";
+  return "properties";
 }
