@@ -208,7 +208,12 @@ export default async function CommunityPage({
 
             {row && (
               <div className="sticky top-0 z-40 border-b border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm md:px-8">
-                <div className="mx-auto max-w-6xl text-center text-sm font-semibold text-slate-700">
+                <div
+                  className="mx-auto max-w-6xl overflow-hidden text-ellipsis whitespace-nowrap text-center text-sm font-semibold text-slate-700"
+                  title={[row.zone_name, row.area_name, row.community_name]
+                    .filter(Boolean)
+                    .join(" > ")}
+                >
                   {[row.zone_name, row.area_name, row.community_name]
                     .filter(Boolean)
                     .join(" > ")}
