@@ -221,6 +221,8 @@ const areas = Array.from(
                   selectedDir={selectedDir}
                   selectedMarket={selectedMarket}
                   selectedPropertyType={selectedPropertyType}
+                  selectedZone={selectedZone}
+                  selectedArea={selectedArea}
                   className="sticky top-0 left-0 z-30 bg-slate-100"
                 />
 
@@ -231,6 +233,8 @@ const areas = Array.from(
                   selectedDir={selectedDir}
                   selectedMarket={selectedMarket}
                   selectedPropertyType={selectedPropertyType}
+                  selectedZone={selectedZone}
+                  selectedArea={selectedArea}
                 />
 
                 <SortableTh
@@ -240,6 +244,8 @@ const areas = Array.from(
                   selectedDir={selectedDir}
                   selectedMarket={selectedMarket}
                   selectedPropertyType={selectedPropertyType}
+                  selectedZone={selectedZone}
+                  selectedArea={selectedArea}
                 />
 
                 <SortableTh
@@ -249,6 +255,8 @@ const areas = Array.from(
                   selectedDir={selectedDir}
                   selectedMarket={selectedMarket}
                   selectedPropertyType={selectedPropertyType}
+                  selectedZone={selectedZone}
+                  selectedArea={selectedArea}
                 />
 
                 <SortableTh
@@ -258,6 +266,8 @@ const areas = Array.from(
                   selectedDir={selectedDir}
                   selectedMarket={selectedMarket}
                   selectedPropertyType={selectedPropertyType}
+                  selectedZone={selectedZone}
+                  selectedArea={selectedArea}
                 />
 
                 <SortableTh
@@ -267,6 +277,8 @@ const areas = Array.from(
                   selectedDir={selectedDir}
                   selectedMarket={selectedMarket}
                   selectedPropertyType={selectedPropertyType}
+                  selectedZone={selectedZone}
+                  selectedArea={selectedArea}
                 />
 
                 <SortableTh
@@ -276,6 +288,8 @@ const areas = Array.from(
                   selectedDir={selectedDir}
                   selectedMarket={selectedMarket}
                   selectedPropertyType={selectedPropertyType}
+                  selectedZone={selectedZone}
+                  selectedArea={selectedArea}
                 />
 
                 <SortableTh
@@ -285,6 +299,8 @@ const areas = Array.from(
                   selectedDir={selectedDir}
                   selectedMarket={selectedMarket}
                   selectedPropertyType={selectedPropertyType}
+                  selectedZone={selectedZone}
+                  selectedArea={selectedArea}
                 />
               </tr>
             </thead>
@@ -422,72 +438,50 @@ function HomeSelectors({
     <div style={{ marginTop: "18px" }}>
       <div style={rowStyle}>
         <a
-          href={homeHref(selectedMarket, "all", selectedSort, selectedDir)}
+          href={homeHref(selectedMarket, "all", selectedSort, selectedDir, selectedZone, selectedArea)}
           style={selectedPropertyType === "all" ? selectedStyle : unselectedStyle}
         >
           All
         </a>
 
         <a
-          href={homeHref(selectedMarket, "condos", selectedSort, selectedDir)}
-          style={
-            selectedPropertyType === "condos" ? selectedStyle : unselectedStyle
-          }
+          href={homeHref(selectedMarket, "condos", selectedSort, selectedDir, selectedZone, selectedArea)}
+          style={selectedPropertyType === "condos" ? selectedStyle : unselectedStyle}
         >
           Condos
         </a>
 
         <a
-          href={homeHref(selectedMarket, "houses", selectedSort, selectedDir)}
-          style={
-            selectedPropertyType === "houses" ? selectedStyle : unselectedStyle
-          }
+          href={homeHref(selectedMarket, "houses", selectedSort, selectedDir, selectedZone, selectedArea)}
+          style={selectedPropertyType === "houses" ? selectedStyle : unselectedStyle}
         >
           Houses
         </a>
       </div>
 
-      <div
-        style={{
-          ...rowStyle,
-          marginTop: "10px",
-        }}
-      >
+      <div style={{ ...rowStyle, marginTop: "10px" }}>
         <a
-          href={homeHref("all", selectedPropertyType, selectedSort, selectedDir)}
+          href={homeHref("all", selectedPropertyType, selectedSort, selectedDir, selectedZone, selectedArea)}
           style={selectedMarket === "all" ? selectedStyle : unselectedStyle}
         >
           All
         </a>
 
         <a
-          href={homeHref(
-            "pre_construction",
-            selectedPropertyType,
-            selectedSort,
-            selectedDir
-          )}
-          style={
-            selectedMarket === "pre_construction"
-              ? selectedStyle
-              : unselectedStyle
-          }
+          href={homeHref("pre_construction", selectedPropertyType, selectedSort, selectedDir, selectedZone, selectedArea)}
+          style={selectedMarket === "pre_construction" ? selectedStyle : unselectedStyle}
         >
           Pre-Construction
         </a>
 
         <a
-          href={homeHref(
-            "resale",
-            selectedPropertyType,
-            selectedSort,
-            selectedDir
-          )}
+          href={homeHref("resale", selectedPropertyType, selectedSort, selectedDir, selectedZone, selectedArea)}
           style={selectedMarket === "resale" ? selectedStyle : unselectedStyle}
         >
           Resale
         </a>
       </div>
+
       <ZoneAreaFilters
         selectedMarket={selectedMarket}
         selectedPropertyType={selectedPropertyType}
@@ -499,9 +493,8 @@ function HomeSelectors({
         areas={areas}
       />
     </div>
-  );
+  );  
 }
-
 function SortableTh({
   label,
   sortKey,
@@ -509,6 +502,8 @@ function SortableTh({
   selectedDir,
   selectedMarket,
   selectedPropertyType,
+  selectedZone,
+  selectedArea,
   className = "",
 }: {
   label: string;
@@ -517,6 +512,8 @@ function SortableTh({
   selectedDir: SortDir;
   selectedMarket: MarketSegment;
   selectedPropertyType: PropertyTypeSegment;
+  selectedZone: string;
+  selectedArea: string;
   className?: string;
 }) {
   const isSelected = selectedSort === sortKey;
@@ -526,7 +523,14 @@ function SortableTh({
   return (
     <Th className={`sticky top-0 z-20 bg-slate-100 ${className}`}>
       <Link
-        href={sortHref(selectedMarket, selectedPropertyType, sortKey, nextDir)}
+        href={sortHref(
+          selectedMarket,
+          selectedPropertyType,
+          sortKey,
+          nextDir,
+          selectedZone,
+          selectedArea
+)}
         className="hover:underline"
       >
         {label}
@@ -606,7 +610,9 @@ function homeHref(
   market: MarketSegment,
   propertyType: PropertyTypeSegment,
   sort: SortKey,
-  dir: SortDir
+  dir: SortDir,
+  zone: string,
+  area: string
 ) {
   const params = new URLSearchParams();
 
@@ -624,6 +630,14 @@ function homeHref(
 
   if (!(sort === "sales_12mo" && dir === "desc")) {
     params.set("dir", dir);
+  }
+
+  if (zone !== "all") {
+    params.set("zone", zone);
+  }
+
+  if (area !== "all") {
+    params.set("area", area);
   }
 
   const queryString = params.toString();
@@ -751,9 +765,11 @@ function sortHref(
   market: MarketSegment,
   propertyType: PropertyTypeSegment,
   sort: SortKey,
-  dir: SortDir
+  dir: SortDir,
+  zone: string,
+  area: string
 ) {
-  return `${homeHref(market, propertyType, sort, dir)}#community-snapshot`;
+  return `${homeHref(market, propertyType, sort, dir, zone, area)}#community-snapshot`;
 }
 
 function buildCommunityQueryString(
