@@ -8,6 +8,8 @@ type MetricGroup = "active" | "pending" | "sold_12mo";
 type BedroomSegment = "all" | "0br" | "1br" | "2br" | "3br_plus";
 
 type CommunitySnapshot = {
+  zone_name: string | null;
+  area_name: string | null;
   community_name: string;
   community_slug: string;
   snapshot_date: string | null;
