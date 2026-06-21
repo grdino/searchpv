@@ -260,9 +260,13 @@ const areas = Array.from(
             </div>
           </div>
 
-        <h2 id="community-snapshot" className="mt-2 text-2xl font-bold">
+        <h2 id="community-snapshot" className="mt-3 text-2xl font-bold">
           Community Snapshot
         </h2>
+
+        <p className="mt-1 text-xs text-slate-500 md:hidden">
+          ← Swipe to see additional columns →
+        </p>
 
         <p className="mt-1 text-sm text-slate-500">
           Snapshot Date: {snapshotDate}
