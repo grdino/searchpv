@@ -260,7 +260,7 @@ const areas = Array.from(
             </div>
           </div>
 
-        <h2 id="community-snapshot" className="mt-6 text-2xl font-bold">
+        <h2 id="community-snapshot" className="mt-4 text-2xl font-bold">
           Community Snapshot
         </h2>
 
