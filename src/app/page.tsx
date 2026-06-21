@@ -682,11 +682,11 @@ function homeHref(
     params.set("propertyType", propertyType);
   }
 
-  if (sort !== "sales_12mo") {
+  if (sort !== "active_count") {
     params.set("sort", sort);
   }
 
-  if (!(sort === "sales_12mo" && dir === "desc")) {
+  if (!(sort === "active_count" && dir === "desc")) {
     params.set("dir", dir);
   }
 
@@ -762,7 +762,7 @@ function getSortKey(value?: string): SortKey {
 
   return allowed.includes(value as SortKey)
     ? (value as SortKey)
-    : "sales_12mo";
+    : "active_count";
 }
 
 function getSortDir(value?: string): SortDir {
