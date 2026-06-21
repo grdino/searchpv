@@ -1,5 +1,6 @@
 import { buildIdxUrl } from "@/lib/idx";
 import { supabase } from "@/lib/supabase";
+import ZoneAreaFilters from "@/app/components/ZoneAreaFilters";
 import Link from "next/link";
 
 type MarketSegment = "all" | "pre_construction" | "resale";
@@ -19,6 +20,8 @@ type SortKey =
 type SortDir = "asc" | "desc";
 
 type CommunitySnapshot = {
+  zone_name: string | null;
+  area_name: string | null;
   community_name: string;
   community_slug: string;
   snapshot_date: string | null;
@@ -53,6 +56,8 @@ export default async function Home({
     propertyType?: string;
     sort?: string;
     dir?: string;
+    zone?: string;
+    area?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -61,16 +66,33 @@ export default async function Home({
   const selectedPropertyType = getPropertyTypeSegment(params.propertyType);
   const selectedSort = getSortKey(params.sort);
   const selectedDir = getSortDir(params.dir);
+  const selectedZone = params.zone ?? "all";
+  const selectedArea = params.area ?? "all";
 
-  const { data, error } = await supabase
+  const { data: optionData, error: optionError } = await supabase
+  .from("community_snapshot")
+  .select("zone_name, area_name")
+  .eq("market_segment", selectedMarket)
+  .eq("property_type_segment", selectedPropertyType);
+
+  let snapshotQuery = supabase
     .from("community_snapshot")
     .select("*")
     .eq("market_segment", selectedMarket)
-    .eq("property_type_segment", selectedPropertyType)
-    .order(selectedSort, {
-      ascending: selectedDir === "asc",
-      nullsFirst: false,
-    });
+    .eq("property_type_segment", selectedPropertyType);
+
+  if (selectedZone !== "all") {
+    snapshotQuery = snapshotQuery.eq("zone_name", selectedZone);
+  }
+
+  if (selectedArea !== "all") {
+    snapshotQuery = snapshotQuery.eq("area_name", selectedArea);
+  }
+
+  const { data, error } = await snapshotQuery.order(selectedSort, {
+    ascending: selectedDir === "asc",
+    nullsFirst: false,
+  });
 
   const { data: drilldownData, error: drilldownError } = await supabase
     .from("community_listing_drilldown")
@@ -80,19 +102,42 @@ export default async function Home({
     .eq("bedroom_segment", "all")
     .in("metric_group", ["active", "pending", "sold_12mo"]);
 
-  if (error || drilldownError) {
+  if (error || drilldownError || optionError) {
     return (
       <main className="min-h-screen p-8">
         <h1 className="text-3xl font-bold">SearchPV</h1>
         <p className="mt-4 text-red-600">Error loading market data.</p>
         <pre className="mt-4 text-sm">
-          {error?.message ?? drilldownError?.message}
+          {error?.message ?? drilldownError?.message ?? optionError?.message}
         </pre>
       </main>
     );
   }
 
   const rows = (data ?? []) as CommunitySnapshot[];
+
+const optionRows = (optionData ?? []) as Pick<
+  CommunitySnapshot,
+  "zone_name" | "area_name"
+>[];
+
+const zones = Array.from(
+  new Set(
+    optionRows
+      .map((row) => row.zone_name)
+      .filter((zone): zone is string => Boolean(zone))
+  )
+).sort();
+
+const areas = Array.from(
+  new Set(
+    optionRows
+      .filter((row) => selectedZone === "all" || row.zone_name === selectedZone)
+      .map((row) => row.area_name)
+      .filter((area): area is string => Boolean(area))
+  )
+).sort();
+
   const drilldownRows = (drilldownData ?? []) as CommunityListingDrilldown[];
 
   const drilldownLookup = new Map<string, CommunityListingDrilldown>();
@@ -142,6 +187,10 @@ export default async function Home({
             selectedPropertyType={selectedPropertyType}
             selectedSort={selectedSort}
             selectedDir={selectedDir}
+            selectedZone={selectedZone}
+            selectedArea={selectedArea}
+            zones={zones}
+            areas={areas}
           />
         </div>
       </section>
@@ -255,12 +304,17 @@ export default async function Home({
                 );
 
                 return (
-                  <tr key={row.community_name} className="border-t">
+                  <tr
+                    key={`${row.zone_name ?? "unknown"}-${row.area_name ?? "unknown"}-${row.community_slug}`}
+                    className="border-t"
+                  >
                     <Td className="sticky left-0 z-10 bg-white border-r border-slate-200">
                       <Link
-                        href={`/communities/${row.community_slug}?${buildQueryString(
+                        href={`/communities/${row.community_slug}?${buildCommunityQueryString(
                           selectedMarket,
-                          selectedPropertyType
+                          selectedPropertyType,
+                          row.zone_name,
+                          row.area_name
                         )}`}
                         className="font-semibold text-blue-700 hover:underline"
                       >
@@ -315,11 +369,19 @@ function HomeSelectors({
   selectedPropertyType,
   selectedSort,
   selectedDir,
+  selectedZone,
+  selectedArea,
+  zones,
+  areas,
 }: {
   selectedMarket: MarketSegment;
   selectedPropertyType: PropertyTypeSegment;
   selectedSort: SortKey;
   selectedDir: SortDir;
+  selectedZone: string;
+  selectedArea: string;
+  zones: string[];
+  areas: string[];
 }) {
   const baseStyle: React.CSSProperties = {
     display: "inline-flex",
@@ -426,6 +488,16 @@ function HomeSelectors({
           Resale
         </a>
       </div>
+      <ZoneAreaFilters
+        selectedMarket={selectedMarket}
+        selectedPropertyType={selectedPropertyType}
+        selectedSort={selectedSort}
+        selectedDir={selectedDir}
+        selectedZone={selectedZone}
+        selectedArea={selectedArea}
+        zones={zones}
+        areas={areas}
+      />
     </div>
   );
 }
@@ -682,4 +754,20 @@ function sortHref(
   dir: SortDir
 ) {
   return `${homeHref(market, propertyType, sort, dir)}#community-snapshot`;
+}
+
+function buildCommunityQueryString(
+  market: MarketSegment,
+  propertyType: PropertyTypeSegment,
+  zoneName: string | null,
+  areaName: string | null
+) {
+  const params = new URLSearchParams();
+
+  if (market !== "all") params.set("market", market);
+  if (propertyType !== "all") params.set("propertyType", propertyType);
+  if (zoneName) params.set("zone", zoneName);
+  if (areaName) params.set("area", areaName);
+
+  return params.toString();
 }

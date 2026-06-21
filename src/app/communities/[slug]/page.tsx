@@ -74,6 +74,8 @@ export default async function CommunityPage({
   searchParams: Promise<{
     market?: string;
     propertyType?: string;
+    zone?: string;
+    area?: string;
   }>;
 }) {
   const routeParams = await params;
@@ -83,14 +85,25 @@ export default async function CommunityPage({
 
   const selectedMarket = getMarketSegment(queryParams.market);
   const selectedPropertyType = getPropertyTypeSegment(queryParams.propertyType);
+  const selectedZone = queryParams.zone;
+  const selectedArea = queryParams.area;
 
-  const { data, error } = await supabase
+  let snapshotQuery = supabase
     .from("community_snapshot")
     .select("*")
     .eq("community_slug", slug)
     .eq("market_segment", selectedMarket)
-    .eq("property_type_segment", selectedPropertyType)
-    .maybeSingle();
+    .eq("property_type_segment", selectedPropertyType);
+
+  if (selectedZone) {
+    snapshotQuery = snapshotQuery.eq("zone_name", selectedZone);
+  }
+
+  if (selectedArea) {
+    snapshotQuery = snapshotQuery.eq("area_name", selectedArea);
+  }
+
+  const { data, error } = await snapshotQuery.maybeSingle();
 
   const { data: drilldownData, error: drilldownError } = await supabase
     .from("community_listing_drilldown")
