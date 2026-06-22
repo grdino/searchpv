@@ -105,7 +105,15 @@ export default async function AreaPage({
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <section className="bg-slate-950 px-4 py-8 text-white md:px-8 md:py-10">
         <div className="mx-auto max-w-6xl">
-          <Link href="/" className="text-sm text-slate-300 hover:underline">
+          <Link
+            href={homeHref(
+              selectedMarket,
+              selectedPropertyType,
+              row.zone_name,
+              row.area_name
+            )}
+            className="text-sm text-slate-300 hover:underline"
+          >
             ← BACK TO COMMUNITY LIST
           </Link>
 
@@ -388,4 +396,22 @@ function formatPropertyTypeDescription(value: PropertyTypeSegment) {
   if (value === "condos") return "condos";
   if (value === "houses") return "houses";
   return "properties";
+}
+
+function homeHref(
+  market: MarketSegment,
+  propertyType: PropertyTypeSegment,
+  zone?: string,
+  area?: string
+) {
+  const params = new URLSearchParams();
+
+  if (market !== "all") params.set("market", market);
+  if (propertyType !== "all") params.set("propertyType", propertyType);
+  if (zone) params.set("zone", zone);
+  if (area) params.set("area", area);
+
+  const queryString = params.toString();
+
+  return queryString ? `/?${queryString}` : "/";
 }

@@ -9,7 +9,9 @@ type BedroomSegment = "all" | "0br" | "1br" | "2br" | "3br_plus";
 
 type CommunitySnapshot = {
   zone_name: string | null;
+  zone_slug: string | null;
   area_name: string | null;
+  area_slug: string | null;
   community_name: string;
   community_slug: string;
   snapshot_date: string | null;
@@ -64,6 +66,11 @@ type CommunityListingDrilldown = {
   bedroom_segment: BedroomSegment;
   listing_count: number | null;
   listing_ids: string | null;
+};
+
+type PageContent = {
+  title: string | null;
+  body: string;
 };
 
 export default async function CommunityPage({
@@ -128,6 +135,22 @@ export default async function CommunityPage({
 
   const row = data as CommunitySnapshot | null;
   const communityName = row?.community_name ?? formatSlugTitle(slug);
+
+  let contentRows: PageContent[] = [];
+
+  if (row?.zone_slug && row?.area_slug && row?.community_slug) {
+    const { data: contentData } = await supabase
+      .from("page_content")
+      .select("title, body")
+      .eq("content_type", "description")
+      .eq("entity_type", "community")
+      .eq("zone_slug", row.zone_slug)
+      .eq("area_slug", row.area_slug)
+      .eq("community_slug", row.community_slug)
+      .order("sort_order", { ascending: true });
+
+    contentRows = (contentData ?? []) as PageContent[];
+  }
   const drilldownRows = (drilldownData ?? []) as CommunityListingDrilldown[];
 
   const drilldownLookup = new Map<string, CommunityListingDrilldown>();
@@ -152,7 +175,12 @@ export default async function CommunityPage({
       <section className="bg-slate-950 px-4 py-8 text-white md:px-8 md:py-10">
         <div className="mx-auto max-w-6xl">
           <Link
-            href={homeHref(selectedMarket, selectedPropertyType)}
+            href={homeHref(
+              selectedMarket,
+              selectedPropertyType,
+              selectedZone,
+              selectedArea
+            )}
             className="text-sm text-slate-300 hover:underline"
           >
             ← BACK TO COMMUNITY LIST
@@ -209,16 +237,30 @@ export default async function CommunityPage({
       </section>
 
             {row && (
-              <div className="sticky top-0 z-40 border-b border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm md:px-8">
+              <div className="sticky top-0 z-40 border-b border-slate-200 bg-white px-4 py-2">
                 <div
                   className="mx-auto max-w-6xl overflow-hidden text-ellipsis whitespace-nowrap text-center text-sm font-semibold text-slate-700"
-                  title={[row.zone_name, row.area_name, row.community_name]
-                    .filter(Boolean)
-                    .join(" > ")}
+                  title={`${row.zone_name} > ${row.area_name} > ${row.community_name}`}
                 >
-                  {[row.zone_name, row.area_name, row.community_name]
-                    .filter(Boolean)
-                    .join(" > ")}
+                  <span>{row.zone_name}</span>
+
+                  {" > "}
+
+                  <Link
+                    href={areaHref(
+                      row.zone_slug!,
+                      row.area_slug!,
+                      selectedMarket,
+                      selectedPropertyType
+                    )}
+                    className="text-blue-700 hover:underline"
+                  >
+                    {row.area_name}
+                  </Link>
+
+                  {" > "}
+
+                  <span>{row.community_name}</span>
                 </div>
               </div>
             )}
@@ -464,6 +506,31 @@ export default async function CommunityPage({
               </p>
             </div>
           </div>
+          {contentRows.length > 0 && (
+            <div style={{ paddingTop: "12px" }}>
+              <div
+                style={{
+                  backgroundColor: "#ffffff",
+                  borderRadius: "24px",
+                  padding: "32px",
+                  boxShadow: "0 1px 3px rgba(15, 23, 42, 0.12)",
+                  border: "1px solid #f1f5f9",
+                }}
+              >
+                {contentRows.map((content) => (
+                  <div key={content.title ?? content.body.slice(0, 40)}>
+                    <h2 className="text-2xl font-bold">
+                      {content.title ?? `About ${communityName}`}
+                    </h2>
+
+                    <p className="mt-4 leading-7 text-slate-700">
+                      {content.body}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       )}
     </main>
@@ -701,6 +768,29 @@ function drilldownKey(metricGroup: MetricGroup, bedroomSegment: BedroomSegment) 
   return `${metricGroup}|${bedroomSegment}`;
 }
 
+function areaHref(
+  zoneSlug: string,
+  areaSlug: string,
+  market: MarketSegment,
+  propertyType: PropertyTypeSegment
+) {
+  const params = new URLSearchParams();
+
+  if (market !== "all") {
+    params.set("market", market);
+  }
+
+  if (propertyType !== "all") {
+    params.set("propertyType", propertyType);
+  }
+
+  const queryString = params.toString();
+
+  return queryString
+    ? `/areas/${zoneSlug}/${areaSlug}?${queryString}`
+    : `/areas/${zoneSlug}/${areaSlug}`;
+}
+
 function communityHref(
   slug: string,
   market: MarketSegment,
@@ -722,7 +812,12 @@ function communityHref(
     : `/communities/${slug}`;
 }
 
-function homeHref(market: MarketSegment, propertyType: PropertyTypeSegment) {
+function homeHref(
+  market: MarketSegment,
+  propertyType: PropertyTypeSegment,
+  zone?: string,
+  area?: string
+) {
   const params = new URLSearchParams();
 
   if (market !== "all") {
@@ -731,6 +826,14 @@ function homeHref(market: MarketSegment, propertyType: PropertyTypeSegment) {
 
   if (propertyType !== "all") {
     params.set("propertyType", propertyType);
+  }
+
+  if (zone) {
+    params.set("zone", zone);
+  }
+
+  if (area) {
+    params.set("area", area);
   }
 
   const queryString = params.toString();
