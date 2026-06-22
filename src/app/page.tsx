@@ -292,7 +292,7 @@ const areas = Array.from(
           Community Snapshot
         </h2>
 
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="text-sm text-slate-500">
           Snapshot Date: {snapshotDate}
         </p>
 
