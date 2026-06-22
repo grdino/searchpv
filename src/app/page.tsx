@@ -73,7 +73,7 @@ export default async function Home({
 
   const { data: optionData, error: optionError } = await supabase
   .from("community_snapshot")
-  .select("zone_name, area_name")
+  .select("zone_name, zone_slug, area_name, area_slug")
   .eq("market_segment", selectedMarket)
   .eq("property_type_segment", selectedPropertyType);
 
