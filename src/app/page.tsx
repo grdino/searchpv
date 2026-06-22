@@ -120,7 +120,7 @@ export default async function Home({
 
 const optionRows = (optionData ?? []) as Pick<
   CommunitySnapshot,
-  "zone_name" | "area_name"
+  "zone_name" | "zone_slug" | "area_name" | "area_slug"
 >[];
 
 const zones = Array.from(
