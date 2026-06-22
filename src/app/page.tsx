@@ -292,15 +292,15 @@ const areas = Array.from(
           Community Snapshot
         </h2>
 
-        <p className="mt-1 text-xs text-slate-500 md:hidden">
-          ← Swipe to see additional columns →
-        </p>
-
         <p className="mt-1 text-sm text-slate-500">
           Snapshot Date: {snapshotDate}
         </p>
 
-        <div className="mt-6 max-h-[70vh] overflow-auto rounded-xl bg-white shadow md:max-h-[65vh]">
+        <p className="mt-2 text-xs text-slate-500 md:hidden">
+          ← Swipe to see additional columns →
+        </p>
+
+        <div className="mt-1 max-h-[70vh] overflow-auto rounded-xl bg-white shadow md:max-h-[65vh]">
           <table className="min-w-[900px] text-sm">
             <thead className="bg-slate-100 text-slate-700 shadow-sm">
               <tr>
