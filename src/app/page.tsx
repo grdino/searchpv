@@ -21,7 +21,9 @@ type SortDir = "asc" | "desc";
 
 type CommunitySnapshot = {
   zone_name: string | null;
+  zone_slug: string | null;
   area_name: string | null;
+  area_slug: string | null;
   community_name: string;
   community_slug: string;
   snapshot_date: string | null;
