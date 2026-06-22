@@ -166,6 +166,20 @@ const areas = Array.from(
     0
   );
 
+  const selectedZoneSlug =
+  selectedZone !== "all"
+    ? optionRows.find((r) => r.zone_name === selectedZone)?.zone_slug
+    : null;
+
+  const selectedAreaSlug =
+  selectedArea !== "all"
+    ? optionRows.find(
+        (r) =>
+          r.zone_name === selectedZone &&
+          r.area_name === selectedArea
+      )?.area_slug
+    : null;
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <section className="bg-slate-950 px-4 py-10 text-white md:px-8 md:py-14">
@@ -217,7 +231,19 @@ const areas = Array.from(
                   {selectedArea !== "all" && (
                     <>
                       {" > "}
-                      <span>{selectedArea}</span>
+                      <Link
+                        href={`/areas/${selectedZoneSlug}/${selectedAreaSlug}${
+                          buildQueryString(selectedMarket, selectedPropertyType)
+                            ? `?${buildQueryString(
+                                selectedMarket,
+                                selectedPropertyType
+                              )}`
+                            : ""
+                        }`}
+                        className="font-semibold text-blue-700 hover:underline"
+                      >
+                        {selectedArea}
+                      </Link>
                     </>
                   )}
                 </>
