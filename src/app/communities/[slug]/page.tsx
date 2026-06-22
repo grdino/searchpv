@@ -390,6 +390,8 @@ export default async function CommunityPage({
                   metricGroup="sold_12mo"
                   bedroomSegment="all"
                   listingCount={row.sales_12mo ?? 0}
+                  zoneName={row.zone_name}
+                  areaName={row.area_name}
                 >
                   {row.sales_12mo ?? 0}
                 </ContactListingLink>
@@ -403,7 +405,8 @@ export default async function CommunityPage({
                     metricGroup="sold_12mo"
                     bedroomSegment="0br"
                     listingCount={row.sales_0br_12mo ?? 0}
-                  >
+                    >zoneName={row.zone_name}
+                    areaName={row.area_name}
                     {row.sales_0br_12mo ?? 0}
                   </ContactListingLink>
                 ),
@@ -415,6 +418,8 @@ export default async function CommunityPage({
                     metricGroup="sold_12mo"
                     bedroomSegment="1br"
                     listingCount={row.sales_1br_12mo ?? 0}
+                    zoneName={row.zone_name}
+                    areaName={row.area_name}
                   >
                     {row.sales_1br_12mo ?? 0}
                   </ContactListingLink>
@@ -427,6 +432,8 @@ export default async function CommunityPage({
                     metricGroup="sold_12mo"
                     bedroomSegment="2br"
                     listingCount={row.sales_2br_12mo ?? 0}
+                    zoneName={row.zone_name}
+                    areaName={row.area_name}
                   >
                     {row.sales_2br_12mo ?? 0}
                   </ContactListingLink>
@@ -439,6 +446,8 @@ export default async function CommunityPage({
                     metricGroup="sold_12mo"
                     bedroomSegment="3br_plus"
                     listingCount={row.sales_3br_plus_12mo ?? 0}
+                    zoneName={row.zone_name}
+                    areaName={row.area_name}
                   >
                     {row.sales_3br_plus_12mo ?? 0}
                   </ContactListingLink>
@@ -726,6 +735,8 @@ function ContactListingLink({
   metricGroup,
   bedroomSegment,
   listingCount,
+  zoneName,
+  areaName,
   children,
 }: {
   communityName: string;
@@ -734,6 +745,8 @@ function ContactListingLink({
   metricGroup: MetricGroup;
   bedroomSegment: BedroomSegment;
   listingCount: number;
+  zoneName?: string | null;
+  areaName?: string | null;
   children: React.ReactNode;
 }) {
   const params = new URLSearchParams();
@@ -744,6 +757,8 @@ function ContactListingLink({
   params.set("metric", metricGroup);
   params.set("bedroom", bedroomSegment);
   params.set("count", String(listingCount));
+  if (zoneName) params.set("zone", zoneName);
+  if (areaName) params.set("area", areaName);
 
   return (
     <Link
