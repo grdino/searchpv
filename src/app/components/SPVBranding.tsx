@@ -24,7 +24,7 @@ export default function SPVBranding() {
         style={{
           display: "flex",
           alignItems: "flex-start",
-          gap: "1px", // hair space between logos
+          gap: "5px", // hair space between logos
         }}
       >
         <Image
