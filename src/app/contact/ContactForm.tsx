@@ -72,6 +72,17 @@ export default function ContactForm({
       <button
         type="submit"
         disabled={sending}
+        style={{
+          alignSelf: "center",
+          background: "#0f172a",
+          color: "#fff",
+          border: "1px solid #0f172a",
+          borderRadius: "9999px",
+          padding: "10px 20px",
+          fontSize: "14px",
+          fontWeight: 600,
+          cursor: sending ? "default" : "pointer",
+        }}
       >
         {sending ? "Sending..." : "Send Request"}
       </button>
