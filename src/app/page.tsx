@@ -2,6 +2,8 @@ import { buildIdxUrl } from "@/lib/idx";
 import { supabase } from "@/lib/supabase";
 import ZoneAreaFilters from "@/app/components/ZoneAreaFilters";
 import Link from "next/link";
+import SPVBranding from "@/app/components/SPVBranding"
+import MainSloganBranding from "@/app/components/MainSloganBranding"
 
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
@@ -186,13 +188,9 @@ const areas = Array.from(
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <section className="bg-slate-950 px-4 py-10 text-white md:px-8 md:py-14">
         <div className="mx-auto max-w-6xl">
-          <p className="text-sm uppercase tracking-widest text-slate-300">
-            Puerto Vallarta Market Intelligence
-          </p>
-
-          <h1 className="mt-3 text-4xl font-bold md:text-5xl">SearchPV</h1>
-
-          <p className="mt-4 max-w-2xl text-slate-300">
+            <SPVBranding />
+            <MainSloganBranding />
+          <p className="mt-4 max-w-2xl text-slate-300"> 
             Explore Puerto Vallarta & Riviera Nayarit Markets. Compare condo and
             house inventory, pricing, sales activity, and months of inventory by
             community.

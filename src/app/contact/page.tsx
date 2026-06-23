@@ -1,3 +1,4 @@
+import ContactForm from "./ContactForm";
 import Link from "next/link";
 
 type SearchParams = {
@@ -43,10 +44,6 @@ Matching Sales: ${count}
 Please send the information by email or WhatsApp.
 
 Thank you.`;
-
-  const mailtoHref = `mailto:gerry@ronmorgan.net?subject=${encodeURIComponent(
-    `SearchPV Request - ${community} Closed Sales`
-  )}&body=${encodeURIComponent(message)}`;
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -102,90 +99,10 @@ Thank you.`;
               IDX and will be provided directly by Gerry Ray.
             </div>
           </div>
-
-          <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "20px", width: "100%" }}>
-            <div style={{ width: "100%" }}>
-                <label style={{ display: "block", fontSize: "14px", fontWeight: 700, color: "#334155" }}>
-                Your Name
-                </label>
-                <input
-                autoFocus
-                type="text"
-                name="name"
-                placeholder="Your name"
-                style={{
-                    marginTop: "6px",
-                    width: "100%",
-                    boxSizing: "border-box",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    padding: "12px 16px",
-                }}
-                />
-            </div>
-
-            <div style={{ width: "100%" }}>
-                <label style={{ display: "block", fontSize: "14px", fontWeight: 700, color: "#334155" }}>
-                Email or WhatsApp
-                </label>
-                <input
-                type="text"
-                name="contact"
-                placeholder="Email or WhatsApp number"
-                style={{
-                    marginTop: "6px",
-                    width: "100%",
-                    boxSizing: "border-box",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    padding: "12px 16px",
-                }}
-                />
-            </div>
-
-            <div style={{ width: "100%" }}>
-                <label style={{ display: "block", fontSize: "14px", fontWeight: 700, color: "#334155" }}>
-                Message
-                </label>
-                <textarea
-                name="message"
-                rows={11}
-                defaultValue={message}
-                style={{
-                    marginTop: "6px",
-                    display: "block",
-                    width: "100%",
-                    maxWidth: "100%",
-                    minHeight: "280px",
-                    boxSizing: "border-box",
-                    resize: "vertical",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    padding: "12px 16px",
-                    fontSize: "14px",
-                    lineHeight: "1.6",
-                }}
-                />
-            </div>
-
-            <a
-                href={mailtoHref}
-                style={{
-                display: "block",
-                width: "100%",
-                boxSizing: "border-box",
-                borderRadius: "12px",
-                backgroundColor: "#020617",
-                padding: "16px 24px",
-                textAlign: "center",
-                fontWeight: 700,
-                color: "#ffffff",
-                textDecoration: "none",
-                }}
-            >
-                Send Request
-            </a>
-            </div>
+            <ContactForm
+              community={community}
+              defaultMessage={message}
+            />
         </div>
       </section>
     </main>

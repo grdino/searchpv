@@ -1,11 +1,13 @@
 import { buildIdxUrl } from "@/lib/idx";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import MainSloganBranding from "@/app/components/MainSloganBranding"
 
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
 type MetricGroup = "active" | "pending" | "sold_12mo";
 type BedroomSegment = "all" | "0br" | "1br" | "2br" | "3br_plus";
+
 
 type CommunitySnapshot = {
   zone_name: string | null;
@@ -192,16 +194,7 @@ export default async function CommunityPage({
               textAlign: "left",
             }}
           >
-            <p
-              style={{
-                fontSize: "14px",
-                textTransform: "uppercase",
-                letterSpacing: "0.16em",
-                color: "#cbd5e1",
-              }}
-            >
-              Puerto Vallarta Market Intelligence
-            </p>
+              <MainSloganBranding />
 
             <h1
               style={{
