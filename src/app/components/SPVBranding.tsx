@@ -40,9 +40,9 @@ export default function SPVBranding() {
             marginTop: "2px",
           }}
         />
-{/*}
+
         <Image
-          src="/rmp_logo_bordered.png"
+          src="/rmp_logo_white.png"
           alt="RMP Logo"
           width={32}
           height={32}
@@ -54,7 +54,6 @@ export default function SPVBranding() {
             marginTop: "2px",
           }}
         /> 
-        */}
       </div>
     </div>
   );
