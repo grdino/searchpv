@@ -7,6 +7,7 @@ export default function MainText() {
         gap: "2px",
       }}
     >
+      {/*
       <div
         style={{
           fontSize: "18px",
@@ -17,6 +18,7 @@ export default function MainText() {
       >
         Puerto Vallarta & Riviera Nayarit Markets
       </div>
+      */}
 
       <div
         style={{
