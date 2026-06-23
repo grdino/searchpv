@@ -45,11 +45,11 @@ export default function SPVBranding() {
           src="/rmp_logo_white.png"
           alt="RMP Logo"
           width={32}
-          height={32}
+          height={40}
           priority
           style={{
             width: "clamp(20px, 4vw, 32px)",
-            height: "clamp(20px, 4vw, 32px)",
+            height: "clamp(20px, 4vw, 40px)",
             objectFit: "contain",
             marginTop: "2px",
           }}
