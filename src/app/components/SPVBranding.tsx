@@ -42,8 +42,8 @@ export default function SPVBranding() {
         />
 
         <Image
-          src="/rmp_logo.png"
-          alt="SPV Logo 2"
+          src="/rmp_logo_bordered.png"
+          alt="RMP Logo"
           width={32}
           height={32}
           priority
