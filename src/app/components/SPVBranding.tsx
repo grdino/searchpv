@@ -5,8 +5,8 @@ export default function SPVBranding() {
     <div
       style={{
         display: "flex",
-        alignItems: "flex-end", // bottom-align logo with text
-        gap: "10px",
+        alignItems: "flex-start",
+        gap: "8px",
       }}
     >
       <h1
@@ -23,14 +23,14 @@ export default function SPVBranding() {
       <Image
         src="/spv_logo.png"
         alt="SearchPV Logo"
-        width={42}
-        height={42}
+        width={32}
+        height={32}
         priority
         style={{
-          width: "clamp(24px, 6vw, 42px)",
-          height: "clamp(24px, 6vw, 42px)",
+          width: "clamp(20px, 4vw, 32px)",
+          height: "clamp(20px, 4vw, 32px)",
           objectFit: "contain",
-          marginBottom: "2px",
+          marginTop: "2px",
         }}
       />
     </div>
