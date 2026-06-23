@@ -398,8 +398,9 @@ export default async function CommunityPage({
                     metricGroup="sold_12mo"
                     bedroomSegment="0br"
                     listingCount={row.sales_0br_12mo ?? 0}
-                    >zoneName={row.zone_name}
+                    zoneName={row.zone_name}
                     areaName={row.area_name}
+                  >
                     {row.sales_0br_12mo ?? 0}
                   </ContactListingLink>
                 ),
