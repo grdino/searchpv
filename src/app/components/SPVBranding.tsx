@@ -21,7 +21,7 @@ export default function SPVBranding() {
       </h1>
 
       <Image
-        src="/spv_logo.png"
+        src="/spv_logo_round.png"
         alt="SearchPV Logo"
         width={32}
         height={32}
