@@ -4,14 +4,14 @@ export default function MainText() {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "6px",
+        gap: "2px",
       }}
     >
       <div
         style={{
-          fontSize: "clamp(24px, 4vw, 40px)",
-          fontWeight: 800,
-          lineHeight: 1.1,
+          fontSize: "18px",
+          fontWeight: 700,
+          lineHeight: 1.2,
           whiteSpace: "nowrap",
         }}
       >
@@ -20,10 +20,9 @@ export default function MainText() {
 
       <div
         style={{
-          fontSize: "clamp(14px, 2vw, 18px)",
-          fontWeight: 500,
-          lineHeight: 1.2,
+          fontSize: "14px",
           color: "#cbd5e1",
+          lineHeight: 1.2,
           whiteSpace: "nowrap",
         }}
       >
