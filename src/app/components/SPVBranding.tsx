@@ -20,19 +20,41 @@ export default function SPVBranding() {
         SearchPV
       </h1>
 
-      <Image
-        src="/spv_logo_round.png"
-        alt="SearchPV Logo"
-        width={32}
-        height={32}
-        priority
+      <div
         style={{
-          width: "clamp(20px, 4vw, 32px)",
-          height: "clamp(20px, 4vw, 32px)",
-          objectFit: "contain",
-          marginTop: "2px",
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "1px", // hair space between logos
         }}
-      />
+      >
+        <Image
+          src="/spv_logo_round.png"
+          alt="SPV Logo"
+          width={32}
+          height={32}
+          priority
+          style={{
+            width: "clamp(20px, 4vw, 32px)",
+            height: "clamp(20px, 4vw, 32px)",
+            objectFit: "contain",
+            marginTop: "2px",
+          }}
+        />
+
+        <Image
+          src="/rmp_logo.png"
+          alt="SPV Logo 2"
+          width={32}
+          height={32}
+          priority
+          style={{
+            width: "clamp(20px, 4vw, 32px)",
+            height: "clamp(20px, 4vw, 32px)",
+            objectFit: "contain",
+            marginTop: "2px",
+          }}
+        />
+      </div>
     </div>
   );
 }
