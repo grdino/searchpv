@@ -4,6 +4,7 @@ import ZoneAreaFilters from "@/app/components/ZoneAreaFilters";
 import Link from "next/link";
 import SPVBranding from "@/app/components/SPVBranding"
 import MainSloganBranding from "@/app/components/MainSloganBranding"
+import MainText from "./components/MainText";
 
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
@@ -190,11 +191,7 @@ const areas = Array.from(
         <div className="mx-auto max-w-6xl">
             <SPVBranding />
             <MainSloganBranding />
-          <p className="mt-4 max-w-2xl text-slate-300"> 
-            Explore Puerto Vallarta & Riviera Nayarit Markets. Compare condo and
-            house inventory, pricing, sales activity, and months of inventory by
-            community.
-          </p>
+          <MainText />
 
           <HomeSelectors
             selectedMarket={selectedMarket}
