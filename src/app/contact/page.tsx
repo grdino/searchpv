@@ -29,7 +29,7 @@ export default async function ContactPage({
 
   const requestSummary = `${bedroom} ${market} ${propertyType} closed sales in ${community}`;
 
-  const message = `Hi Gerry,
+  const message = `Hola SearchPV,
 
 I would like the closed sales details for:
 
@@ -96,7 +96,7 @@ Thank you.`;
 
             <div className="mt-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
               The information requested below is not publicly available through
-              IDX and will be provided directly by Gerry Ray.
+              IDX and will be provided directly by SearchPV.
             </div>
           </div>
             <ContactForm
