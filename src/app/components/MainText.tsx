@@ -2,6 +2,7 @@ export default function MainText() {
   return (
     <div
       style={{
+        marginTop: "8px",
         display: "flex",
         flexDirection: "column",
         gap: "2px",
