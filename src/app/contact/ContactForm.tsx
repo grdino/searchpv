@@ -51,22 +51,75 @@ export default function ContactForm({
         gap: "20px",
       }}
     >
-      <input
-        name="name"
-        placeholder="Your name"
-        required
-      />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          flexWrap: "wrap",
+        }}
+      >
+        <strong>Your Name:</strong>
 
-      <input
-        name="contact"
-        placeholder="Email or WhatsApp"
-        required
-      />
+        <input
+          name="name"
+          required
+          autoFocus
+          style={{
+            flex: 1,
+            minWidth: "250px",
+            padding: "10px",
+            border: "1px solid #cbd5e1",
+            borderRadius: "6px",
+            backgroundColor: "#f8fafc",
+            fontSize: "14px",
+          }}
+        />
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          flexWrap: "wrap",
+        }}
+      >
+        <strong>Email or WhatsApp:</strong>
+
+        <input
+          name="contact"
+          required
+          style={{
+            flex: 1,
+            minWidth: "250px",
+            padding: "10px",
+            border: "1px solid #cbd5e1",
+            borderRadius: "6px",
+            backgroundColor: "#f8fafc",
+            fontSize: "14px",
+          }}
+        />
+      </div>
+
+      <div>
+        <strong>Message:</strong>
+      </div>
 
       <textarea
         name="message"
         rows={11}
         defaultValue={defaultMessage}
+        style={{
+          width: "100%",
+          padding: "12px",
+          border: "1px solid #cbd5e1",
+          borderRadius: "6px",
+          backgroundColor: "#f8fafc",
+          fontSize: "14px",
+          lineHeight: "1.5",
+          boxSizing: "border-box",
+        }}
       />
 
       <button
@@ -88,8 +141,14 @@ export default function ContactForm({
       </button>
 
       {sent && (
-        <p>
-          Thank you. Your request has been sent.
+        <p
+          style={{
+            textAlign: "center",
+            color: "#166534",
+            fontWeight: 600,
+          }}
+        >
+          Thank you. We will contact you shortly with the information you requested.
         </p>
       )}
     </form>
