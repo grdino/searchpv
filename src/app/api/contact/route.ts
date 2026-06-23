@@ -9,7 +9,7 @@ export async function POST(request: Request) {
 
     await resend.emails.send({
       from: "SearchPV <onboarding@resend.dev>",
-      to: "grkcmo@hotmail.com",
+      to: "gerry@ronmorgan.net",
       subject: `SearchPV Request - ${body.community}`,
       text: `
 Name: ${body.name}
