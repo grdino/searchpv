@@ -48,8 +48,8 @@ export default function SPVBranding() {
           height={40}
           priority
           style={{
-            width: "clamp(20px, 4vw, 32px)",
-            height: "clamp(20px, 4vw, 40px)",
+            width: "clamp(25px, 4vw, 32px)",
+            height: "clamp(25px, 4vw, 40px)",
             objectFit: "contain",
             marginTop: "2px",
           }}
