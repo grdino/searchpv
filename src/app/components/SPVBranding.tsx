@@ -40,7 +40,7 @@ export default function SPVBranding() {
             marginTop: "2px",
           }}
         />
-
+{/*}
         <Image
           src="/rmp_logo_bordered.png"
           alt="RMP Logo"
@@ -53,7 +53,8 @@ export default function SPVBranding() {
             objectFit: "contain",
             marginTop: "2px",
           }}
-        />
+        /> 
+        */}
       </div>
     </div>
   );
