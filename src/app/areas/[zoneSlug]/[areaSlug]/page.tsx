@@ -138,14 +138,47 @@ export default async function AreaPage({
         </div>
       </section>
 
-      <div className="sticky top-0 z-40 border-b border-slate-200 bg-white px-4 py-2 shadow-sm md:px-8">
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 40,
+          backgroundColor: "#334155",
+          borderBottom: "1px solid #1e293b",
+          padding: "10px 16px",
+        }}
+      >
+      <div
+        style={{
+          maxWidth: "72rem",
+          margin: "0 auto",
+          textAlign: "center",
+          color: "#ffffff",
+          fontSize: "14px",
+          fontWeight: 700,
+          whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+      }}
+      title={`${row.zone_name} > ${row.area_name}`}
+  >
+        {row.zone_name} &gt; {row.area_name}
+                                  
         <div
-          className="mx-auto max-w-6xl overflow-hidden text-ellipsis whitespace-nowrap text-center text-sm font-semibold text-slate-700"
-          title={`${row.zone_name} > ${row.area_name}`}
+          style={{
+            marginTop: "4px",
+            fontSize: "13px",
+            fontWeight: 700,
+            color: "#ffffff",
+          }}
         >
-          {row.zone_name} &gt; {row.area_name}
+          {formatSelectedFilters(
+            selectedMarket,
+            selectedPropertyType
+          )}
         </div>
       </div>
+    </div>
 
       <section className="mx-auto max-w-6xl px-4 py-10 md:px-8">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -414,4 +447,29 @@ function homeHref(
   const queryString = params.toString();
 
   return queryString ? `/?${queryString}` : "/";
+}
+
+function formatSelectedFilters(
+  market: MarketSegment,
+  propertyType: PropertyTypeSegment
+) {
+  const parts: string[] = [];
+
+  if (propertyType === "all") {
+    parts.push("Condos", "Houses");
+  } else if (propertyType === "condos") {
+    parts.push("Condos");
+  } else {
+    parts.push("Houses");
+  }
+
+  if (market === "all") {
+    parts.push("Resale", "Pre-Construction");
+  } else if (market === "resale") {
+    parts.push("Resale");
+  } else {
+    parts.push("Pre-Construction");
+  }
+
+  return parts.join(" | ");
 }

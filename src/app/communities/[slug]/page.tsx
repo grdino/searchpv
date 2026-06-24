@@ -230,33 +230,69 @@ export default async function CommunityPage({
       </section>
 
             {row && (
-              <div className="sticky top-0 z-40 border-b border-slate-200 bg-white px-4 py-2">
-                <div
-                  className="mx-auto max-w-6xl overflow-hidden text-ellipsis whitespace-nowrap text-center text-sm font-semibold text-slate-700"
-                  title={`${row.zone_name} > ${row.area_name} > ${row.community_name}`}
+            <div
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 40,
+                backgroundColor: "#334155",
+                borderBottom: "1px solid #1e293b",
+                padding: "10px 16px",
+              }}
+  >
+              <div
+                style={{
+                  maxWidth: "72rem",
+                  margin: "0 auto",
+                  textAlign: "center",
+                  color: "#ffffff",
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+                title={`${row.zone_name} > ${row.area_name} > ${row.community_name}`}
+              >
+                <span>{row.zone_name}</span>
+
+                {" > "}
+
+                <Link
+                  href={areaHref(
+                    row.zone_slug!,
+                    row.area_slug!,
+                    selectedMarket,
+                    selectedPropertyType
+                  )}
+                  style={{
+                    color: "#ffffff",
+                    textDecoration: "underline",
+                  }}
                 >
-                  <span>{row.zone_name}</span>
+                  {row.area_name}
+                </Link>
 
-                  {" > "}
+                {" > "}
 
-                  <Link
-                    href={areaHref(
-                      row.zone_slug!,
-                      row.area_slug!,
-                      selectedMarket,
-                      selectedPropertyType
-                    )}
-                    className="text-blue-700 hover:underline"
-                  >
-                    {row.area_name}
-                  </Link>
+                <span>{row.community_name}</span>
 
-                  {" > "}
-
-                  <span>{row.community_name}</span>
+                <div
+                  style={{
+                    marginTop: "4px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "#ffffff",
+                  }}
+                >
+                  {formatSelectedFilters(
+                    selectedMarket,
+                    selectedPropertyType
+                  )}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
       {!row ? (
         <section className="mx-auto max-w-6xl px-4 py-10 md:px-8">
@@ -897,4 +933,29 @@ function formatPropertyTypeDescription(value: PropertyTypeSegment) {
   if (value === "condos") return "condos";
   if (value === "houses") return "houses";
   return "properties";
+}
+
+function formatSelectedFilters(
+  market: MarketSegment,
+  propertyType: PropertyTypeSegment
+) {
+  const parts: string[] = [];
+
+  if (propertyType === "all") {
+    parts.push("Condos", "Houses");
+  } else if (propertyType === "condos") {
+    parts.push("Condos");
+  } else {
+    parts.push("Houses");
+  }
+
+  if (market === "all") {
+    parts.push("Resale", "Pre-Construction");
+  } else if (market === "resale") {
+    parts.push("Resale");
+  } else {
+    parts.push("Pre-Construction");
+  }
+
+  return parts.join(" | ");
 }
