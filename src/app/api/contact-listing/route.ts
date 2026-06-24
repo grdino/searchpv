@@ -28,7 +28,10 @@ ${message}
       `,
     });
 
-    return NextResponse.redirect(new URL("/contact-listing/thanks", request.url));
+    return NextResponse.redirect(
+      new URL("/contact-listing/thanks", request.url),
+      303
+    );
   } catch (error) {
     console.error(error);
     return NextResponse.json(
