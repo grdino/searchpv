@@ -1,4 +1,11 @@
-User-agent: *
-Allow: /
+import type { MetadataRoute } from "next";
 
-Sitemap: https://searchpv.com/sitemap.xml
+export default function robots(): MetadataRoute.Robots {
+  return {
+    rules: {
+      userAgent: "*",
+      allow: "/",
+    },
+    sitemap: "https://searchpv.com/sitemap.xml",
+  };
+}
