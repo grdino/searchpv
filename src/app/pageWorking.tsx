@@ -6,6 +6,7 @@ import Link from "next/link";
 import SPVBranding from "@/app/components/SPVBranding";
 import MainSloganBranding from "@/app/components/MainSloganBranding";
 import MainText from "./components/MainText";
+import MetricCard from "@/app/components/MetricCard";
 
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
@@ -70,30 +71,6 @@ type DevelopmentSnapshot = {
 type CommunityListingDrilldown = {
   community_name: string;
   community_slug: string;
-  market_segment: MarketSegment;
-  property_type_segment: PropertyTypeSegment;
-  metric_group: MetricGroup;
-  bedroom_segment: string;
-  listing_count: number | null;
-  listing_ids: string | null;
-};
-
-type AreaListingDrilldown = {
-  zone_slug: string;
-  area_slug: string;
-  market_segment: MarketSegment;
-  property_type_segment: PropertyTypeSegment;
-  metric_group: MetricGroup;
-  bedroom_segment: string;
-  listing_count: number | null;
-  listing_ids: string | null;
-};
-
-type DevelopmentListingDrilldown = {
-  zone_slug: string;
-  area_slug: string;
-  community_slug: string;
-  development_slug: string;
   market_segment: MarketSegment;
   property_type_segment: PropertyTypeSegment;
   metric_group: MetricGroup;
@@ -175,29 +152,6 @@ export default async function Home({
     .eq("bedroom_segment", "all")
     .in("metric_group", ["active", "pending", "sold_12mo"]);
 
-  let areaDrilldownQuery = supabase
-    .from("area_listing_drilldown")
-    .select("*")
-    .eq("market_segment", selectedMarket)
-    .eq("property_type_segment", selectedPropertyType)
-    .eq("bedroom_segment", "all")
-    .in("metric_group", ["active", "pending", "sold_12mo"]);
-
-  if (selectedZone !== "all") {
-    areaDrilldownQuery = areaDrilldownQuery.eq("zone_slug", slugify(selectedZone));
-  }
-
-  const { data: areaDrilldownData, error: areaDrilldownError } =
-    await areaDrilldownQuery;
-
-  let developmentDrilldownQuery = supabase
-    .from("development_listing_drilldown")
-    .select("*")
-    .eq("market_segment", selectedMarket)
-    .eq("property_type_segment", selectedPropertyType)
-    .eq("bedroom_segment", "all")
-    .in("metric_group", ["active", "pending", "sold_12mo"]);
-
   let developmentQuery = supabase
     .from("development_snapshot")
     .select("*")
@@ -207,37 +161,23 @@ export default async function Home({
   if (selectedZone !== "all") {
     const zoneSlug = slugify(selectedZone);
     developmentQuery = developmentQuery.eq("zone_slug", zoneSlug);
-    developmentDrilldownQuery = developmentDrilldownQuery.eq("zone_slug", zoneSlug);
   }
 
   if (selectedArea !== "all") {
     const areaSlug = slugify(selectedArea);
     developmentQuery = developmentQuery.eq("area_slug", areaSlug);
-    developmentDrilldownQuery = developmentDrilldownQuery.eq("area_slug", areaSlug);
   }
 
   if (selectedCommunity !== "all") {
     developmentQuery = developmentQuery.eq("community_slug", selectedCommunity);
-    developmentDrilldownQuery = developmentDrilldownQuery.eq("community_slug", selectedCommunity);
   } else {
     developmentQuery = developmentQuery.limit(0);
-    developmentDrilldownQuery = developmentDrilldownQuery.limit(0);
   }
 
   const { data: developmentData, error: developmentError } =
     await developmentQuery;
 
-  const { data: developmentDrilldownData, error: developmentDrilldownError } =
-    await developmentDrilldownQuery;
-
-  if (
-    error ||
-    drilldownError ||
-    areaDrilldownError ||
-    developmentDrilldownError ||
-    optionError ||
-    developmentError
-  ) {
+  if (error || drilldownError || optionError || developmentError) {
     return (
       <main className="min-h-screen p-8">
         <h1 className="text-3xl font-bold">SearchPV</h1>
@@ -245,8 +185,6 @@ export default async function Home({
         <pre className="mt-4 text-sm">
           {error?.message ??
             drilldownError?.message ??
-            areaDrilldownError?.message ??
-            developmentDrilldownError?.message ??
             optionError?.message ??
             developmentError?.message}
         </pre>
@@ -351,44 +289,14 @@ export default async function Home({
         : developmentRows;
 
   const selectedCommunityName =
-    selectedCommunity === "all"
-      ? "All Communities"
-      : communities.find((c) => c.community_slug === selectedCommunity)
-          ?.community_name ?? "All Communities";
+    communities.find((c) => c.community_slug === selectedCommunity)
+      ?.community_name ?? "All Communities";
 
   const drilldownRows = (drilldownData ?? []) as CommunityListingDrilldown[];
   const drilldownLookup = new Map<string, CommunityListingDrilldown>();
 
   for (const row of drilldownRows) {
     drilldownLookup.set(drilldownKey(row.community_name, row.metric_group), row);
-  }
-
-  const areaDrilldownRows =
-    (areaDrilldownData ?? []) as AreaListingDrilldown[];
-  const areaDrilldownLookup = new Map<string, AreaListingDrilldown>();
-
-  for (const row of areaDrilldownRows) {
-    areaDrilldownLookup.set(
-      areaDrilldownKey(row.zone_slug, row.area_slug, row.metric_group),
-      row
-    );
-  }
-
-  const developmentDrilldownRows =
-    (developmentDrilldownData ?? []) as DevelopmentListingDrilldown[];
-  const developmentDrilldownLookup = new Map<string, DevelopmentListingDrilldown>();
-
-  for (const row of developmentDrilldownRows) {
-    developmentDrilldownLookup.set(
-      developmentDrilldownKey(
-        row.zone_slug,
-        row.area_slug,
-        row.community_slug,
-        row.development_slug,
-        row.metric_group
-      ),
-      row
-    );
   }
 
   const snapshotDate =
@@ -416,32 +324,18 @@ export default async function Home({
   const communityOptions =
     selectedArea === "all"
       ? []
-      : [
-          {
-            label: "All Communities",
-            href: homeHref(
-              selectedMarket,
-              selectedPropertyType,
-              selectedSort,
-              selectedDir,
-              selectedZone,
-              selectedArea,
-              "all"
-            ),
-          },
-          ...communities.map((community) => ({
-            label: community.community_name,
-            href: homeHref(
-              selectedMarket,
-              selectedPropertyType,
-              selectedSort,
-              selectedDir,
-              selectedZone,
-              selectedArea,
-              community.community_slug
-            ),
-          })),
-        ];
+      : communities.map((community) => ({
+          label: community.community_name,
+          href: homeHref(
+            selectedMarket,
+            selectedPropertyType,
+            selectedSort,
+            selectedDir,
+            selectedZone,
+            selectedArea,
+            community.community_slug
+          ),
+        }));
 
   const developmentOptions =
     selectedCommunity === "all"
@@ -481,12 +375,6 @@ export default async function Home({
           <HierarchySelects
             communityOptions={communityOptions}
             developmentOptions={developmentOptions}
-            selectedCommunityLabel={selectedCommunityName}
-            selectedDevelopmentLabel={
-              displayMode === "development" && developmentRows.length > 0
-                ? "Choose Development"
-                : undefined
-            }
           />
         </div>
       </section>
@@ -722,46 +610,9 @@ export default async function Home({
                         </Link>
                       </Td>
 
-                      <Td>
-                        <IdxListingLink
-                          listingIds={
-                            areaDrilldownLookup.get(
-                              areaDrilldownKey(row.zone_slug, row.area_slug, "active")
-                            )?.listing_ids
-                          }
-                        >
-                          {row.active_count}
-                        </IdxListingLink>
-                      </Td>
-                      <Td>
-                        <IdxListingLink
-                          listingIds={
-                            areaDrilldownLookup.get(
-                              areaDrilldownKey(row.zone_slug, row.area_slug, "pending")
-                            )?.listing_ids
-                          }
-                        >
-                          {row.pending_count}
-                        </IdxListingLink>
-                      </Td>
-                      <Td>
-                        <ContactListingLink
-                          communityName=""
-                          zoneName={row.zone_name}
-                          areaName={row.area_name}
-                          market={selectedMarket}
-                          propertyType={selectedPropertyType}
-                          metricGroup="sold_12mo"
-                          bedroomSegment="all"
-                          listingCount={
-                            areaDrilldownLookup.get(
-                              areaDrilldownKey(row.zone_slug, row.area_slug, "sold_12mo")
-                            )?.listing_count ?? row.sales_12mo ?? 0
-                          }
-                        >
-                          {row.sales_12mo}
-                        </ContactListingLink>
-                      </Td>
+                      <Td>{row.active_count}</Td>
+                      <Td>{row.pending_count}</Td>
+                      <Td>{row.sales_12mo}</Td>
                       <Td>{formatMoney(row.median_sold_price)}</Td>
                       <Td>{formatMoney(row.avg_sold_price_ft2)}</Td>
                       <Td>{formatNumber(row.sold_avg_dom_12mo)}</Td>
@@ -869,65 +720,9 @@ export default async function Home({
                           </Link>
                         </Td>
 
-                        <Td>
-                          <IdxListingLink
-                            listingIds={
-                              developmentDrilldownLookup.get(
-                                developmentDrilldownKey(
-                                  row.zone_slug ?? "",
-                                  row.area_slug ?? "",
-                                  row.community_slug ?? "",
-                                  row.development_slug,
-                                  "active"
-                                )
-                              )?.listing_ids
-                            }
-                          >
-                            {row.active_count ?? 0}
-                          </IdxListingLink>
-                        </Td>
-                        <Td>
-                          <IdxListingLink
-                            listingIds={
-                              developmentDrilldownLookup.get(
-                                developmentDrilldownKey(
-                                  row.zone_slug ?? "",
-                                  row.area_slug ?? "",
-                                  row.community_slug ?? "",
-                                  row.development_slug,
-                                  "pending"
-                                )
-                              )?.listing_ids
-                            }
-                          >
-                            {row.pending_count ?? 0}
-                          </IdxListingLink>
-                        </Td>
-                        <Td>
-                          <ContactDevelopmentListingLink
-                            developmentName={row.development_name}
-                            communityName={row.community_name}
-                            zoneName={row.zone_name}
-                            areaName={row.area_name}
-                            market={selectedMarket}
-                            propertyType={selectedPropertyType}
-                            metricGroup="sold_12mo"
-                            bedroomSegment="all"
-                            listingCount={
-                              developmentDrilldownLookup.get(
-                                developmentDrilldownKey(
-                                  row.zone_slug ?? "",
-                                  row.area_slug ?? "",
-                                  row.community_slug ?? "",
-                                  row.development_slug,
-                                  "sold_12mo"
-                                )
-                              )?.listing_count ?? row.sales_12mo ?? 0
-                            }
-                          >
-                            {row.sales_12mo ?? 0}
-                          </ContactDevelopmentListingLink>
-                        </Td>
+                        <Td>{row.active_count ?? 0}</Td>
+                        <Td>{row.pending_count ?? 0}</Td>
+                        <Td>{row.sales_12mo ?? 0}</Td>
                         <Td>{formatMoney(row.median_sold_price)}</Td>
                         <Td>{formatMoney(row.avg_sold_price_ft2)}</Td>
                         <Td>{formatNumber(row.sold_avg_dom_12mo)}</Td>
@@ -1053,7 +848,21 @@ function HomeSelectors({
         </a>
       </div>
 
-      <div style={{ ...rowStyle, gridTemplateColumns: "repeat(2, minmax(0, 1fr))", marginTop: "10px" }}>
+      <div style={{ ...rowStyle, marginTop: "10px" }}>
+        <a
+          href={homeHref(
+            "all",
+            selectedPropertyType,
+            selectedSort,
+            selectedDir,
+            selectedZone,
+            selectedArea,
+            selectedCommunity
+          )}
+          style={selectedMarket === "all" ? selectedStyle : unselectedStyle}
+        >
+          All
+        </a>
 
         <a
           href={homeHref(
@@ -1212,15 +1021,6 @@ function ContactListingLink({
     >
       {children}
     </Link>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-xl bg-white p-6 shadow">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-2 text-4xl font-bold">{value.toLocaleString()}</p>
-    </div>
   );
 }
 
@@ -1439,70 +1239,6 @@ function buildQueryString(
   if (propertyType !== "all") params.set("propertyType", propertyType);
 
   return params.toString();
-}
-
-
-function areaDrilldownKey(
-  zoneSlug: string,
-  areaSlug: string,
-  metricGroup: MetricGroup
-) {
-  return `${zoneSlug}|${areaSlug}|${metricGroup}`;
-}
-
-function developmentDrilldownKey(
-  zoneSlug: string,
-  areaSlug: string,
-  communitySlug: string,
-  developmentSlug: string,
-  metricGroup: MetricGroup
-) {
-  return `${zoneSlug}|${areaSlug}|${communitySlug}|${developmentSlug}|${metricGroup}`;
-}
-
-function ContactDevelopmentListingLink({
-  developmentName,
-  communityName,
-  zoneName,
-  areaName,
-  market,
-  propertyType,
-  metricGroup,
-  bedroomSegment,
-  listingCount,
-  children,
-}: {
-  developmentName: string;
-  communityName: string | null;
-  zoneName: string | null;
-  areaName: string | null;
-  market: MarketSegment;
-  propertyType: PropertyTypeSegment;
-  metricGroup: MetricGroup;
-  bedroomSegment: string;
-  listingCount: number;
-  children: React.ReactNode;
-}) {
-  const params = new URLSearchParams();
-
-  if (zoneName) params.set("zone", zoneName);
-  if (areaName) params.set("area", areaName);
-  if (communityName) params.set("community", communityName);
-  params.set("development", developmentName);
-  params.set("market", market);
-  params.set("propertyType", propertyType);
-  params.set("metric", metricGroup);
-  params.set("bedroom", bedroomSegment);
-  params.set("count", String(listingCount));
-
-  return (
-    <Link
-      href={`/contact?${params.toString()}`}
-      className="font-semibold text-blue-700 hover:underline"
-    >
-      {children}
-    </Link>
-  );
 }
 
 function drilldownKey(communityName: string, metricGroup: MetricGroup) {
