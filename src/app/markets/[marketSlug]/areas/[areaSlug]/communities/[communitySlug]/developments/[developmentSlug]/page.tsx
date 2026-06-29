@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { buildIdxUrl } from "@/lib/idx";
@@ -168,6 +169,52 @@ type DevelopmentProfile = {
   notes: string | null;
 };
 
+/*
+  SEO metadata for development pages.
+
+  This controls the browser title, Google search result title/description,
+  canonical URL, and social sharing metadata. It does not change the visible
+  page layout.
+*/
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{
+    marketSlug: string;
+    areaSlug: string;
+    communitySlug: string;
+    developmentSlug: string;
+  }>;
+}): Promise<Metadata> {
+  const routeParams = await params;
+
+  const developmentName = formatSlugTitle(routeParams.developmentSlug);
+  const communityName = formatSlugTitle(routeParams.communitySlug);
+  const areaName = formatSlugTitle(routeParams.areaSlug);
+  const zoneName = formatSlugTitle(routeParams.marketSlug);
+
+  const pageUrl = `https://searchpv.com/markets/${routeParams.marketSlug}/areas/${routeParams.areaSlug}/communities/${routeParams.communitySlug}/developments/${routeParams.developmentSlug}`;
+
+  const title = `${developmentName} Real Estate Market | ${communityName}, ${zoneName} | SearchPV`;
+
+  const description = `Current inventory, pricing, sales activity, walkability, nearby amenities, and market trends for ${developmentName} in ${communityName}, ${areaName}, ${zoneName}.`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: pageUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: "SearchPV",
+      type: "website",
+    },
+  };
+}
+
 export default async function DevelopmentPage({
   params,
   searchParams,
@@ -294,8 +341,83 @@ export default async function DevelopmentPage({
     ? formatDate(row.snapshot_date)
     : "Unknown";
 
+/*
+  Structured data for Google.
+
+  BreadcrumbList helps search engines understand the page hierarchy:
+  SearchPV > Zone > Area > Community > Development.
+
+  Place helps search engines understand that this page represents a real
+  development/location, not just a generic statistics page.
+*/
+const pageUrl = `https://searchpv.com/markets/${routeParams.marketSlug}/areas/${routeParams.areaSlug}/communities/${routeParams.communitySlug}/developments/${routeParams.developmentSlug}`;
+
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "SearchPV",
+      item: "https://searchpv.com/",
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: zoneName,
+      item: `https://searchpv.com/markets/${routeParams.marketSlug}`,
+    },
+    {
+      "@type": "ListItem",
+      position: 3,
+      name: areaName,
+      item: `https://searchpv.com/markets/${routeParams.marketSlug}/areas/${routeParams.areaSlug}`,
+    },
+    {
+      "@type": "ListItem",
+      position: 4,
+      name: communityName,
+      item: `https://searchpv.com/markets/${routeParams.marketSlug}/areas/${routeParams.areaSlug}/communities/${routeParams.communitySlug}`,
+    },
+    {
+      "@type": "ListItem",
+      position: 5,
+      name: developmentName,
+      item: pageUrl,
+    },
+  ],
+};
+
+const placeJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Place",
+  name: developmentName,
+  url: pageUrl,
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: communityName,
+    addressRegion: areaName,
+    addressCountry: "MX",
+  },
+  containedInPlace: {
+    "@type": "Place",
+    name: zoneName,
+  },
+};
+
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+  <main className="min-h-screen bg-slate-50 text-slate-900">
+    {/* Structured data only. Not visible on the page. */}
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+    />
+
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(placeJsonLd) }}
+    />
       <section className="bg-slate-950 px-4 py-8 text-white md:px-8 md:py-10">
         <div className="mx-auto max-w-6xl">
           <Link href="/" className="text-sm text-slate-300 hover:underline">
