@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { buildIdxUrl } from "@/lib/idx";
 import { supabase } from "@/lib/supabase";
 import ZoneAreaFilters from "@/app/components/ZoneAreaFilters";
@@ -122,6 +123,38 @@ type AreaSnapshotRow = {
 };
 
 const DEFAULT_ZONE_NAME = "Puerto Vallarta";
+
+/*
+  SEO metadata for the SearchPV homepage.
+
+  This controls the browser title, Google search result title/description,
+  canonical URL, and social sharing metadata. It does not change the visible
+  page layout.
+*/
+export async function generateMetadata(): Promise<Metadata> {
+  const title =
+    "Puerto Vallarta & Riviera Nayarit Real Estate Market Intelligence | SearchPV";
+
+  const description =
+    "Explore current MLS inventory, pending listings, closed sales, pricing trends, days on market, and months of inventory for Puerto Vallarta and Riviera Nayarit communities.";
+
+  const pageUrl = "https://searchpv.com/";
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: pageUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: "SearchPV",
+      type: "website",
+    },
+  };
+}
 
 export default async function Home({
   searchParams,
@@ -423,6 +456,41 @@ export default async function Home({
     0
   );
 
+/*
+  Structured data for the homepage.
+
+  WebSite identifies SearchPV as a real website and brand property.
+
+  SearchAction is included because the homepage functions as a market search
+  and filtering interface. The target uses your existing query-string pattern.
+
+  Organization identifies SearchPV as the publisher/brand behind the site.
+*/
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "SearchPV",
+  url: "https://searchpv.com/",
+  description:
+    "Puerto Vallarta and Riviera Nayarit real estate market intelligence using MLS inventory, pending listings, closed sales, pricing trends, and months of inventory.",
+  inLanguage: "en",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: "https://searchpv.com/?community={community}",
+    "query-input": "required name=community",
+  },
+};
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "SearchPV",
+  url: "https://searchpv.com/",
+  logo: "https://searchpv.com/icon.png",
+  description:
+    "SearchPV provides Puerto Vallarta and Riviera Nayarit real estate market intelligence by area, community, and development.",
+};
+
   const communityOptions =
     selectedArea === "all"
       ? []
@@ -479,6 +547,16 @@ export default async function Home({
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
+      {/* Structured data only. Not visible on the page. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
       <section className="bg-slate-950 px-4 py-10 text-white md:px-8 md:py-14">
         <div className="mx-auto max-w-6xl">
           <SPVBranding />
