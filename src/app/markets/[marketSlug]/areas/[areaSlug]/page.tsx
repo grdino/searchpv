@@ -606,21 +606,24 @@ export default async function AreaPage({
                 border: "1px solid #f1f5f9",
               }}
             >
-              <h2 className="text-2xl font-bold">Market Summary</h2>
+              <h2 className="text-2xl font-bold">
+                About {areaName}
+              </h2>
 
               <p className="mt-4 leading-7 text-slate-700">
-                For {formatMarketDescription(selectedMarket)}{" "}
-                {formatPropertyTypeDescription(selectedPropertyType)} in{" "}
-                <strong>{areaName}</strong>, there are currently{" "}
-                <strong>{rollup.active_count}</strong> active listings,{" "}
-                <strong>{rollup.pending_count}</strong> pending listings, and{" "}
-                <strong>{rollup.sales_12mo}</strong> closed sales over the past
-                12 months. The median sold price is{" "}
-                <strong>{formatMoney(rollup.median_sold_price)}</strong>, with
-                average sold pricing around{" "}
-                <strong>{formatMoney(rollup.avg_sold_price_ft2)}</strong> per
-                square foot. Current months of inventory is{" "}
-                <strong>{formatNumber(rollup.months_inventory)}</strong>.
+                <strong>{areaName}</strong> is one of the primary areas within{" "}
+                {zoneName}, offering a mix of neighborhoods with distinct
+                lifestyles, property types, and price ranges. Buyers can compare
+                current inventory, pending sales, pricing trends, and market
+                activity across the communities that make up the area.
+
+                <br />
+                <br />
+
+                SearchPV provides continually updated MLS market statistics,
+                allowing buyers, sellers, and investors to monitor how individual
+                communities within <strong>{areaName}</strong> are performing over
+                time.
               </p>
             </div>
           </div>
