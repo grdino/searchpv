@@ -1,3 +1,5 @@
+import WalkabilityInfo from "@/app/components/WalkabilityInfo";
+
 type NearbyRollup = {
   walkability_score: number | null;
   walkability_label: string | null;
@@ -63,12 +65,9 @@ export default function NearbySection({
               <div className="rounded-2xl bg-slate-950 px-5 py-4 text-white">
                 <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
                   <span>Walkability</span>
-                  <span
-                    title="SearchPV walkability is based on nearby restaurants, cafés, grocery options, pharmacies, parks, gyms, galleries, and beach proximity within approximately 500 meters. Scores are generated from mapped place data and should be used as a general lifestyle indicator, not a formal walk score."
-                    className="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-slate-500 text-[10px] text-slate-300"
-                  >
-                    ?
-                  </span>
+                  <div className="relative">
+                    <WalkabilityInfo />
+                  </div>
                 </div>
                 <div className="mt-1 flex items-end gap-2">
                   <span className="text-4xl font-extrabold">
