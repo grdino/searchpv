@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { buildIdxUrl } from "@/lib/idx";
@@ -133,6 +134,49 @@ type DevelopmentSnapshot = {
   months_inventory: number | null;
 };
 
+/*
+  SEO metadata for community pages.
+
+  This controls the browser title, Google search result title/description,
+  canonical URL, and social sharing metadata. It does not change the visible
+  page layout.
+*/
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{
+    marketSlug: string;
+    areaSlug: string;
+    communitySlug: string;
+  }>;
+}): Promise<Metadata> {
+  const routeParams = await params;
+
+  const communityName = formatSlugTitle(routeParams.communitySlug);
+  const areaName = formatSlugTitle(routeParams.areaSlug);
+  const zoneName = formatSlugTitle(routeParams.marketSlug);
+
+  const pageUrl = `https://searchpv.com/markets/${routeParams.marketSlug}/areas/${routeParams.areaSlug}/communities/${routeParams.communitySlug}`;
+
+  const title = `${communityName} Real Estate Market | ${zoneName} | SearchPV`;
+
+  const description = `Current inventory, pricing, sales activity, development snapshots, and market trends for ${communityName} in ${areaName}, ${zoneName}.`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: pageUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: "SearchPV",
+      type: "website",
+    },
+  };
+}
 
 export default async function CommunityPage({
   params,
@@ -245,14 +289,86 @@ export default async function CommunityPage({
   }
 
   const communityName =
-    row?.community_name ?? formatSlugTitle(routeParams.communitySlug);
+  row?.community_name ?? formatSlugTitle(routeParams.communitySlug);
 
-  const snapshotDate = row?.snapshot_date
-    ? formatDate(row.snapshot_date)
-    : "Unknown";
+const areaName = row?.area_name ?? formatSlugTitle(routeParams.areaSlug);
+const zoneName = row?.zone_name ?? formatSlugTitle(routeParams.marketSlug);
+
+const snapshotDate = row?.snapshot_date
+  ? formatDate(row.snapshot_date)
+  : "Unknown";
+
+/*
+  Structured data for Google.
+
+  BreadcrumbList helps search engines understand the page hierarchy:
+  SearchPV > Zone > Area > Community.
+
+  Place helps search engines understand that this page represents a real
+  community/location, not just a generic statistics page.
+*/
+const pageUrl = `https://searchpv.com/markets/${routeParams.marketSlug}/areas/${routeParams.areaSlug}/communities/${routeParams.communitySlug}`;
+
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "SearchPV",
+      item: "https://searchpv.com/",
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: zoneName,
+      item: `https://searchpv.com/markets/${routeParams.marketSlug}`,
+    },
+    {
+      "@type": "ListItem",
+      position: 3,
+      name: areaName,
+      item: `https://searchpv.com/markets/${routeParams.marketSlug}/areas/${routeParams.areaSlug}`,
+    },
+    {
+      "@type": "ListItem",
+      position: 4,
+      name: communityName,
+      item: pageUrl,
+    },
+  ],
+};
+
+const placeJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Place",
+  name: communityName,
+  url: pageUrl,
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: communityName,
+    addressRegion: areaName,
+    addressCountry: "MX",
+  },
+  containedInPlace: {
+    "@type": "Place",
+    name: zoneName,
+  },
+};
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
+      {/* Structured data only. Not visible on the page. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(placeJsonLd) }}
+     />
       <section className="bg-slate-950 px-4 py-8 text-white md:px-8 md:py-10">
         <div className="mx-auto max-w-6xl">
           <Link href="/" className="text-sm text-slate-300 hover:underline">
