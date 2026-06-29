@@ -908,13 +908,13 @@ function IdxListingLink({
 
 
 function developmentDrilldownKey(
-  zoneSlug: string,
-  areaSlug: string,
-  communitySlug: string,
+  zoneSlug: string | null,
+  areaSlug: string | null,
+  communitySlug: string | null,
   developmentSlug: string,
   metricGroup: "active" | "pending" | "sold_12mo"
 ) {
-  return `${zoneSlug}|${areaSlug}|${communitySlug}|${developmentSlug}|${metricGroup}`;
+  return `${zoneSlug ?? ""}|${areaSlug ?? ""}|${communitySlug ?? ""}|${developmentSlug}|${metricGroup}`;
 }
 
 function ContactDevelopmentLink({
