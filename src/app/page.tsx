@@ -68,6 +68,8 @@ type DevelopmentSnapshot = {
 };
 
 type CommunityListingDrilldown = {
+  zone_slug: string | null;
+  area_slug: string | null;
   community_name: string;
   community_slug: string;
   market_segment: MarketSegment;
@@ -360,7 +362,15 @@ export default async function Home({
   const drilldownLookup = new Map<string, CommunityListingDrilldown>();
 
   for (const row of drilldownRows) {
-    drilldownLookup.set(drilldownKey(row.community_name, row.metric_group), row);
+    drilldownLookup.set(
+      drilldownKey(
+        row.zone_slug,
+        row.area_slug,
+        row.community_slug,
+        row.metric_group
+      ),
+      row
+    );
   }
 
   const areaDrilldownRows =
@@ -771,15 +781,15 @@ export default async function Home({
                 : displayMode === "community"
                   ? communityRows.map((row) => {
                       const activeDrilldown = drilldownLookup.get(
-                        drilldownKey(row.community_name, "active")
+                        drilldownKey(row.zone_slug, row.area_slug, row.community_slug, "active")
                       );
 
                       const pendingDrilldown = drilldownLookup.get(
-                        drilldownKey(row.community_name, "pending")
+                        drilldownKey(row.zone_slug, row.area_slug, row.community_slug, "pending")
                       );
 
                       const soldDrilldown = drilldownLookup.get(
-                        drilldownKey(row.community_name, "sold_12mo")
+                        drilldownKey(row.zone_slug, row.area_slug, row.community_slug, "sold_12mo")
                       );
 
                       return (
@@ -1053,7 +1063,21 @@ function HomeSelectors({
         </a>
       </div>
 
-      <div style={{ ...rowStyle, gridTemplateColumns: "repeat(2, minmax(0, 1fr))", marginTop: "10px" }}>
+      <div style={{ ...rowStyle, marginTop: "10px" }}>
+        <a
+          href={homeHref(
+            "all",
+            selectedPropertyType,
+            selectedSort,
+            selectedDir,
+            selectedZone,
+            selectedArea,
+            selectedCommunity
+          )}
+          style={selectedMarket === "all" ? selectedStyle : unselectedStyle}
+        >
+          All
+        </a>
 
         <a
           href={homeHref(
@@ -1505,8 +1529,13 @@ function ContactDevelopmentListingLink({
   );
 }
 
-function drilldownKey(communityName: string, metricGroup: MetricGroup) {
-  return `${communityName}|${metricGroup}`;
+function drilldownKey(
+  zoneSlug: string | null,
+  areaSlug: string | null,
+  communitySlug: string,
+  metricGroup: MetricGroup
+) {
+  return `${zoneSlug ?? ""}|${areaSlug ?? ""}|${communitySlug}|${metricGroup}`;
 }
 
 function slugify(value: string) {

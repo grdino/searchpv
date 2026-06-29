@@ -226,7 +226,12 @@ export default async function AreaPage({
 
   for (const row of (communityDrilldownRows ?? []) as CommunityListingDrilldown[]) {
     communityDrilldownLookup.set(
-      communityDrilldownKey(row.community_slug, row.metric_group),
+      communityDrilldownKey(
+        row.zone_slug,
+        row.area_slug,
+        row.community_slug,
+        row.metric_group
+      ),
       row
     );
   }
@@ -670,7 +675,12 @@ export default async function AreaPage({
                           <IdxListingLink
                             listingIds={
                               communityDrilldownLookup.get(
-                                communityDrilldownKey(community.community_slug, "active")
+                                communityDrilldownKey(
+                                  community.zone_slug,
+                                  community.area_slug,
+                                  community.community_slug,
+                                  "active"
+                                )
                               )?.listing_ids
                             }
                           >
@@ -681,7 +691,12 @@ export default async function AreaPage({
                           <IdxListingLink
                             listingIds={
                               communityDrilldownLookup.get(
-                                communityDrilldownKey(community.community_slug, "pending")
+                                communityDrilldownKey(
+                                  community.zone_slug,
+                                  community.area_slug,
+                                  community.community_slug,
+                                  "pending"
+                                )
                               )?.listing_ids
                             }
                           >
@@ -697,7 +712,12 @@ export default async function AreaPage({
                             propertyType={selectedPropertyType}
                             listingCount={
                               communityDrilldownLookup.get(
-                                communityDrilldownKey(community.community_slug, "sold_12mo")
+                                communityDrilldownKey(
+                                  community.zone_slug,
+                                  community.area_slug,
+                                  community.community_slug,
+                                  "sold_12mo"
+                                )
                               )?.listing_count ?? community.sales_12mo ?? 0
                             }
                           >
@@ -907,8 +927,13 @@ function IdxListingLink({
 }
 
 
-function communityDrilldownKey(communitySlug: string, metricGroup: MetricGroup) {
-  return `${communitySlug}|${metricGroup}`;
+function communityDrilldownKey(
+  zoneSlug: string | null,
+  areaSlug: string | null,
+  communitySlug: string,
+  metricGroup: MetricGroup
+) {
+  return `${zoneSlug ?? ""}|${areaSlug ?? ""}|${communitySlug}|${metricGroup}`;
 }
 
 function ContactCommunityLink({

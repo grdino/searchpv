@@ -271,6 +271,10 @@ export default async function DevelopmentPage({
     return (
       drilldownRowsTyped.find(
         (r) =>
+          r.zone_slug === routeParams.marketSlug &&
+          r.area_slug === routeParams.areaSlug &&
+          r.community_slug === routeParams.communitySlug &&
+          r.development_slug === routeParams.developmentSlug &&
           r.metric_group === metricGroup &&
           r.bedroom_segment === bedroomSegment
       )?.listing_ids ?? null

@@ -83,6 +83,8 @@ type CommunitySnapshot = {
 };
 
 type CommunityListingDrilldown = {
+  zone_slug: string;
+  area_slug: string;
   community_slug: string;
   market_segment: MarketSegment;
   property_type_segment: PropertyTypeSegment;
@@ -165,6 +167,8 @@ export default async function CommunityPage({
   const { data: drilldownRows } = await supabase
     .from("community_listing_drilldown")
     .select("*")
+    .eq("zone_slug", routeParams.marketSlug)
+    .eq("area_slug", routeParams.areaSlug)
     .eq("community_slug", routeParams.communitySlug)
     .eq("market_segment", selectedMarket)
     .eq("property_type_segment", selectedPropertyType);
@@ -229,7 +233,13 @@ export default async function CommunityPage({
 
   for (const row of (developmentDrilldownRows ?? []) as DevelopmentListingDrilldown[]) {
     developmentDrilldownLookup.set(
-      developmentDrilldownKey(row.development_slug, row.metric_group),
+      developmentDrilldownKey(
+        row.zone_slug,
+        row.area_slug,
+        row.community_slug,
+        row.development_slug,
+        row.metric_group
+      ),
       row
     );
   }
@@ -645,7 +655,13 @@ export default async function CommunityPage({
                               <IdxListingLink
                                 listingIds={
                                   developmentDrilldownLookup.get(
-                                    developmentDrilldownKey(development.development_slug, "active")
+                                    developmentDrilldownKey(
+                                      development.zone_slug,
+                                      development.area_slug,
+                                      development.community_slug,
+                                      development.development_slug,
+                                      "active"
+)
                                   )?.listing_ids
                                 }
                               >
@@ -656,7 +672,13 @@ export default async function CommunityPage({
                               <IdxListingLink
                                 listingIds={
                                   developmentDrilldownLookup.get(
-                                    developmentDrilldownKey(development.development_slug, "pending")
+                                    developmentDrilldownKey(
+                                      development.zone_slug,
+                                      development.area_slug,
+                                      development.community_slug,
+                                      development.development_slug,
+                                      "pending"
+                                    )
                                   )?.listing_ids
                                 }
                               >
@@ -670,7 +692,13 @@ export default async function CommunityPage({
                                 propertyType={selectedPropertyType}
                                 listingCount={
                                   developmentDrilldownLookup.get(
-                                    developmentDrilldownKey(development.development_slug, "sold_12mo")
+                                    developmentDrilldownKey(
+                                      development.zone_slug,
+                                      development.area_slug,
+                                      development.community_slug,
+                                      development.development_slug,
+                                      "sold_12mo"
+                                    )
                                   )?.listing_count ?? development.sales_12mo ?? 0
                                 }
                               >
@@ -880,10 +908,13 @@ function IdxListingLink({
 
 
 function developmentDrilldownKey(
+  zoneSlug: string,
+  areaSlug: string,
+  communitySlug: string,
   developmentSlug: string,
   metricGroup: "active" | "pending" | "sold_12mo"
 ) {
-  return `${developmentSlug}|${metricGroup}`;
+  return `${zoneSlug}|${areaSlug}|${communitySlug}|${developmentSlug}|${metricGroup}`;
 }
 
 function ContactDevelopmentLink({
