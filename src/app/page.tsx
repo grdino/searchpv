@@ -441,15 +441,24 @@ export default async function Home({
           },
           ...communities.map((community) => ({
             label: community.community_name,
-            href: homeHref(
-              selectedMarket,
-              selectedPropertyType,
-              selectedSort,
-              selectedDir,
-              selectedZone,
-              selectedArea,
-              community.community_slug
-            ),
+            href:
+              community.zone_slug && community.area_slug
+                ? communityHref(
+                    community.zone_slug,
+                    community.area_slug,
+                    community.community_slug,
+                    selectedMarket,
+                    selectedPropertyType
+                  )
+                : homeHref(
+                    selectedMarket,
+                    selectedPropertyType,
+                    selectedSort,
+                    selectedDir,
+                    selectedZone,
+                    selectedArea,
+                    community.community_slug
+                  ),
           })),
         ];
 
@@ -801,14 +810,12 @@ export default async function Home({
                         >
                           <Td className="sticky left-0 z-10 bg-white border-r border-slate-200">
                             <Link
-                              href={homeHref(
+                              href={communityHref(
+                                row.zone_slug ?? "",
+                                row.area_slug ?? "",
+                                row.community_slug,
                                 selectedMarket,
-                                selectedPropertyType,
-                                selectedSort,
-                                selectedDir,
-                                selectedZone,
-                                selectedArea,
-                                row.community_slug
+                                selectedPropertyType
                               )}
                               className="font-semibold text-blue-700 hover:underline"
                             >
