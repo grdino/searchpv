@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Header from "@/app/components/Header";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { buildIdxUrl } from "@/lib/idx";
@@ -371,9 +372,7 @@ const placeJsonLd = {
      />
       <section className="bg-slate-950 px-4 py-8 text-white md:px-8 md:py-10">
         <div className="mx-auto max-w-6xl">
-          <Link href="/" className="text-sm text-slate-300 hover:underline">
-            ← BACK TO SEARCHPV
-          </Link>
+          <Header />
 
           <div style={{ marginTop: "32px", textAlign: "left" }}>
             <MainSloganBranding />
