@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import AreaGuideModal from "@/app/components/AreaGuideModal";
 
 type Props = {
   selectedMarket: string;
@@ -29,7 +30,8 @@ export default function ZoneAreaFilters({
     const params = new URLSearchParams();
 
     if (selectedMarket !== "all") params.set("market", selectedMarket);
-    if (selectedPropertyType !== "all") params.set("propertyType", selectedPropertyType);
+    if (selectedPropertyType !== "all")
+      params.set("propertyType", selectedPropertyType);
     if (selectedSort !== "sales_12mo") params.set("sort", selectedSort);
 
     if (!(selectedSort === "sales_12mo" && selectedDir === "desc")) {
@@ -64,48 +66,63 @@ export default function ZoneAreaFilters({
     <div
       style={{
         marginTop: "10px",
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: "8px",
         width: "100%",
         maxWidth: "360px",
       }}
     >
-      <select
-        value={selectedZone}
-        onChange={(e) => updateFilters(e.target.value, "all")}
-        style={selectStyle}
-      >
-        <option value="all" style={optionStyle}>
-          All Zones
-        </option>
-
-        {zones.map((zone) => (
-          <option key={zone} value={zone} style={optionStyle}>
-            {zone}
-          </option>
-        ))}
-      </select>
-
-      <select
-        value={selectedArea}
-        onChange={(e) => updateFilters(selectedZone, e.target.value)}
-        disabled={selectedZone === "all"}
+      <div
         style={{
-          ...selectStyle,
-          opacity: selectedZone === "all" ? 0.6 : 1,
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "8px",
         }}
       >
-        <option value="all" style={optionStyle}>
-          All Areas
-        </option>
-
-        {areas.map((area) => (
-          <option key={area} value={area} style={optionStyle}>
-            {area}
+        <select
+          value={selectedZone}
+          onChange={(e) => updateFilters(e.target.value, "all")}
+          style={selectStyle}
+        >
+          <option value="all" style={optionStyle}>
+            All Zones
           </option>
-        ))}
-      </select>
+
+          {zones.map((zone) => (
+            <option key={zone} value={zone} style={optionStyle}>
+              {zone}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={selectedArea}
+          onChange={(e) => updateFilters(selectedZone, e.target.value)}
+          disabled={selectedZone === "all"}
+          style={{
+            ...selectStyle,
+            opacity: selectedZone === "all" ? 0.6 : 1,
+          }}
+        >
+          <option value="all" style={optionStyle}>
+            All Areas
+          </option>
+
+          {areas.map((area) => (
+            <option key={area} value={area} style={optionStyle}>
+              {area}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div
+        style={{
+          marginTop: "6px",
+          display: "flex",
+          justifyContent: "flex-end",
+        }}
+      >
+        <AreaGuideModal />
+      </div>
     </div>
   );
 }

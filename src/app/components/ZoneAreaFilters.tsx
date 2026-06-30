@@ -1,5 +1,7 @@
 "use client";
 
+import AreaGuideModal from "@/app/components/AreaGuideModal";
+
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
 type SortKey =
@@ -40,56 +42,71 @@ export default function ZoneAreaFilters({
     <div
       style={{
         marginTop: "10px",
-        display: "grid",
-        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-        gap: "8px",
         width: "100%",
         maxWidth: "360px",
       }}
     >
-      <select
-        value={selectedZone === "all" ? DEFAULT_ZONE_NAME : selectedZone}
-        onChange={(e) => {
-          window.location.href = homeHref(
-            selectedMarket,
-            selectedPropertyType,
-            selectedSort,
-            selectedDir,
-            e.target.value,
-            "all"
-          );
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gap: "8px",
         }}
-        style={selectStyle}
       >
-        {cleanedZones.map((zone) => (
-          <option key={zone} value={zone}>
-            {zone}
-          </option>
-        ))}
-      </select>
+        <select
+          value={selectedZone === "all" ? DEFAULT_ZONE_NAME : selectedZone}
+          onChange={(e) => {
+            window.location.href = homeHref(
+              selectedMarket,
+              selectedPropertyType,
+              selectedSort,
+              selectedDir,
+              e.target.value,
+              "all"
+            );
+          }}
+          style={selectStyle}
+        >
+          {cleanedZones.map((zone) => (
+            <option key={zone} value={zone}>
+              {zone}
+            </option>
+          ))}
+        </select>
 
-      <select
-        value={selectedArea}
-        onChange={(e) => {
-          window.location.href = homeHref(
-            selectedMarket,
-            selectedPropertyType,
-            selectedSort,
-            selectedDir,
-            selectedZone === "all" ? DEFAULT_ZONE_NAME : selectedZone,
-            e.target.value
-          );
-        }}
-        style={selectStyle}
-      >
-        <option value="all">All Areas</option>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr auto",
+            gap: "4px",
+          }}
+        >
+          <select
+            value={selectedArea}
+            onChange={(e) => {
+              window.location.href = homeHref(
+                selectedMarket,
+                selectedPropertyType,
+                selectedSort,
+                selectedDir,
+                selectedZone === "all" ? DEFAULT_ZONE_NAME : selectedZone,
+                e.target.value
+              );
+            }}
+            style={selectStyle}
+          >
+            <option value="all">All Areas</option>
 
-        {areas.map((area) => (
-          <option key={area} value={area}>
-            {area}
-          </option>
-        ))}
-      </select>
+            {areas.map((area) => (
+              <option key={area} value={area}>
+                {area}
+              </option>
+            ))}
+          </select>
+
+          <AreaGuideModal />
+        </div>
+       </div>
     </div>
   );
 }
