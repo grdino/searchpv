@@ -29,7 +29,7 @@ export default function MainText() {
           whiteSpace: "nowrap",
         }}
       >
-        Inventory, Sales Activity, Pricing & Listing Detail
+        Explore markets, analyze trends, and compare communities.
       </div>
     </div>
   );

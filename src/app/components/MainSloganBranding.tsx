@@ -10,7 +10,7 @@ export default function MarketIntelligenceBranding() {
         whiteSpace: "nowrap",
       }}
     >
-      Puerto Vallarta Market Intelligence
+      Puerto Vallarta Real Estate Analytics
     </p>
   );
 }
