@@ -7,6 +7,7 @@ import Link from "next/link";
 import SPVBranding from "@/app/components/SPVBranding";
 import MainSloganBranding from "@/app/components/MainSloganBranding";
 import MainText from "./components/MainText";
+import Header from "@/app/components/Header";
 
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
@@ -559,7 +560,7 @@ const organizationJsonLd = {
       />
       <section className="bg-slate-950 px-4 py-10 text-white md:px-8 md:py-14">
         <div className="mx-auto max-w-6xl">
-          <SPVBranding />
+          <Header />
           <MainSloganBranding />
           <MainText />
 
