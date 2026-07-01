@@ -3,6 +3,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import PrintButton from "@/app/components/PrintButton";
 import ReportHierarchyFilters from "@/app/components/ReportHierarchyFilters";
+import { buildIdxUrl } from "@/lib/idx";
 
 export const metadata: Metadata = {
   title: "Active Listings Report | SearchPV",
@@ -291,7 +292,20 @@ if (params.zone) {
               {rows.map((row) => (
                 <tr key={`${row.mls}-${row.address}`} className="border-t">
                   <Td className="sticky left-0 z-10 bg-white border-r border-slate-200 font-semibold">
-                    {row.mls}
+                    {row.mls ? (
+                      <a
+                        href={buildIdxUrl(String(row.mls))}
+                        style={{
+                          color: "#0f5d8c",
+                          fontWeight: 700,
+                          textDecoration: "none",
+                        }}
+                      >
+                        {row.mls}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
                   </Td>
                   <Td>{row.address ?? "—"}</Td>
                   <Td>{row.development ?? "—"}</Td>
