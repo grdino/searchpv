@@ -264,8 +264,8 @@ if (params.zone) {
           ← Swipe to see additional columns →
         </p>
 
-        <div className="mt-1 max-h-[70vh] overflow-auto rounded-xl bg-white shadow md:max-h-[65vh]">
-          <table className="min-w-[1350px] text-sm">
+        <div className="report-table-shell mt-1 max-h-[70vh] rounded-xl bg-white shadow md:max-h-[65vh]">
+          <table className="w-max min-w-[1350px] text-sm">
             <thead className="sticky top-0 z-20 bg-slate-100 text-slate-700 shadow-sm">
               <tr>
                 <SortableTh label="MLS" column="mls" params={params} className="sticky left-0 z-30 bg-slate-100" />
@@ -338,6 +338,27 @@ if (params.zone) {
           font-weight: 700;
           color: #26352f;
         }
+        
+        .report-table-shell {
+          width: 100%;
+          max-width: 100%;
+          overflow-x: auto;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        @media (max-width: 700px) {
+          main {
+            padding-left: 10px !important;
+            padding-right: 10px !important;
+          }
+
+          .no-print {
+            max-width: 100%;
+            overflow-x: hidden;
+          }
+        }
+
         @media print {
           .no-print {
             display: none !important;
@@ -549,10 +570,12 @@ const buttonRowStyle = {
 } as const;
 
 const pageStyle = {
+  width: "100%",
   maxWidth: "1500px",
   margin: "0 auto",
-  padding: "28px 18px 60px",
+  padding: "28px 12px 60px",
   color: "#17211b",
+  overflowX: "hidden",
 } as const;
 
 const topBarStyle = {
