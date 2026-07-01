@@ -1,5 +1,7 @@
 "use client";
 
+import AreaGuideModal from "@/app/components/AreaGuideModal";
+
 type SearchParams = {
   zone?: string;
   area?: string;
@@ -68,14 +70,25 @@ export default function ReportHierarchyFilters({
         onChange={(value) => updateFilter("zone", value)}
       />
 
-      <FilterSelect
-        label="Area"
-        value={params.area ?? ""}
-        options={areas}
-        disabled={!params.zone}
-        placeholder={!params.zone ? "Choose Zone First" : "All Areas"}
-        onChange={(value) => updateFilter("area", value)}
-      />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr auto",
+          gap: "6px",
+          alignItems: "end",
+        }}
+      >
+        <FilterSelect
+          label="Area"
+          value={params.area ?? ""}
+          options={areas}
+          disabled={!params.zone}
+          placeholder={!params.zone ? "Choose Zone First" : "All Areas"}
+          onChange={(value) => updateFilter("area", value)}
+        />
+
+
+</div>
 
       <FilterSelect
         label="Community"
@@ -115,7 +128,17 @@ function FilterSelect({
 }) {
   return (
     <label style={labelStyle}>
-      <span style={filterTitleStyle}>{label}</span>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+        }}
+      >
+        <span style={filterTitleStyle}>{label}</span>
+
+        {label === "Area" && <AreaGuideModal />}
+      </div>
 
       <select
         value={value}
