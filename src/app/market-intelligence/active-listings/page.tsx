@@ -25,6 +25,7 @@ type ActiveListing = {
   mls: number | null;
   address: string | null;
   development: string | null;
+  unit_id: string | null;
   beds: number | null;
   baths: number | null;
   sqft: number | null;
@@ -41,6 +42,7 @@ const sortableColumns = new Set([
   "mls",
   "address",
   "development",
+  "unit_id",
   "beds",
   "baths",
   "sqft",
@@ -271,6 +273,7 @@ if (params.zone) {
                 <SortableTh label="MLS" column="mls" params={params} className="sticky left-0 z-30 bg-slate-100" />
                 <SortableTh label="Address" column="address" params={params} />
                 <SortableTh label="Development" column="development" params={params} />
+                <SortableTh label="Unit" column="unit_id" params={params} />
                 <SortableTh label="Beds" column="beds" params={params} align="right" />
                 <SortableTh label="Baths" column="baths" params={params} align="right" />
                 <SortableTh label="SqFt" column="sqft" params={params} align="right" />
@@ -292,6 +295,7 @@ if (params.zone) {
                   </Td>
                   <Td>{row.address ?? "—"}</Td>
                   <Td>{row.development ?? "—"}</Td>
+                  <Td>{row.unit_id ?? "—"}</Td>
                   <Td align="right">{formatNumber(row.beds)}</Td>
                   <Td align="right">{formatNumber(row.baths)}</Td>
                   <Td align="right">{formatNumber(row.sqft)}</Td>
