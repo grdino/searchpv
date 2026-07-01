@@ -9,7 +9,7 @@ export default function Header() {
 
   const navLinks = [
     { label: "Home", href: "/" },
-    { label: "Market Intelligence", href: "/market-intelligence" },
+    { label: "Market Analytics", href: "/market-intelligence" },
     { label: "About", href: "/about" },
   ];
 
