@@ -54,10 +54,9 @@ export default function ReportHierarchyFilters({
     }
 
     const qs = next.toString();
+    const basePath = window.location.pathname;
 
-    window.location.href = qs
-      ? `/market-intelligence/active-listings?${qs}`
-      : "/market-intelligence/active-listings";
+    window.location.href = qs ? `${basePath}?${qs}` : basePath;
   }
 
   return (
@@ -74,7 +73,7 @@ export default function ReportHierarchyFilters({
         value={params.area ?? ""}
         options={areas}
         disabled={!params.zone}
-        placeholder={!params.zone ? "Choose Zone First" : "All"}
+        placeholder={!params.zone ? "Choose Zone First" : "All Areas"}
         onChange={(value) => updateFilter("area", value)}
       />
 
@@ -83,7 +82,7 @@ export default function ReportHierarchyFilters({
         value={params.community ?? ""}
         options={communities}
         disabled={!params.area}
-        placeholder={!params.area ? "Choose Area First" : "All"}
+        placeholder={!params.area ? "Choose Area First" : "All Communities"}
         onChange={(value) => updateFilter("community", value)}
       />
 
@@ -92,7 +91,7 @@ export default function ReportHierarchyFilters({
         value={params.development ?? ""}
         options={developments}
         disabled={!params.community}
-        placeholder={!params.community ? "Choose Community First" : "All"}
+        placeholder={!params.community ? "Choose Community First" : "All Developments"}
         onChange={(value) => updateFilter("development", value)}
       />
     </div>
@@ -115,8 +114,9 @@ function FilterSelect({
   placeholder?: string;
 }) {
   return (
-    <label style={{ display: "grid", gap: "6px" }}>
+    <label style={labelStyle}>
       <span style={filterTitleStyle}>{label}</span>
+
       <select
         value={value}
         disabled={disabled}
@@ -128,6 +128,7 @@ function FilterSelect({
         }}
       >
         <option value="">{placeholder}</option>
+
         {options.map((option) => (
           <option key={option} value={option}>
             {option}
@@ -140,26 +141,30 @@ function FilterSelect({
 
 const locationRowStyle: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(4, minmax(180px, 1fr))",
-  gap: "14px",
-  alignItems: "end",
-  marginBottom: "0",
+  gridTemplateColumns: "repeat(auto-fit, minmax(170px, 190px))",
+  justifyContent: "end",
+  gap: "12px",
+  marginBottom: "16px",
+  width: "100%",
+};
+
+const labelStyle: React.CSSProperties = {
+  display: "grid",
+  gap: "6px",
+  minWidth: 0,
 };
 
 const filterTitleStyle: React.CSSProperties = {
-  display: "block",
-  fontSize: "0.78rem",
+  fontSize: "0.72rem",
   fontWeight: 800,
   textTransform: "uppercase",
   letterSpacing: "0.08em",
-  marginBottom: "2px",
   opacity: 0.7,
-  textAlign: "center",
 };
 
 const selectStyle: React.CSSProperties = {
   width: "100%",
-  height: "42px",
+  minWidth: 0,
   border: "1px solid #c8d8d0",
   borderRadius: "999px",
   padding: "8px 12px",
