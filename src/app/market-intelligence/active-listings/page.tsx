@@ -260,47 +260,53 @@ if (params.zone) {
         Showing <strong>{rows.length}</strong> active listings
       </div>
 
-      <div style={tableWrapStyle}>
-        <table style={tableStyle}>
-          <thead>
-            <tr>
-              <SortableTh label="MLS" column="mls" params={params} />
-              <SortableTh label="Address" column="address" params={params} />
-              <SortableTh label="Development" column="development" params={params} />
-              <SortableTh label="Beds" column="beds" params={params} align="right" />
-              <SortableTh label="Baths" column="baths" params={params} align="right" />
-              <SortableTh label="SqFt" column="sqft" params={params} align="right" />
-              <SortableTh label="m²" column="sqm" params={params} align="right" />
-              <SortableTh label="Original Price" column="original_price" params={params} align="right" />
-              <SortableTh label="Current Price" column="current_price" params={params} align="right" />
-              <SortableTh label="Price Chg #" column="price_changes" params={params} align="right" />
-              <SortableTh label="Price Chg $" column="total_reduction" params={params} align="right" />
-              <SortableTh label="Price Chg %" column="reduction_percent" params={params} align="right" />
-              <SortableTh label="DOM" column="dom" params={params} align="right" />
-            </tr>
-          </thead>
+      <p className="mt-2 text-xs text-slate-500 md:hidden">
+          ← Swipe to see additional columns →
+        </p>
 
-          <tbody>
-            {rows.map((row) => (
-              <tr key={`${row.mls}-${row.address}`}>
-                <td style={tdStyle}>{row.mls}</td>
-                <td style={tdStyle}>{row.address ?? "—"}</td>
-                <td style={tdStyle}>{row.development ?? "—"}</td>
-                <td style={tdRightStyle}>{formatNumber(row.beds)}</td>
-                <td style={tdRightStyle}>{formatNumber(row.baths)}</td>
-                <td style={tdRightStyle}>{formatNumber(row.sqft)}</td>
-                <td style={tdRightStyle}>{formatNumber(row.sqm)}</td>
-                <td style={tdRightStyle}>{formatCurrency(row.original_price)}</td>
-                <td style={tdRightStyle}>{formatCurrency(row.current_price)}</td>
-                <td style={tdRightStyle}>{formatNumber(row.price_changes)}</td>
-                <td style={tdRightStyle}>{formatCurrency(row.total_reduction)}</td>
-                <td style={tdRightStyle}>{formatPercent(row.reduction_percent)}</td>
-                <td style={tdRightStyle}>{formatNumber(row.dom)}</td>
+        <div className="mt-1 max-h-[70vh] overflow-auto rounded-xl bg-white shadow md:max-h-[65vh]">
+          <table className="min-w-[1350px] text-sm">
+            <thead className="sticky top-0 z-20 bg-slate-100 text-slate-700 shadow-sm">
+              <tr>
+                <SortableTh label="MLS" column="mls" params={params} className="sticky left-0 z-30 bg-slate-100" />
+                <SortableTh label="Address" column="address" params={params} />
+                <SortableTh label="Development" column="development" params={params} />
+                <SortableTh label="Beds" column="beds" params={params} align="right" />
+                <SortableTh label="Baths" column="baths" params={params} align="right" />
+                <SortableTh label="SqFt" column="sqft" params={params} align="right" />
+                <SortableTh label="m²" column="sqm" params={params} align="right" />
+                <SortableTh label="Original Price" column="original_price" params={params} align="right" />
+                <SortableTh label="Current Price" column="current_price" params={params} align="right" />
+                <SortableTh label="Price Chg #" column="price_changes" params={params} align="right" />
+                <SortableTh label="Price Chg $" column="total_reduction" params={params} align="right" />
+                <SortableTh label="Price Chg %" column="reduction_percent" params={params} align="right" />
+                <SortableTh label="DOM" column="dom" params={params} align="right" />
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+
+            <tbody>
+              {rows.map((row) => (
+                <tr key={`${row.mls}-${row.address}`} className="border-t">
+                  <Td className="sticky left-0 z-10 bg-white border-r border-slate-200 font-semibold">
+                    {row.mls}
+                  </Td>
+                  <Td>{row.address ?? "—"}</Td>
+                  <Td>{row.development ?? "—"}</Td>
+                  <Td align="right">{formatNumber(row.beds)}</Td>
+                  <Td align="right">{formatNumber(row.baths)}</Td>
+                  <Td align="right">{formatNumber(row.sqft)}</Td>
+                  <Td align="right">{formatNumber(row.sqm)}</Td>
+                  <Td align="right">{formatCurrency(row.original_price)}</Td>
+                  <Td align="right">{formatCurrency(row.current_price)}</Td>
+                  <Td align="right">{formatNumber(row.price_changes)}</Td>
+                  <Td align="right">{formatCurrency(row.total_reduction)}</Td>
+                  <Td align="right">{formatPercent(row.reduction_percent)}</Td>
+                  <Td align="right">{formatNumber(row.dom)}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
       <style>{`
         .report-hierarchy-shell {
@@ -364,29 +370,55 @@ function SortableTh({
   column,
   params,
   align = "left",
+  className = "",
 }: {
   label: string;
   column: string;
   params: SearchParams;
   align?: "left" | "right";
+  className?: string;
 }) {
   const currentSort = params.sort ?? "current_price";
   const currentDir = params.dir ?? "desc";
   const isCurrent = currentSort === column;
 
   const nextDir = isCurrent && currentDir === "asc" ? "desc" : "asc";
-  const arrow = isCurrent ? (currentDir === "asc" ? " ↑" : " ↓") : "";
+  const arrow = isCurrent ? (currentDir === "asc" ? " ▲" : " ▼") : "";
 
   return (
-    <th style={{ ...thStyle, textAlign: align }}>
+    <th
+      className={`whitespace-nowrap px-3 py-2 text-xs font-bold uppercase tracking-wide ${
+        align === "right" ? "text-right" : "text-left"
+      } ${className}`}
+    >
       <Link
         href={buildHref(params, { sort: column, dir: nextDir })}
-        style={thLinkStyle}
+        className="text-slate-700 no-underline"
       >
         {label}
         {arrow}
       </Link>
     </th>
+  );
+}
+
+function Td({
+  children,
+  align = "left",
+  className = "",
+}: {
+  children: React.ReactNode;
+  align?: "left" | "right";
+  className?: string;
+}) {
+  return (
+    <td
+      className={`whitespace-nowrap px-3 py-2 align-top text-slate-700 ${
+        align === "right" ? "text-right" : "text-left"
+      } ${className}`}
+    >
+      {children}
+    </td>
   );
 }
 
@@ -609,48 +641,6 @@ const summaryStyle = {
   fontSize: "0.95rem",
   opacity: 0.8,
 } as const;
-
-const tableWrapStyle = {
-  overflowX: "auto",
-  border: "1px solid #dde8e2",
-  borderRadius: "16px",
-} as const;
-
-const tableStyle = {
-  width: "100%",
-  borderCollapse: "collapse",
-  minWidth: "1250px",
-  background: "#ffffff",
-} as const;
-
-const thStyle = {
-  padding: "10px",
-  borderBottom: "1px solid #dde8e2",
-  background: "#f7faf8",
-  fontSize: "0.78rem",
-  textTransform: "uppercase",
-  letterSpacing: "0.04em",
-  whiteSpace: "nowrap",
-} as const;
-
-const thLinkStyle = {
-  color: "#17211b",
-  textDecoration: "none",
-} as const;
-
-const tdStyle = {
-  padding: "9px 10px",
-  borderBottom: "1px solid #eef3f0",
-  fontSize: "0.9rem",
-  verticalAlign: "top",
-} as const;
-
-const tdRightStyle = {
-  ...tdStyle,
-  textAlign: "right",
-  whiteSpace: "nowrap",
-} as const;
-
 
 const buttonFilterTitleStyle = {
   ...filterTitleStyle,
