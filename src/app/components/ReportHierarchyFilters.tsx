@@ -142,7 +142,7 @@ function FilterSelect({
 const locationRowStyle: React.CSSProperties = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(170px, 190px))",
-  justifyContent: "end",
+  justifyContent: "start",
   gap: "12px",
   marginBottom: "16px",
   width: "100%",
@@ -173,3 +173,4 @@ const selectStyle: React.CSSProperties = {
   fontSize: "0.85rem",
   fontWeight: 700,
 };
+

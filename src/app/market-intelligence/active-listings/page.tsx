@@ -208,7 +208,7 @@ if (params.zone) {
       <section className="no-print" style={filterBoxStyle}>
 
 
-        <div style={buttonRowStyle}>
+        <div className="report-filter-buttons" style={buttonRowStyle}>
           <FilterGroup
             title="Property Type"
             paramName="propertyType"
@@ -331,6 +331,27 @@ if (params.zone) {
            }
         }
 
+        @media (max-width: 700px) {
+          .report-filter-buttons {
+            grid-template-columns: 1fr !important;
+            gap: 18px !important;
+          }
+
+          .report-filter-group-row {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            gap: 6px !important;
+            width: 100%;
+          }
+
+          .report-filter-button {
+            padding: 7px 9px !important;
+            font-size: 0.78rem !important;
+            white-space: nowrap !important;
+            flex: 1 1 auto;
+          }
+        }
+
         @media print {
           .no-print {
             display: none !important;
@@ -431,7 +452,7 @@ function FilterGroup({
   return (
   <div style={{ textAlign: "center" }}>
       <div style={buttonFilterTitleStyle}>{title}</div>
-      <div style={filterRowStyle}>
+      <div className="report-filter-group-row" style={filterRowStyle}>
         {options.map((option) => (
           <FilterLink
             key={option.label}
@@ -483,6 +504,7 @@ function FilterLink({
   return (
     <Link
       href={buildHref(params, set ?? {})}
+      className="report-filter-button"
       style={active ? selectedFilterStyle : filterLinkStyle}
     >
       {label}
@@ -535,7 +557,7 @@ function formatPercent(value: number | null) {
 
 const buttonRowStyle = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
   gap: "18px",
   alignItems: "start",
   marginBottom: "24px",
