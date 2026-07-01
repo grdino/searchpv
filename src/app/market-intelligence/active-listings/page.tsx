@@ -308,36 +308,13 @@ if (params.zone) {
           </table>
         </div>
 
-      <style>{`
-        .report-hierarchy-shell {
-          margin-top: 26px;
-          padding-top: 22px;
-          border-top: 1px solid #dde8e2;
-        }
-
-        .report-hierarchy-shell > * {
-          display: grid !important;
-          grid-template-columns: repeat(4, minmax(180px, 1fr)) !important;
-          gap: 14px !important;
-          align-items: end !important;
-          width: 100% !important;
-        }
-
-        .report-hierarchy-shell label,
-        .report-hierarchy-shell div {
-          text-align: left;
-        }
-
-        .report-hierarchy-shell select {
-          width: 100%;
-          height: 42px;
-          border-radius: 999px;
-          border: 1px solid #c8d8d0;
-          background: white;
-          padding: 0 14px;
-          font-weight: 700;
-          color: #26352f;
-        }
+      <style>{`.report-hierarchy-shell {
+        margin-top: 20px;
+        padding-top: 18px;
+        border-top: 1px solid #dde8e2;
+        width: 100%;
+        max-width: 100%;
+      }
         
         .report-table-shell {
           width: 100%;
@@ -351,12 +328,7 @@ if (params.zone) {
           main {
             padding-left: 10px !important;
             padding-right: 10px !important;
-          }
-
-          .no-print {
-            max-width: 100%;
-            overflow-x: hidden;
-          }
+           }
         }
 
         @media print {
@@ -563,7 +535,7 @@ function formatPercent(value: number | null) {
 
 const buttonRowStyle = {
   display: "grid",
-  gridTemplateColumns: "repeat(3, minmax(220px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
   gap: "18px",
   alignItems: "start",
   marginBottom: "24px",
@@ -575,7 +547,6 @@ const pageStyle = {
   margin: "0 auto",
   padding: "28px 12px 60px",
   color: "#17211b",
-  overflowX: "hidden",
 } as const;
 
 const topBarStyle = {
