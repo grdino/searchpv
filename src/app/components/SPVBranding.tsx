@@ -23,10 +23,10 @@ export default function SPVBranding({
       >
         <h1
           style={{
-            margin: 0,
-            fontWeight: 700,
-            fontSize: "clamp(32px, 8vw, 56px)",
-            lineHeight: 1,
+            width: "clamp(18px, 3vw, 30px)",
+            height: "clamp(18px, 3vw, 30px)",
+            objectFit: "contain",
+            marginTop: "2px",
             cursor: "pointer",
           }}
         >
@@ -53,8 +53,8 @@ export default function SPVBranding({
             height={32}
             priority
             style={{
-              width: "clamp(20px, 4vw, 32px)",
-              height: "clamp(20px, 4vw, 32px)",
+              width: "clamp(18px, 3vw, 30px)",
+              height: "clamp(22px, 3.5vw, 36px)",
               objectFit: "contain",
               marginTop: "2px",
               cursor: "pointer",
@@ -73,7 +73,7 @@ export default function SPVBranding({
                   justifyContent: "center",
                   background: "#020617",
                   borderRadius: "8px",
-                  padding: "3px 6px",
+                  padding: "2px 4px",
                 }
               : {
                   display: "flex",
@@ -87,8 +87,8 @@ export default function SPVBranding({
             height={40}
             priority
             style={{
-              width: "clamp(25px, 4vw, 32px)",
-              height: "clamp(25px, 4vw, 40px)",
+              width: "clamp(18px, 3vw, 30px)",
+              height: "clamp(22px, 3.5vw, 36px)",
               objectFit: "contain",
               marginTop: "2px",
               cursor: "pointer",
