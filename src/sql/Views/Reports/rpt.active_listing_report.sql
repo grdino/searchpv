@@ -78,21 +78,21 @@ select
     case
         when s.orgnl_list_prc_am is not null
          and s.snap_list_prc_am is not null
-        then s.orgnl_list_prc_am - s.snap_list_prc_am
+        then s.snap_list_prc_am - s.orgnl_list_prc_am
         else null
-    end                           as total_reduction,
+    end                           as price_change_amount,
 
     case
         when s.orgnl_list_prc_am > 0
         then round(
             (
-                (s.orgnl_list_prc_am - s.snap_list_prc_am)
+                (s.snap_list_prc_am - s.orgnl_list_prc_am)
                 / s.orgnl_list_prc_am
             ) * 100,
             2
         )
         else null
-    end                           as reduction_percent,
+    end                           as price_change_percent,
 
     s.prc_ft2_qt                  as price_per_sqft,
     s.prc_m2_qt                   as price_per_sqm,

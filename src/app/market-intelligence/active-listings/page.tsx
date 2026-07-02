@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import PrintButton from "@/app/components/PrintButton";
+import ReportExportButtons from "@/app/components/ReportExportButtons";
 import ReportHierarchyFilters from "@/app/components/ReportHierarchyFilters";
 import { buildIdxUrl } from "@/lib/idx";
+import SPVBranding from "@/app/components/SPVBranding";
+import HamburgerMenu from "@/app/components/HamburgerMenu";
 
 export const metadata: Metadata = {
   title: "Active Listings Report | SearchPV",
@@ -24,9 +26,9 @@ type SearchParams = {
 
 type ActiveListing = {
   mls: number | null;
-  address: string | null;
   development: string | null;
   unit_id: string | null;
+  address: string | null;
   beds: number | null;
   baths: number | null;
   sqft: number | null;
@@ -34,16 +36,16 @@ type ActiveListing = {
   original_price: number | null;
   current_price: number | null;
   price_changes: number | null;
-  total_reduction: number | null;
-  reduction_percent: number | null;
+  price_change_amount: number | null;
+  price_change_percent: number | null;
   dom: number | null;
 };
 
 const sortableColumns = new Set([
   "mls",
-  "address",
   "development",
   "unit_id",
+  "address",
   "beds",
   "baths",
   "sqft",
@@ -51,8 +53,8 @@ const sortableColumns = new Set([
   "original_price",
   "current_price",
   "price_changes",
-  "total_reduction",
-  "reduction_percent",
+  "price_change_amount",
+  "price_change_percent",
   "dom",
 ]);
 
@@ -192,13 +194,29 @@ if (params.zone) {
 
   return (
     <main style={pageStyle}>
-      <div className="no-print" style={topBarStyle}>
-        <Link href="/market-intelligence" style={backLinkStyle}>
-          ← Back to Market Intelligence
-        </Link>
+      <div
+        className="no-print"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: "24px",
+        }}
+      >
+        <SPVBranding rmpBadge />
 
-        <PrintButton />
-      </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: "12px",
+          }}
+        >
+    <HamburgerMenu />
+    <ReportExportButtons />
+  </div>
+</div>
 
       <section style={{ marginBottom: "24px" }}>
         <p style={eyebrowStyle}>SearchPV Report</p>
@@ -275,9 +293,9 @@ if (params.zone) {
             <thead className="sticky top-0 z-20 bg-slate-100 text-slate-700 shadow-sm">
               <tr>
                 <SortableTh label="MLS" column="mls" params={params} className="sticky left-0 z-30 bg-slate-100" />
-                <SortableTh label="Address" column="address" params={params} />
                 <SortableTh label="Development" column="development" params={params} />
                 <SortableTh label="Unit" column="unit_id" params={params} />
+                <SortableTh label="Address" column="address" params={params} />
                 <SortableTh label="Beds" column="beds" params={params} align="right" />
                 <SortableTh label="Baths" column="baths" params={params} align="right" />
                 <SortableTh label="SqFt" column="sqft" params={params} align="right" />
@@ -285,8 +303,8 @@ if (params.zone) {
                 <SortableTh label="Original Price" column="original_price" params={params} align="right" />
                 <SortableTh label="Current Price" column="current_price" params={params} align="right" />
                 <SortableTh label="Price Chg #" column="price_changes" params={params} align="right" />
-                <SortableTh label="Price Chg $" column="total_reduction" params={params} align="right" />
-                <SortableTh label="Price Chg %" column="reduction_percent" params={params} align="right" />
+                <SortableTh label="Price Chg $" column="price_change_amount" params={params} align="right" />
+                <SortableTh label="Price Chg %" column="price_change_percent" params={params} align="right" />
                 <SortableTh label="DOM" column="dom" params={params} align="right" />
               </tr>
             </thead>
@@ -310,9 +328,9 @@ if (params.zone) {
                       "—"
                     )}
                   </Td>
-                  <Td>{row.address ?? "—"}</Td>
                   <Td>{row.development ?? "—"}</Td>
                   <Td>{row.unit_id ?? "—"}</Td>
+                  <Td>{row.address ?? "—"}</Td>
                   <Td align="right">{formatNumber(row.beds)}</Td>
                   <Td align="right">{formatNumber(row.baths)}</Td>
                   <Td align="right">{formatNumber(row.sqft)}</Td>
@@ -320,8 +338,8 @@ if (params.zone) {
                   <Td align="right">{formatCurrency(row.original_price)}</Td>
                   <Td align="right">{formatCurrency(row.current_price)}</Td>
                   <Td align="right">{formatNumber(row.price_changes)}</Td>
-                  <Td align="right">{formatCurrency(row.total_reduction)}</Td>
-                  <Td align="right">{formatPercent(row.reduction_percent)}</Td>
+                  <Td align="right">{formatCurrency(row.price_change_amount)}</Td>
+                  <Td align="right">{formatPercent(row.price_change_percent)}</Td>
                   <Td align="right">{formatNumber(row.dom)}</Td>
                 </tr>
               ))}
@@ -598,12 +616,6 @@ const topBarStyle = {
   alignItems: "center",
   gap: "12px",
   marginBottom: "24px",
-} as const;
-
-const backLinkStyle = {
-  color: "#2f5d50",
-  textDecoration: "none",
-  fontWeight: 600,
 } as const;
 
 const eyebrowStyle = {

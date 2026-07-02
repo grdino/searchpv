@@ -1,7 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 
-export default function SPVBranding() {
+export default function SPVBranding({
+  rmpBadge = false,
+}: {
+  rmpBadge?: boolean;
+}) {
   return (
     <div
       style={{
@@ -61,7 +65,20 @@ export default function SPVBranding() {
         <a
           href="https://ronmorgan.net"
           aria-label="Ron Morgan Properties"
-          style={{ display: "flex" }}
+          style={
+            rmpBadge
+              ? {
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "#020617",
+                  borderRadius: "8px",
+                  padding: "3px 6px",
+                }
+              : {
+                  display: "flex",
+                }
+          }
         >
           <Image
             src="/rmp_logo_white.png"
