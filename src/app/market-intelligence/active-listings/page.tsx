@@ -26,6 +26,7 @@ type SearchParams = {
 
 type ActiveListing = {
   mls: number | null;
+  data_current_as_of: string | null;
   development: string | null;
   unit_id: string | null;
   address: string | null;
@@ -192,6 +193,9 @@ if (params.zone) {
 
   const rows = (data ?? []) as ActiveListing[];
 
+  const reportGeneratedAt = formatDateTime(new Date().toISOString());
+  const dataCurrentAsOf = formatDateTime(rows[0]?.data_current_as_of ?? null);
+
   return (
     <main style={pageStyle}>
       <div className="no-print report-topbar" style={{ marginBottom: "24px" }}>
@@ -227,6 +231,18 @@ if (params.zone) {
         <p style={subtitleStyle}>
           Current active listings with sortable pricing, size, reduction and DOM.
         </p>
+
+        <div style={reportMetaStyle}>
+          <div>
+            <div style={metaLabelStyle}>Data Current As Of</div>
+            <div style={metaValueStyle}>{dataCurrentAsOf}</div>
+          </div>
+
+          <div>
+            <div style={metaLabelStyle}>Report Generated</div>
+            <div style={metaValueStyle}>{reportGeneratedAt}</div>
+          </div>
+        </div>
       </section>
 
       <section
@@ -604,6 +620,19 @@ function formatPercent(value: number | null) {
   })}%`;
 }
 
+function formatDateTime(value: string | null) {
+  if (!value) return "Not available";
+
+  return new Date(value).toLocaleString("en-US", {
+    timeZone: "America/Mexico_City",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 const buttonRowStyle = {
   display: "grid",
   gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
@@ -704,4 +733,26 @@ const summaryStyle = {
 const buttonFilterTitleStyle = {
   ...filterTitleStyle,
   textAlign: "center",
+} as const;
+
+const reportMetaStyle = {
+  marginTop: "14px",
+  display: "flex",
+  gap: "28px",
+  flexWrap: "wrap",
+} as const;
+
+const metaLabelStyle = {
+  fontSize: "0.72rem",
+  fontWeight: 800,
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+  opacity: 0.65,
+} as const;
+
+const metaValueStyle = {
+  marginTop: "3px",
+  fontSize: "0.92rem",
+  fontWeight: 700,
+  color: "#17211b",
 } as const;

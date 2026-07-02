@@ -6,25 +6,60 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const rows = await getRows(searchParams);
 
+  const reportGeneratedAt = formatDateTime(new Date().toISOString());
+  const dataCurrentAsOf = formatDateTime(rows[0]?.data_current_as_of ?? null);
+
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Active Listings");
 
   sheet.columns = [
-    { header: "MLS", key: "mls", width: 12 },
-    { header: "Development", key: "development", width: 24 },
-    { header: "Unit", key: "unit_id", width: 12 },
-    { header: "Address", key: "address", width: 32 },
-    { header: "Beds", key: "beds", width: 10 },
-    { header: "Baths", key: "baths", width: 10 },
-    { header: "SqFt", key: "sqft", width: 12 },
-    { header: "m²", key: "sqm", width: 12 },
-    { header: "Original Price", key: "original_price", width: 16 },
-    { header: "Current Price", key: "current_price", width: 16 },
-    { header: "Price Chg #", key: "price_changes", width: 12 },
-    { header: "Price Chg $", key: "price_change_amount", width: 16 },
-    { header: "Price Chg %", key: "price_change_percent", width: 14 },
-    { header: "DOM", key: "dom", width: 10 },
+    { key: "mls", width: 12 },
+    { key: "development", width: 24 },
+    { key: "unit_id", width: 12 },
+    { key: "address", width: 32 },
+    { key: "beds", width: 10 },
+    { key: "baths", width: 10 },
+    { key: "sqft", width: 12 },
+    { key: "sqm", width: 12 },
+    { key: "original_price", width: 16 },
+    { key: "current_price", width: 16 },
+    { key: "price_changes", width: 12 },
+    { key: "price_change_amount", width: 16 },
+    { key: "price_change_percent", width: 14 },
+    { key: "dom", width: 10 },
   ];
+
+  sheet.mergeCells("A1:N1");
+  sheet.getCell("A1").value = "SearchPV Active Listings Report";
+
+  sheet.mergeCells("A2:N2");
+  sheet.getCell("A2").value =
+    "Current active listings with sortable pricing, size, price changes and DOM.";
+
+  sheet.mergeCells("A3:N3");
+  sheet.getCell("A3").value = `Data Current As Of: ${dataCurrentAsOf}`;
+
+  sheet.mergeCells("A4:N4");
+  sheet.getCell("A4").value = `Report Generated: ${reportGeneratedAt}`;
+
+  sheet.addRow([]);
+
+  sheet.addRow([
+    "MLS",
+    "Development",
+    "Unit",
+    "Address",
+    "Beds",
+    "Baths",
+    "SqFt",
+    "m²",
+    "Original Price",
+    "Current Price",
+    "Price Chg #",
+    "Price Chg $",
+    "Price Chg %",
+    "DOM",
+  ]);
 
   sheet.addRows(
     rows.map((row) => ({
@@ -36,8 +71,13 @@ export async function GET(request: Request) {
     }))
   );
 
-  sheet.getRow(1).font = { bold: true };
-  sheet.views = [{ state: "frozen", ySplit: 1 }];
+  sheet.getCell("A1").font = { bold: true, size: 16 };
+  sheet.getCell("A2").font = { italic: true };
+  sheet.getCell("A3").font = { bold: true };
+  sheet.getCell("A4").font = { bold: true };
+  sheet.getRow(6).font = { bold: true };
+
+  sheet.views = [{ state: "frozen", ySplit: 6 }];
 
   ["I", "J", "L"].forEach((col) => {
     sheet.getColumn(col).numFmt = "$#,##0;[Red]-$#,##0";
@@ -47,7 +87,7 @@ export async function GET(request: Request) {
 
   const buffer = await workbook.xlsx.writeBuffer();
 
-  return new NextResponse(buffer, {
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -93,4 +133,17 @@ function applyFilters(query: any, searchParams: URLSearchParams) {
   if (beds === "1") query.eq("beds", 1);
   if (beds === "2") query.eq("beds", 2);
   if (beds === "3plus") query.gte("beds", 3);
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) return "Not available";
+
+  return new Date(value).toLocaleString("en-US", {
+    timeZone: "America/Mexico_City",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }

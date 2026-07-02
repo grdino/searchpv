@@ -6,6 +6,9 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const rows = await getRows(searchParams);
 
+  const reportGeneratedAt = formatDateTime(new Date().toISOString());
+  const dataCurrentAsOf = formatDateTime(rows[0]?.data_current_as_of ?? null);
+
   const doc = new PDFDocument({
     size: "LETTER",
     layout: "landscape",
@@ -18,10 +21,18 @@ export async function GET(request: Request) {
   doc.on("end", () => {});
 
   doc.fontSize(18).text("SearchPV Active Listings Report");
-  doc.moveDown(0.4);
-  doc.fontSize(9).text(`Generated: ${new Date().toLocaleDateString("en-US")}`);
-  doc.moveDown(0.8);
+  doc.moveDown(0.35);
 
+  doc
+    .fontSize(9)
+    .text("Current active listings with sortable pricing, size, price changes and DOM.");
+
+  doc.moveDown(0.4);
+
+doc.fontSize(9).text(`Data Current As Of: ${dataCurrentAsOf}`);
+doc.fontSize(9).text(`Report Generated: ${reportGeneratedAt}`);
+
+doc.moveDown(0.8);
   const headers = [
     "MLS",
     "Development",
@@ -176,4 +187,17 @@ function formatPercent(value: number | null) {
   return `${Number(value).toLocaleString("en-US", {
     maximumFractionDigits: 2,
   })}%`;
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) return "Not available";
+
+  return new Date(value).toLocaleString("en-US", {
+    timeZone: "America/Mexico_City",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
