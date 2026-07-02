@@ -194,30 +194,32 @@ if (params.zone) {
 
   return (
     <main style={pageStyle}>
-      <div
-        className="no-print report-topbar"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: "24px",
-        }}
-      >
-        <SPVBranding rmpBadge />
+      <div className="no-print report-topbar" style={{ marginBottom: "24px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            width: "100%",
+            gap: "12px",
+          }}
+        >
+          <SPVBranding rmpBadge />
+          <HamburgerMenu />
+        </div>
 
         <div
           className="report-topbar-actions"
           style={{
             display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-end",
-            gap: "12px",
+            justifyContent: "flex-end",
+            marginTop: "12px",
+            width: "100%",
           }}
         >
-    <HamburgerMenu />
-    <ReportExportButtons />
-  </div>
-</div>
+          <ReportExportButtons />
+        </div>
+      </div>
 
       <section style={{ marginBottom: "24px" }}>
         <p style={eyebrowStyle}>SearchPV Report</p>
@@ -365,15 +367,9 @@ if (params.zone) {
         }
 
         @media (max-width: 700px) {
-          .report-topbar {
-            flex-direction: column !important;
-            align-items: stretch !important;
-            gap: 14px !important;
-          }
-
           .report-topbar-actions {
             width: 100% !important;
-            align-items: stretch !important;
+            justify-content: stretch !important;
           }
         }
 
