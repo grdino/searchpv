@@ -510,24 +510,15 @@ const organizationJsonLd = {
           },
           ...communities.map((community) => ({
             label: community.community_name,
-            href:
-              community.zone_slug && community.area_slug
-                ? communityHref(
-                    community.zone_slug,
-                    community.area_slug,
-                    community.community_slug,
-                    selectedMarket,
-                    selectedPropertyType
-                  )
-                : homeHref(
-                    selectedMarket,
-                    selectedPropertyType,
-                    selectedSort,
-                    selectedDir,
-                    selectedZone,
-                    selectedArea,
-                    community.community_slug
-                  ),
+            href: homeHref(
+              selectedMarket,
+              selectedPropertyType,
+              selectedSort,
+              selectedDir,
+              selectedZone,
+              selectedArea,
+              community.community_slug
+            ),
           })),
         ];
 

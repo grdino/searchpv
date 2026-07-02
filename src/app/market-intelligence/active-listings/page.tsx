@@ -208,8 +208,11 @@ if (params.zone) {
         </p>
       </section>
 
-      <section className="no-print" style={filterBoxStyle}>
-
+      <section
+        id="active-listings-report"
+        className="no-print"
+        style={filterBoxStyle}
+      >
 
         <div className="report-filter-buttons" style={buttonRowStyle}>
           <FilterGroup
@@ -543,8 +546,8 @@ function buildHref(params: SearchParams, updates: Partial<SearchParams>) {
   const qs = next.toString();
 
   return qs
-  ? `/market-intelligence/active-listings?${qs}`
-  : "/market-intelligence/active-listings";
+    ? `/market-intelligence/active-listings?${qs}#active-listings-report`
+    : "/market-intelligence/active-listings#active-listings-report";
 }
 
 function formatCurrency(value: number | null) {

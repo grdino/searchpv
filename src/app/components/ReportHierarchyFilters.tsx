@@ -58,7 +58,9 @@ export default function ReportHierarchyFilters({
     const qs = next.toString();
     const basePath = window.location.pathname;
 
-    window.location.href = qs ? `${basePath}?${qs}` : basePath;
+    window.location.href = qs
+      ? `${basePath}?${qs}#active-listings-report`
+      : `${basePath}#active-listings-report`;
   }
 
   return (
