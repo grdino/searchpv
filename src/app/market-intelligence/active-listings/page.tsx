@@ -195,7 +195,7 @@ if (params.zone) {
   return (
     <main style={pageStyle}>
       <div
-        className="no-print"
+        className="no-print report-topbar"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -206,6 +206,7 @@ if (params.zone) {
         <SPVBranding rmpBadge />
 
         <div
+          className="report-topbar-actions"
           style={{
             display: "flex",
             flexDirection: "column",
@@ -361,6 +362,19 @@ if (params.zone) {
           overflow-x: auto;
           overflow-y: auto;
           -webkit-overflow-scrolling: touch;
+        }
+
+        @media (max-width: 700px) {
+          .report-topbar {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 14px !important;
+          }
+
+          .report-topbar-actions {
+            width: 100% !important;
+            align-items: stretch !important;
+          }
         }
 
         @media (max-width: 700px) {
