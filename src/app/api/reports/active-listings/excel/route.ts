@@ -26,7 +26,15 @@ export async function GET(request: Request) {
     { header: "DOM", key: "dom", width: 10 },
   ];
 
-  sheet.addRows(rows);
+  sheet.addRows(
+    rows.map((row) => ({
+      ...row,
+      price_change_percent:
+        row.price_change_percent == null
+          ? null
+          : Number(row.price_change_percent) / 100,
+    }))
+  );
 
   sheet.getRow(1).font = { bold: true };
   sheet.views = [{ state: "frozen", ySplit: 1 }];
