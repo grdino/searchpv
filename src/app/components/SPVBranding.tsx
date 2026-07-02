@@ -23,10 +23,10 @@ export default function SPVBranding({
       >
         <h1
           style={{
-            width: "clamp(18px, 3vw, 30px)",
-            height: "clamp(18px, 3vw, 30px)",
-            objectFit: "contain",
-            marginTop: "2px",
+            margin: 0,
+            fontWeight: 700,
+            fontSize: "clamp(32px, 8vw, 56px)",
+            lineHeight: 1,
             cursor: "pointer",
           }}
         >
@@ -54,7 +54,7 @@ export default function SPVBranding({
             priority
             style={{
               width: "clamp(18px, 3vw, 30px)",
-              height: "clamp(22px, 3.5vw, 36px)",
+              height: "clamp(18px, 3vw, 30px)",
               objectFit: "contain",
               marginTop: "2px",
               cursor: "pointer",
