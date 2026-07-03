@@ -27,6 +27,7 @@ export default function ReportHierarchyFilters({
   areas: string[];
   communities: string[];
   developments: string[];
+  anchor?: string;
 }) {
   function updateFilter(key: keyof SearchParams, value: string) {
     const next = new URLSearchParams();
