@@ -158,7 +158,7 @@ if (params.zone) {
 
   let query = supabase
     .from("active_listing")
-    .select("*")
+    .select("*", { count: "exact" })
     .order(sort, { ascending: dir === "asc" });
 
     if (params.zone) query = query.eq("zone_name", params.zone);
@@ -187,12 +187,7 @@ if (params.zone) {
     for (let from = 0; from < 5000; from += pageSize) {
       const to = from + pageSize - 1;
 
-      const selectedQuery =
-        from === 0
-          ? query.select("*", { count: "exact" })
-          : query.select("*");
-
-      const { data, error, count } = await selectedQuery.range(from, to);
+      const { data, error, count } = await query.range(from, to);
 
       if (error) {
         fetchError = error.message;
