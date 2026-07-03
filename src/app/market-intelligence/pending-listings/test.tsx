@@ -8,12 +8,12 @@ import SPVBranding from "@/app/components/SPVBranding";
 import HamburgerMenu from "@/app/components/HamburgerMenu";
 
 export const metadata: Metadata = {
-  title: "Active Listings Report | SearchPV",
-  description: "Sortable active listings report for Puerto Vallarta real estate.",
+  title: "Pending Listings Report | SearchPV",
+  description: "Sortable pending listings report for Puerto Vallarta real estate.",
 };
 
 type SearchParams = {
-  zone?: string;  
+  zone?: string;
   area?: string;
   community?: string;
   development?: string;
@@ -24,7 +24,7 @@ type SearchParams = {
   dir?: "asc" | "desc";
 };
 
-type ActiveListing = {
+type PendignListing = {
   mls: number | null;
   data_current_as_of: string | null;
   development: string | null;
@@ -59,7 +59,7 @@ const sortableColumns = new Set([
   "dom",
 ]);
 
-export default async function ActiveListingsReportPage({
+export default async function PendingListingsReportPage({
   searchParams,
 }: {
   searchParams: Promise<SearchParams>;
@@ -67,7 +67,7 @@ export default async function ActiveListingsReportPage({
   const params = await searchParams;
 
   let zoneQuery = supabase
-  .from("active_listing")
+  .from("pending_listing")
   .select("zone_name");
 
 if (params.propertyType) {
@@ -85,7 +85,7 @@ let areaRows: { area_name: string | null }[] | null = [];
 
 if (params.zone) {
   let areaQuery = supabase
-    .from("active_listing")
+    .from("pending_listing")
     .select("area_name")
     .eq("zone_name", params.zone);
 
@@ -107,7 +107,7 @@ if (params.zone) {
 
   if (params.zone && params.area) {
     let communityQuery = supabase
-      .from("active_listing")
+      .from("pending_listing")
       .select("community_name")
       .eq("zone_name", params.zone)
       .eq("area_name", params.area);
@@ -130,7 +130,7 @@ if (params.zone) {
 
   if (params.zone && params.area && params.community) {
     let developmentQuery = supabase
-      .from("active_listing")
+      .from("pending_listing")
       .select("development_name")
       .eq("zone_name", params.zone)
       .eq("area_name", params.area)
@@ -157,7 +157,7 @@ if (params.zone) {
   const dir = params.dir === "asc" ? "asc" : "desc";
 
   let query = supabase
-    .from("active_listing")
+    .from("pending_listing")
     .select("*")
     .order(sort, { ascending: dir === "asc" });
 
@@ -179,48 +179,19 @@ if (params.zone) {
   if (params.beds === "2") query = query.eq("beds", 2);
   if (params.beds === "3plus") query = query.gte("beds", 3);
 
-  const pageSize = 1000;
-    let allRows: ActiveListing[] = [];
-    let totalCount: number | null = null;
-    let fetchError: string | null = null;
+  const { data, error } = await query.limit(500);
 
-    for (let from = 0; from < 5000; from += pageSize) {
-      const to = from + pageSize - 1;
-
-      const selectedQuery =
-        from === 0
-          ? query.select("*", { count: "exact" })
-          : query.select("*");
-
-      const { data, error, count } = await selectedQuery.range(from, to);
-
-      if (error) {
-        fetchError = error.message;
-        break;
-      }
-
-      if (from === 0) {
-        totalCount = count ?? null;
-      }
-
-      allRows = [...allRows, ...((data ?? []) as ActiveListing[])];
-
-      if (!data || data.length < pageSize) {
-        break;
-      }
-    }
-
-  if (fetchError) {
+  if (error) {
     return (
       <main style={pageStyle}>
-        <h1>Active Listings Report</h1>
-        <p>Error loading active listings.</p>
-        <pre>{fetchError}</pre>
+        <h1>Pending Listings Report</h1>
+        <p>Error loading pending listings.</p>
+        <pre>{error.message}</pre>
       </main>
     );
   }
 
-  const rows = allRows;
+  const rows = (data ?? []) as PendingListing[];
 
   const reportGeneratedAt = formatDateTime(new Date().toISOString());
   const dataCurrentAsOf = formatDateTime(rows[0]?.data_current_as_of ?? null);
@@ -250,20 +221,16 @@ if (params.zone) {
             width: "100%",
           }}
         >
-          <ReportExportButtons reportKey="active-listings" />
+          <ReportExportButtons reportKey="pending-listings" />
         </div>
       </div>
 
       <section style={{ marginBottom: "24px" }}>
         <p style={eyebrowStyle}>SearchPV Report</p>
-        <h1 style={titleStyle}>Active Listings Report</h1>
-        <div style={filterSummaryStyle}>
-          {buildFilterSummary(params).map((item) => (
-            <span key={item} style={filterPillStyle}>
-              {item}
-            </span>
-          ))}
-        </div>
+        <h1 style={titleStyle}>Pending Listings Report</h1>
+        <p style={subtitleStyle}>
+          Sortable pending listings report for Puerto Vallarta real estate..
+        </p>
 
         <div style={reportMetaStyle}>
           <div>
@@ -279,7 +246,7 @@ if (params.zone) {
       </section>
 
       <section
-        id="active-listings-report"
+        id="pending-listings-report"
         className="no-print"
         style={filterBoxStyle}
       >
@@ -333,7 +300,7 @@ if (params.zone) {
       </section>
 
       <div style={summaryStyle}>
-        Showing <strong>{totalCount ?? rows.length}</strong> active listings
+        Showing <strong>{rows.length}</strong> pending listings
       </div>
 
       <p className="mt-2 text-xs text-slate-500 md:hidden">
@@ -623,8 +590,8 @@ function buildHref(params: SearchParams, updates: Partial<SearchParams>) {
   const qs = next.toString();
 
   return qs
-    ? `/market-intelligence/active-listings?${qs}#active-listings-report`
-    : "/market-intelligence/active-listings#active-listings-report";
+    ? `/market-intelligence/pending-listings?${qs}#pending-listings-report`
+    : "/market-intelligence/pending-listings#pending-listings-report";
 }
 
 function formatCurrency(value: number | null) {
@@ -664,26 +631,6 @@ function formatDateTime(value: string | null) {
     hour: "numeric",
     minute: "2-digit",
   });
-}
-
-function buildFilterSummary(params: SearchParams) {
-  return [
-    params.propertyType ?? "All Property Types",
-    params.marketType ?? "All Market Types",
-    params.beds ? formatBedroomFilter(params.beds) : "All Bedrooms",
-    params.zone ?? "All Zones",
-    params.area ?? "All Areas",
-    params.community ?? "All Communities",
-    params.development ?? "All Developments",
-  ];
-}
-
-function formatBedroomFilter(value: string) {
-  if (value === "0") return "Studio";
-  if (value === "1") return "1 BR";
-  if (value === "2") return "2 BR";
-  if (value === "3plus") return "3+ BR";
-  return "All Bedrooms";
 }
 
 const buttonRowStyle = {
@@ -808,23 +755,4 @@ const metaValueStyle = {
   fontSize: "0.92rem",
   fontWeight: 700,
   color: "#17211b",
-} as const;
-
-const filterSummaryStyle = {
-  marginTop: "12px",
-  display: "flex",
-  gap: "8px",
-  flexWrap: "wrap",
-} as const;
-
-const filterPillStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  borderRadius: "999px",
-  background: "#eef6f2",
-  border: "1px solid #c8d8d0",
-  color: "#2f5d50",
-  padding: "5px 10px",
-  fontSize: "0.82rem",
-  fontWeight: 700,
 } as const;

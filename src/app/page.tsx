@@ -8,6 +8,7 @@ import SPVBranding from "@/app/components/SPVBranding";
 import MainSloganBranding from "@/app/components/MainSloganBranding";
 import MainText from "./components/MainText";
 import Header from "@/app/components/Header";
+import HamburgerMenu from "@/app/components/HamburgerMenu";
 
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
@@ -551,7 +552,14 @@ const organizationJsonLd = {
       />
       <section className="bg-slate-950 px-4 py-10 text-white md:px-8 md:py-14">
         <div className="mx-auto max-w-6xl">
-          <Header />
+          <div className="relative">
+            <Header />
+
+            <div className="absolute right-0 top-0 z-50">
+              <HamburgerMenu />
+            </div>
+          </div>
+
           <MainSloganBranding />
           <MainText />
 

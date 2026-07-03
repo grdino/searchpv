@@ -20,6 +20,7 @@ export default function ReportHierarchyFilters({
   areas,
   communities,
   developments,
+  anchor = "active-listings-report",
 }: {
   params: SearchParams;
   zones: string[];
@@ -59,9 +60,9 @@ export default function ReportHierarchyFilters({
     const basePath = window.location.pathname;
 
     window.location.href = qs
-      ? `${basePath}?${qs}#active-listings-report`
-      : `${basePath}#active-listings-report`;
-  }
+    ? `${basePath}?${qs}#${anchor}`
+    : `${basePath}#${anchor}`;
+    }
 
   return (
     <div style={locationRowStyle}>

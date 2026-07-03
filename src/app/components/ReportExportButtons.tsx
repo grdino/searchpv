@@ -2,22 +2,26 @@
 
 import { useSearchParams } from "next/navigation";
 
-export default function ReportExportButtons() {
+export default function ReportExportButtons({
+  reportKey,
+}: {
+  reportKey: string;
+}) {
   const searchParams = useSearchParams();
   const qs = searchParams.toString();
 
   const excelHref = qs
-    ? `/api/reports/active-listings/excel?${qs}`
-    : "/api/reports/active-listings/excel";
+    ? `/api/reports/${reportKey}/excel?${qs}`
+    : `/api/reports/${reportKey}/excel`;
 
   const pdfHref = qs
-    ? `/api/reports/active-listings/pdf?${qs}`
-    : "/api/reports/active-listings/pdf";
+    ? `/api/reports/${reportKey}/pdf?${qs}`
+    : `/api/reports/${reportKey}/pdf`;
 
   return (
     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
       <button type="button" onClick={() => window.print()} style={buttonStyle}>
-  🖨 Print
+        🖨 Print
       </button>
 
       <a href={pdfHref} style={buttonStyle}>

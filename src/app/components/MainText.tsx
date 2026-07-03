@@ -29,7 +29,7 @@ export default function MainText() {
           whiteSpace: "nowrap",
         }}
       >
-        Explore markets, analyze trends, and compare communities.
+        Explore Puerto Vallarta Real Estate.
       </div>
     </div>
   );
