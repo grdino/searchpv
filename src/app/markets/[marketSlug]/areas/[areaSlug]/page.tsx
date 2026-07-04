@@ -752,7 +752,7 @@ const placeJsonLd = {
             </div>
           </div>
 
-          <div style={{ paddingTop: "48px" }}>
+          <div id="community-snapshot" style={{ paddingTop: "48px" }}>
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow">
               <h2 className="text-2xl font-bold">Community Snapshot</h2>
               <p className="mt-2 text-sm text-slate-600">
@@ -1603,5 +1603,5 @@ function areaSortHref(
   params.set("sort", nextSort);
   params.set("dir", nextDir);
 
-  return `/markets/${marketSlug}/areas/${areaSlug}?${params.toString()}`;
+  return `/markets/${marketSlug}/areas/${areaSlug}?${params.toString()}#community-snapshot`;
 }
