@@ -42,6 +42,12 @@ export async function GET(request: Request) {
   sheet.mergeCells("A4:N4");
   sheet.getCell("A4").value = `Report Generated: ${reportGeneratedAt}`;
 
+  sheet.mergeCells("A5:N5");
+  sheet.getCell("A5").value = `Current Filters Applied: ${buildFilterSummary(
+    searchParams
+  )}`;
+  sheet.getCell("A5").alignment = { wrapText: true, vertical: "top" };
+
   sheet.addRow([]);
 
   sheet.addRow([
@@ -71,13 +77,14 @@ export async function GET(request: Request) {
     }))
   );
 
-  sheet.getCell("A1").font = { bold: true, size: 16 };
-  sheet.getCell("A2").font = { italic: true };
-  sheet.getCell("A3").font = { bold: true };
-  sheet.getCell("A4").font = { bold: true };
-  sheet.getRow(6).font = { bold: true };
+  sheet.getRow(1).font = { bold: true, size: 14 };
+  sheet.getRow(2).font = { italic: true };
+  sheet.getRow(3).font = { bold: true };
+  sheet.getRow(4).font = { bold: true };
+  sheet.getRow(5).font = { bold: true };
+  sheet.getRow(7).font = { bold: true };
 
-  sheet.views = [{ state: "frozen", ySplit: 6 }];
+  sheet.views = [{ state: "frozen", ySplit: 7 }];
 
   ["I", "J", "L"].forEach((col) => {
     sheet.getColumn(col).numFmt = "$#,##0;[Red]-$#,##0";
@@ -133,6 +140,28 @@ function applyFilters(query: any, searchParams: URLSearchParams) {
   if (beds === "1") query.eq("beds", 1);
   if (beds === "2") query.eq("beds", 2);
   if (beds === "3plus") query.gte("beds", 3);
+}
+
+function buildFilterSummary(searchParams: URLSearchParams) {
+  const beds = searchParams.get("beds");
+
+  return [
+    searchParams.get("propertyType") ?? "All Property Types",
+    searchParams.get("marketType") ?? "All Market Types",
+    beds ? formatBedroomFilter(beds) : "All Bedrooms",
+    searchParams.get("zone") ?? "All Zones",
+    searchParams.get("area") ?? "All Areas",
+    searchParams.get("community") ?? "All Communities",
+    searchParams.get("development") ?? "All Developments",
+  ].join(" / ");
+}
+
+function formatBedroomFilter(value: string) {
+  if (value === "0") return "Studio";
+  if (value === "1") return "1 BR";
+  if (value === "2") return "2 BR";
+  if (value === "3plus") return "3+ BR";
+  return "All Bedrooms";
 }
 
 function formatDateTime(value: string | null) {

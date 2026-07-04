@@ -32,6 +32,10 @@ export async function GET(request: Request) {
 doc.fontSize(9).text(`Data Current As Of: ${dataCurrentAsOf}`);
 doc.fontSize(9).text(`Report Generated: ${reportGeneratedAt}`);
 
+doc.moveDown(0.4);
+doc.font("Helvetica-Bold").fontSize(8).text("Current Filters Applied");
+doc.font("Helvetica").fontSize(9).text(buildFilterSummary(searchParams));
+
 doc.moveDown(0.8);
   const headers = [
     "MLS",
@@ -200,4 +204,28 @@ function formatDateTime(value: string | null) {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function buildFilterSummary(searchParams: URLSearchParams) {
+  const beds = searchParams.get("beds");
+
+  const filters = [
+    searchParams.get("propertyType") ?? "All Property Types",
+    searchParams.get("marketType") ?? "All Market Types",
+    beds ? formatBedroomFilter(beds) : "All Bedrooms",
+    searchParams.get("zone") ?? "All Zones",
+    searchParams.get("area") ?? "All Areas",
+    searchParams.get("community") ?? "All Communities",
+    searchParams.get("development") ?? "All Developments",
+  ];
+
+  return filters.join(" / ");
+}
+
+function formatBedroomFilter(value: string) {
+  if (value === "0") return "Studio";
+  if (value === "1") return "1 BR";
+  if (value === "2") return "2 BR";
+  if (value === "3plus") return "3+ BR";
+  return "All Bedrooms";
 }

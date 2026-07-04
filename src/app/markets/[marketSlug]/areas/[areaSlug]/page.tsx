@@ -156,6 +156,18 @@ type AreaRollup = {
   months_inventory_3br_plus: number | null;
 };
 
+type SortKey =
+  | "community"
+  | "active_count"
+  | "pending_count"
+  | "sales_12mo"
+  | "median_sold_price"
+  | "avg_sold_price_ft2"
+  | "sold_avg_dom_12mo"
+  | "months_inventory";
+
+type SortDir = "asc" | "desc";
+
 /*
   SEO metadata for area pages.
 
@@ -209,6 +221,8 @@ export default async function AreaPage({
   searchParams: Promise<{
     market?: string;
     propertyType?: string;
+    sort?: SortKey;
+    dir?: SortDir;
   }>;
 }) {
   const routeParams = await params;
@@ -216,6 +230,9 @@ export default async function AreaPage({
 
   const selectedMarket = getMarketSegment(queryParams.market);
   const selectedPropertyType = getPropertyTypeSegment(queryParams.propertyType);
+
+  const selectedSort = getSortKey(queryParams.sort);
+  const selectedDir = getSortDir(queryParams.dir);
 
   const { data, error } = await supabase
     .from("community_snapshot")
@@ -255,8 +272,10 @@ export default async function AreaPage({
     );
   }
 
-  const communityRows = ((data ?? []) as CommunitySnapshot[]).sort(
-    (a, b) => Number(b.active_count ?? 0) - Number(a.active_count ?? 0)
+  const communityRows = sortCommunityRows(
+    (data ?? []) as CommunitySnapshot[],
+    selectedSort,
+    selectedDir
   );
 
   const rollup = buildAreaRollup(
@@ -744,18 +763,91 @@ const placeJsonLd = {
                 ← Swipe to see additional columns →
               </p>
 
-              <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
-                <table className="min-w-[850px] text-sm">
-                  <thead className="bg-slate-100 text-slate-700">
+              <div
+                style={{
+                  marginTop: "16px",
+                  maxHeight: "620px",
+                  overflow: "auto",
+                  borderRadius: "12px",
+                  border: "1px solid #e2e8f0",
+                }}
+              >
+                <table
+                  style={{
+                    minWidth: "900px",
+                    width: "100%",
+                    borderCollapse: "separate",
+                    borderSpacing: 0,
+                    fontSize: "14px",
+                  }}
+                >
+                  <thead>
                     <tr>
-                      <Th>Community</Th>
-                      <ThRight>Active</ThRight>
-                      <ThRight>Pending</ThRight>
-                      <ThRight>Sales 12 Mo</ThRight>
-                      <ThRight>Median Sold</ThRight>
-                      <ThRight>Avg $/ft²</ThRight>
-                      <ThRight>DOM</ThRight>
-                      <ThRight>MOI</ThRight>
+                      <SortableTh
+                        label="Community"
+                        sortKey="community"
+                        selectedSort={selectedSort}
+                        selectedDir={selectedDir}
+                        href={areaSortHref(
+                          routeParams.marketSlug,
+                          routeParams.areaSlug,
+                          selectedMarket,
+                          selectedPropertyType,
+                          "community",
+                          selectedSort,
+                          selectedDir
+                        )}
+                        stickyLeft
+                      />
+                      <SortableThRight
+                        label="Active"
+                        sortKey="active_count"
+                        selectedSort={selectedSort}
+                        selectedDir={selectedDir}
+                        href={areaSortHref(routeParams.marketSlug, routeParams.areaSlug, selectedMarket, selectedPropertyType, "active_count", selectedSort, selectedDir)}
+                      />
+                      <SortableThRight
+                        label="Pending"
+                        sortKey="pending_count"
+                        selectedSort={selectedSort}
+                        selectedDir={selectedDir}
+                        href={areaSortHref(routeParams.marketSlug, routeParams.areaSlug, selectedMarket, selectedPropertyType, "pending_count", selectedSort, selectedDir)}
+                      />
+                      <SortableThRight
+                        label="Sales 12 Mo"
+                        sortKey="sales_12mo"
+                        selectedSort={selectedSort}
+                        selectedDir={selectedDir}
+                        href={areaSortHref(routeParams.marketSlug, routeParams.areaSlug, selectedMarket, selectedPropertyType, "sales_12mo", selectedSort, selectedDir)}
+                      />
+                      <SortableThRight
+                        label="Median Sold"
+                        sortKey="median_sold_price"
+                        selectedSort={selectedSort}
+                        selectedDir={selectedDir}
+                        href={areaSortHref(routeParams.marketSlug, routeParams.areaSlug, selectedMarket, selectedPropertyType, "median_sold_price", selectedSort, selectedDir)}
+                      />
+                      <SortableThRight
+                        label="Avg $/ft²"
+                        sortKey="avg_sold_price_ft2"
+                        selectedSort={selectedSort}
+                        selectedDir={selectedDir}
+                        href={areaSortHref(routeParams.marketSlug, routeParams.areaSlug, selectedMarket, selectedPropertyType, "avg_sold_price_ft2", selectedSort, selectedDir)}
+                      />
+                      <SortableThRight
+                        label="DOM"
+                        sortKey="sold_avg_dom_12mo"
+                        selectedSort={selectedSort}
+                        selectedDir={selectedDir}
+                        href={areaSortHref(routeParams.marketSlug, routeParams.areaSlug, selectedMarket, selectedPropertyType, "sold_avg_dom_12mo", selectedSort, selectedDir)}
+                      />
+                      <SortableThRight
+                        label="MOI"
+                        sortKey="months_inventory"
+                        selectedSort={selectedSort}
+                        selectedDir={selectedDir}
+                        href={areaSortHref(routeParams.marketSlug, routeParams.areaSlug, selectedMarket, selectedPropertyType, "months_inventory", selectedSort, selectedDir)}
+                      />
                     </tr>
                   </thead>
 
@@ -763,9 +855,8 @@ const placeJsonLd = {
                     {communityRows.map((community) => (
                       <tr
                         key={`${community.zone_slug}-${community.area_slug}-${community.community_slug}`}
-                        className="border-t"
                       >
-                        <Td>
+                        <StickyTd>
                           <Link
                             href={communityHref(
                               routeParams.marketSlug,
@@ -778,7 +869,8 @@ const placeJsonLd = {
                           >
                             {community.community_name}
                           </Link>
-                        </Td>
+                        </StickyTd>
+
                         <TdRight>
                           <IdxListingLink
                             listingIds={
@@ -795,6 +887,7 @@ const placeJsonLd = {
                             {community.active_count ?? 0}
                           </IdxListingLink>
                         </TdRight>
+
                         <TdRight>
                           <IdxListingLink
                             listingIds={
@@ -811,6 +904,7 @@ const placeJsonLd = {
                             {community.pending_count ?? 0}
                           </IdxListingLink>
                         </TdRight>
+
                         <TdRight>
                           <ContactCommunityLink
                             zoneName={community.zone_name}
@@ -832,15 +926,10 @@ const placeJsonLd = {
                             {community.sales_12mo ?? 0}
                           </ContactCommunityLink>
                         </TdRight>
-                        <TdRight>
-                          {formatMoney(community.median_sold_price)}
-                        </TdRight>
-                        <TdRight>
-                          {formatMoney(community.avg_sold_price_ft2)}
-                        </TdRight>
-                        <TdRight>
-                          {formatNumber(community.sold_avg_dom_12mo)}
-                        </TdRight>
+
+                        <TdRight>{formatMoney(community.median_sold_price)}</TdRight>
+                        <TdRight>{formatMoney(community.avg_sold_price_ft2)}</TdRight>
+                        <TdRight>{formatNumber(community.sold_avg_dom_12mo)}</TdRight>
                         <TdRight>{formatNumber(community.months_inventory)}</TdRight>
                       </tr>
                     ))}
@@ -1122,22 +1211,6 @@ function ContactAreaLink({
   );
 }
 
-function Th({ children }: { children: ReactNode }) {
-  return <th className="px-4 py-3 text-left font-semibold">{children}</th>;
-}
-
-function ThRight({ children }: { children: ReactNode }) {
-  return <th className="px-4 py-3 text-right font-semibold">{children}</th>;
-}
-
-function Td({ children }: { children: ReactNode }) {
-  return <td className="px-4 py-3">{children}</td>;
-}
-
-function TdRight({ children }: { children: ReactNode }) {
-  return <td className="px-4 py-3 text-right">{children}</td>;
-}
-
 function buildAreaRollup(
   rows: CommunitySnapshot[],
   marketSlug: string,
@@ -1366,4 +1439,169 @@ function formatSelectedFilters(
   }
 
   return parts.join(" | ");
+}
+
+function SortableTh({
+  label,
+  sortKey,
+  selectedSort,
+  selectedDir,
+  href,
+  stickyLeft = false,
+}: {
+  label: string;
+  sortKey: SortKey;
+  selectedSort: SortKey;
+  selectedDir: SortDir;
+  href: string;
+  stickyLeft?: boolean;
+}) {
+  const active = selectedSort === sortKey;
+  const arrow = active ? (selectedDir === "asc" ? " ▲" : " ▼") : "";
+
+  return (
+    <th
+      style={{
+        position: "sticky",
+        top: 0,
+        left: stickyLeft ? 0 : undefined,
+        zIndex: stickyLeft ? 30 : 20,
+        backgroundColor: "#f1f5f9",
+        padding: "12px 16px",
+        textAlign: "left",
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+        borderBottom: "1px solid #e2e8f0",
+        boxShadow: stickyLeft ? "2px 0 0 #e2e8f0" : undefined,
+      }}
+    >
+      <Link href={href} className="text-slate-700 hover:text-blue-700">
+        {label}
+        {arrow}
+      </Link>
+    </th>
+  );
+}
+
+function SortableThRight(props: Omit<Parameters<typeof SortableTh>[0], "stickyLeft">) {
+  const active = props.selectedSort === props.sortKey;
+  const arrow = active ? (props.selectedDir === "asc" ? " ▲" : " ▼") : "";
+
+  return (
+    <th
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 20,
+        backgroundColor: "#f1f5f9",
+        padding: "12px 16px",
+        textAlign: "right",
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+        borderBottom: "1px solid #e2e8f0",
+      }}
+    >
+      <Link href={props.href} className="text-slate-700 hover:text-blue-700">
+        {props.label}
+        {arrow}
+      </Link>
+    </th>
+  );
+}
+
+function StickyTd({ children }: { children: ReactNode }) {
+  return (
+    <td
+      style={{
+        position: "sticky",
+        left: 0,
+        zIndex: 10,
+        backgroundColor: "#ffffff",
+        padding: "12px 16px",
+        whiteSpace: "nowrap",
+        borderTop: "1px solid #e2e8f0",
+        boxShadow: "2px 0 0 #e2e8f0",
+      }}
+    >
+      {children}
+    </td>
+  );
+}
+
+function TdRight({ children }: { children: ReactNode }) {
+  return (
+    <td
+      style={{
+        padding: "12px 16px",
+        textAlign: "right",
+        whiteSpace: "nowrap",
+        borderTop: "1px solid #e2e8f0",
+      }}
+    >
+      {children}
+    </td>
+  );
+}
+
+function getSortKey(value?: string): SortKey {
+  if (
+    value === "community" ||
+    value === "active_count" ||
+    value === "pending_count" ||
+    value === "sales_12mo" ||
+    value === "median_sold_price" ||
+    value === "avg_sold_price_ft2" ||
+    value === "sold_avg_dom_12mo" ||
+    value === "months_inventory"
+  ) {
+    return value;
+  }
+
+  return "active_count";
+}
+
+function getSortDir(value?: string): SortDir {
+  return value === "asc" ? "asc" : "desc";
+}
+
+function sortCommunityRows(
+  rows: CommunitySnapshot[],
+  sortKey: SortKey,
+  sortDir: SortDir
+) {
+  return [...rows].sort((a, b) => {
+    const direction = sortDir === "asc" ? 1 : -1;
+
+    if (sortKey === "community") {
+      return direction * a.community_name.localeCompare(b.community_name);
+    }
+
+    const aValue = Number(a[sortKey] ?? 0);
+    const bValue = Number(b[sortKey] ?? 0);
+
+    return direction * (aValue - bValue);
+  });
+}
+
+function areaSortHref(
+  marketSlug: string,
+  areaSlug: string,
+  market: MarketSegment,
+  propertyType: PropertyTypeSegment,
+  nextSort: SortKey,
+  currentSort: SortKey,
+  currentDir: SortDir
+) {
+  const params = new URLSearchParams();
+
+  if (market !== "all") params.set("market", market);
+  if (propertyType !== "all") params.set("propertyType", propertyType);
+
+  const nextDir =
+    currentSort === nextSort && currentDir === "desc" ? "asc" : "desc";
+
+  params.set("sort", nextSort);
+  params.set("dir", nextDir);
+
+  return `/markets/${marketSlug}/areas/${areaSlug}?${params.toString()}`;
 }

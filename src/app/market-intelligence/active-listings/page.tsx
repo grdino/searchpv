@@ -252,12 +252,11 @@ if (params.zone) {
       <section style={{ marginBottom: "24px" }}>
         <p style={eyebrowStyle}>SearchPV Report</p>
         <h1 style={titleStyle}>Active Listings Report</h1>
-        <div style={filterSummaryStyle}>
-          {buildFilterSummary(params).map((item) => (
-            <span key={item} style={filterPillStyle}>
-              {item}
-            </span>
-          ))}
+        <div style={{ marginTop: "14px" }}>
+        <div style={metaLabelStyle}>Current Filters Applied</div>
+          <div style={currentFiltersTextStyle}>
+            {buildFilterSummary(params).join("  /  ")}
+          </div>
         </div>
 
         <div style={reportMetaStyle}>
@@ -273,11 +272,16 @@ if (params.zone) {
         </div>
       </section>
 
-      <section
-        id="active-listings-report"
-        className="no-print"
-        style={filterBoxStyle}
-      >
+      <div style={{ position: "relative", marginBottom: "18px" }}>  
+        <div style={reportFiltersHeaderStyle1}>
+          ← Report Filters →
+        </div>
+
+        <section
+          id="active-listings-report"
+          className="no-print"
+          style={filterBoxStyle}
+        >
 
         <div className="report-filter-buttons" style={buttonRowStyle}>
           <FilterGroup
@@ -326,6 +330,7 @@ if (params.zone) {
           />
         </div>
       </section>
+      </div>
 
       <div style={summaryStyle}>
         Showing <strong>{totalCount ?? rows.length}</strong> active listings
@@ -822,4 +827,30 @@ const filterPillStyle = {
   padding: "5px 10px",
   fontSize: "0.82rem",
   fontWeight: 700,
+} as const;
+
+const reportFiltersHeaderStyle1 = {
+  position: "absolute",
+  top: "-12px",
+  left: "50%",
+  transform: "translateX(-50%)",
+  padding: "4px 14px",
+  background: "#dfeee8",      // slightly darker than the filter box
+  border: "1px solid #c8d8d0",
+  borderRadius: "999px",
+  color: "#2f5d50",
+  fontSize: "0.78rem",
+  fontWeight: 800,
+  textTransform: "uppercase",
+  zIndex: 10,
+  letterSpacing: "0.35em",
+  wordSpacing: "0.75em",
+} as const;
+
+const currentFiltersTextStyle = {
+  marginTop: "3px",
+  fontSize: "0.92rem",
+  fontWeight: 700,
+  color: "#17211b",
+  lineHeight: 1.4,
 } as const;
