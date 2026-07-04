@@ -12,9 +12,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata = {
-  title: "SearchPV",
-  description: "Puerto Vallarta real estate market intelligence by community.",
+export const metadata: Metadata = {
+  metadataBase: new URL("https://www.searchpv.com"),
+  title: {
+    default: "SearchPV | Puerto Vallarta Real Estate Market Intelligence",
+    template: "%s | SearchPV",
+  },
+  description:
+    "Explore Puerto Vallarta and Riviera Nayarit real estate market intelligence by community, including inventory, pricing, sales activity, and market trends.",
   icons: {
     icon: "/icon.png",
     apple: "/apple-icon.png",

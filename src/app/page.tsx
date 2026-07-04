@@ -683,7 +683,7 @@ const organizationJsonLd = {
               : "Development Snapshot"}
         </h2>
 
-        <p className="text-sm text-slate-500">Snapshot Date: {snapshotDate}</p>
+        <p className="text-sm text-slate-500">Data Current As Of: {snapshotDate}</p>
 
         <p className="mt-2 text-xs text-slate-500 md:hidden">
           ← Swipe to see additional columns →

@@ -420,7 +420,7 @@ const placeJsonLd = {
                 color: "#cbd5e1",
               }}
             >
-              Snapshot Date: {snapshotDate}
+              Data Current As Of: {snapshotDate}
             </p>
 
             <AreaSelectors
