@@ -752,7 +752,12 @@ const placeJsonLd = {
                     style={{
                       marginTop: "16px",
                       maxHeight: "620px",
-                      overflow: "auto",
+                      width: "100%",
+                      maxWidth: "100%",
+                      overflowX: "auto",
+                      overflowY: "auto",
+                      WebkitOverflowScrolling: "touch",
+                      touchAction: "pan-x pan-y",
                       borderRadius: "12px",
                       border: "1px solid #e2e8f0",
                     }}
@@ -760,7 +765,7 @@ const placeJsonLd = {
                     <table
                       style={{
                         minWidth: "900px",
-                        width: "100%",
+                        width: "max-content",
                         borderCollapse: "separate",
                         borderSpacing: 0,
                         fontSize: "14px",
@@ -1357,6 +1362,9 @@ function SortableTh({
         textAlign: "left",
         fontWeight: 700,
         whiteSpace: "nowrap",
+        width: stickyLeft ? "180px" : undefined,
+        minWidth: stickyLeft ? "180px" : undefined,
+        maxWidth: stickyLeft ? "180px" : undefined,
         borderBottom: "1px solid #e2e8f0",
         boxShadow: stickyLeft ? "2px 0 0 #e2e8f0" : undefined,
       }}
@@ -1405,6 +1413,11 @@ function StickyTd({ children }: { children: React.ReactNode }) {
         backgroundColor: "#ffffff",
         padding: "12px 16px",
         whiteSpace: "nowrap",
+        width: "180px",
+        minWidth: "180px",
+        maxWidth: "180px",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
         borderTop: "1px solid #e2e8f0",
         boxShadow: "2px 0 0 #e2e8f0",
       }}
