@@ -566,60 +566,32 @@ const placeJsonLd = {
             <MetricCard
               label="Closed Sales - 12 Mo"
               value={
-                <ContactLink
-                  row={row}
-                  market={selectedMarket}
-                  propertyType={selectedPropertyType}
-                  listingCount={row.sales_12mo ?? 0}
-                  bedroomSegment="all"
-                >
+                <ClosedSalesListingLink listingIds={getListingIds("sold_12mo", "all")}>
                   {row.sales_12mo ?? 0}
-                </ContactLink>
+                </ClosedSalesListingLink>
               }
               breakdown={{
                 studio: (
-                  <ContactLink
-                    row={row}
-                    market={selectedMarket}
-                    propertyType={selectedPropertyType}
-                    listingCount={row.sales_0br_12mo ?? 0}
-                    bedroomSegment="0br"
-                  >
+                  <ClosedSalesListingLink listingIds={getListingIds("sold_12mo", "0br")}>
                     {row.sales_0br_12mo ?? 0}
-                  </ContactLink>
+                  </ClosedSalesListingLink>
                 ),
                 oneBed: (
-                  <ContactLink
-                    row={row}
-                    market={selectedMarket}
-                    propertyType={selectedPropertyType}
-                    listingCount={row.sales_1br_12mo ?? 0}
-                    bedroomSegment="1br"
-                  >
+                  <ClosedSalesListingLink listingIds={getListingIds("sold_12mo", "1br")}>
                     {row.sales_1br_12mo ?? 0}
-                  </ContactLink>
+                  </ClosedSalesListingLink>
                 ),
                 twoBed: (
-                  <ContactLink
-                    row={row}
-                    market={selectedMarket}
-                    propertyType={selectedPropertyType}
-                    listingCount={row.sales_2br_12mo ?? 0}
-                    bedroomSegment="2br"
-                  >
+                  <ClosedSalesListingLink listingIds={getListingIds("sold_12mo", "2br")}>
                     {row.sales_2br_12mo ?? 0}
-                  </ContactLink>
+                  </ClosedSalesListingLink>
                 ),
                 threeBedPlus: (
-                  <ContactLink
-                    row={row}
-                    market={selectedMarket}
-                    propertyType={selectedPropertyType}
-                    listingCount={row.sales_3br_plus_12mo ?? 0}
-                    bedroomSegment="3br_plus"
+                  <ClosedSalesListingLink
+                    listingIds={getListingIds("sold_12mo", "3br_plus")}
                   >
                     {row.sales_3br_plus_12mo ?? 0}
-                  </ContactLink>
+                  </ClosedSalesListingLink>
                 ),
               }}
             />
@@ -1333,6 +1305,27 @@ function IdxListingLink({
     >
       {children}
     </a>
+  );
+}
+
+function ClosedSalesListingLink({
+  listingIds,
+  children,
+}: {
+  listingIds?: string | null;
+  children: ReactNode;
+}) {
+  if (!listingIds) {
+    return <span>{children}</span>;
+  }
+
+  return (
+    <Link
+      href={`/market-intelligence/closed-sales/search-results?mls=${listingIds}`}
+      className="font-semibold text-blue-700 hover:underline"
+    >
+      {children}
+    </Link>
   );
 }
 

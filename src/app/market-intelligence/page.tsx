@@ -16,42 +16,49 @@ const reports = [
     description: "Current inventory with pricing, DOM, and listing details.",
     href: "/market-intelligence/active-listings",
     Icon: ClipboardList,
+    inDevelopment: false,
   },
   {
-    title: "Pending Listings",
+    title: "Pending Sales",
     description: "Listings currently under contract across selected markets.",
-    href: "/market-intelligence/pending-listings",
+    href: "/market-intelligence/pending-sales",
     Icon: Clock3,
+    inDevelopment: true,
   },
   {
     title: "Closed Sales",
     description: "Historical sales activity, sold pricing, and market results.",
     href: "/market-intelligence/closed-sales",
     Icon: BadgeDollarSign,
+    inDevelopment: true,
   },
   {
     title: "Price Reductions",
     description: "Track price changes, reductions, and listing adjustments.",
     href: "/market-intelligence/price-reductions",
     Icon: TrendingDown,
+    inDevelopment: true,
   },
   {
     title: "Community Summary",
     description: "Market snapshot for individual Puerto Vallarta communities.",
     href: "/market-intelligence/community-summary",
     Icon: Map,
+    inDevelopment: true,
   },
   {
     title: "Development Summary",
     description: "Inventory, pricing, and sales activity by development.",
     href: "/market-intelligence/development-summary",
     Icon: Building2,
+    inDevelopment: true,
   },
   {
     title: "Market Trends",
     description: "Inventory, pricing, sales, and activity over time.",
     href: "/market-intelligence/market-trends",
     Icon: ChartLine,
+    inDevelopment: true,
   },
 ];
 
@@ -157,7 +164,7 @@ export default function ReportsPage() {
             gap: "18px",
           }}
         >
-          {reports.map(({ title, description, href, Icon }) => (
+          {reports.map(({ title, description, href, Icon, inDevelopment }) => (
             <Link
               key={title}
               href={href}
@@ -196,12 +203,33 @@ export default function ReportsPage() {
                 <h3
                   style={{
                     margin: 0,
-                    fontSize: "1.1rem",
+                    fontSize: "1.3rem",
+                    fontWeight: 900,
+                    lineHeight: 1.15,
                     color: "#0f172a",
+                    letterSpacing: "-0.02em",
                   }}
                 >
                   {title}
                 </h3>
+
+                {inDevelopment && (
+                  <span
+                    style={{
+                      display: "inline-block",
+                      background: "#f59e0b",
+                      color: "#111827",
+                      fontWeight: 800,
+                      fontSize: "0.72rem",
+                      letterSpacing: "0.04em",
+                      padding: "4px 10px",
+                      borderRadius: "999px",
+                      marginTop: "10px",
+                    }}
+                  >
+                    🚧 IN DEVELOPMENT
+                  </span>
+                )}
 
                 <p
                   style={{

@@ -906,13 +906,8 @@ const placeJsonLd = {
                         </TdRight>
 
                         <TdRight>
-                          <ContactCommunityLink
-                            zoneName={community.zone_name}
-                            areaName={community.area_name}
-                            communityName={community.community_name}
-                            market={selectedMarket}
-                            propertyType={selectedPropertyType}
-                            listingCount={
+                          <ClosedSalesListingLink
+                            listingIds={
                               communityDrilldownLookup.get(
                                 communityDrilldownKey(
                                   community.zone_slug,
@@ -920,11 +915,11 @@ const placeJsonLd = {
                                   community.community_slug,
                                   "sold_12mo"
                                 )
-                              )?.listing_count ?? community.sales_12mo ?? 0
+                              )?.listing_ids
                             }
                           >
                             {community.sales_12mo ?? 0}
-                          </ContactCommunityLink>
+                          </ClosedSalesListingLink>
                         </TdRight>
 
                         <TdRight>{formatMoney(community.median_sold_price)}</TdRight>
@@ -1131,6 +1126,27 @@ function communityDrilldownKey(
   metricGroup: MetricGroup
 ) {
   return `${zoneSlug ?? ""}|${areaSlug ?? ""}|${communitySlug}|${metricGroup}`;
+}
+
+function ClosedSalesListingLink({
+  listingIds,
+  children,
+}: {
+  listingIds: string | null | undefined;
+  children: React.ReactNode;
+}) {
+  if (!listingIds) {
+    return <>{children}</>;
+  }
+
+  return (
+    <Link
+      href={`/market-intelligence/closed-sales/search-results?mls=${listingIds}`}
+      className="font-semibold text-blue-700 hover:underline"
+    >
+      {children}
+    </Link>
+  );
 }
 
 function ContactCommunityLink({

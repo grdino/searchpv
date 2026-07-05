@@ -1,13 +1,29 @@
 "use client";
 
-
 import { useState } from "react";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 
+const marketIntelligenceLinks = [
+  { label: "Active Listings", href: "/market-intelligence/active-listings", exists: false },
+  { label: "Pending Sales", href: "/market-intelligence/pending-sales", exists: false },
+  { label: "Closed Sales", href: "/market-intelligence/closed-sales", exists: true },
+  { label: "Price Changes", href: "/market-intelligence/price-changes", exists: false },
+  { label: "New Listings", href: "/market-intelligence/new-listings", exists: false },
+];
+
+const reportLinks = [
+  { label: "Active Listings Report", href: "/reports/active-listings-report", exists: true,},
+  { label: "Pending Sales Report", href: "/reports/pending-sales-report", exists: false,},
+  { label: "Closed Sales Report", href: "/reports/closed-sales-report", exists: false, },
+  { label: "Price Changes Report", href: "/reports/price-changes-report", exists: false,},
+  { label: "New Listings Report", href: "/reports/new-listings-report", exists: false,},
+];
+
 export default function HamburgerMenu() {
   const [open, setOpen] = useState(false);
-  const [marketOpen, setMarketOpen] = useState(false);
+
+  const closeMenu = () => setOpen(false);
 
   return (
     <div style={{ position: "relative" }}>
@@ -22,45 +38,56 @@ export default function HamburgerMenu() {
 
       {open && (
         <div style={menuPanelStyle}>
-          <Link href="/" onClick={() => setOpen(false)} style={menuLinkStyle}>
-            Home
+          <Link href="/#market-explorer" onClick={closeMenu} style={menuLinkStyle}>
+            Market Explorer
           </Link>
 
-          <div>
-            <div style={expandableRowStyle}>
-              <Link
-                href="/market-intelligence"
-                onClick={() => setOpen(false)}
-                style={expandableLinkStyle}
-              >
-                Market Intelligence
-              </Link>
+          <div style={sectionStyle}>
+            <Link href="/market-intelligence" onClick={closeMenu} style={menuLinkStyle}>
+              Market Intelligence
+            </Link>
 
-              <button
-                type="button"
-                onClick={() => setMarketOpen((value) => !value)}
-                aria-label="Expand Market Intelligence menu"
-                style={arrowButtonStyle}
-              >
-                {marketOpen ? "▾" : "▸"}
-              </button>
-            </div>
-
-            {marketOpen && (
-              <div style={subMenuStyle}>
+            <div style={subMenuStyle}>
+              {marketIntelligenceLinks.map((item) => (
                 <Link
-                  href="/market-intelligence/active-listings"
-                  onClick={() => setOpen(false)}
-                  style={subMenuLinkStyle}
+                  key={item.href}
+                  href={item.href}
+                  onClick={closeMenu}
+                  style={{
+                    ...subMenuLinkStyle,
+                    color: item.exists ? "#15803d" : "#ca8a04",
+                  }}
                 >
-                  Active Listings
+                  {item.label}
                 </Link>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
 
-          <Link href="/about" onClick={() => setOpen(false)} style={menuLinkStyle}>
-            About
+          <div style={sectionStyle}>
+            <Link href="/reports" onClick={closeMenu} style={menuLinkStyle}>
+              Reports
+            </Link>
+
+            <div style={subMenuStyle}>
+              {reportLinks.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={closeMenu}
+                  style={{
+                    ...subMenuLinkStyle,
+                    color: item.exists ? "#15803d" : "#ca8a04",
+                  }}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <Link href="/about" onClick={closeMenu} style={menuLinkStyle}>
+            About SearchPV
           </Link>
         </div>
       )}
@@ -86,60 +113,41 @@ const menuButtonStyle: CSSProperties = {
 
 const menuPanelStyle: CSSProperties = {
   position: "absolute",
-  top: "36px",
+  top: "58px",
   right: 0,
   zIndex: 1000,
-  minWidth: "240px",
-  padding: "10px",
-  borderRadius: "14px",
-  border: "1px solid #d7e3dc",
+  minWidth: "300px",
+  padding: "18px",
+  borderRadius: "16px",
+  border: "1px solid rgba(0,229,255,.35)",
   background: "#ffffff",
-  boxShadow: "0 12px 30px rgba(15, 23, 42, 0.15)",
+  boxShadow: "0 18px 40px rgba(15, 23, 42, 0.22)",
+};
+
+const sectionStyle: CSSProperties = {
+  marginTop: "12px",
+  marginBottom: "18px",
 };
 
 const menuLinkStyle: CSSProperties = {
   display: "block",
-  padding: "10px 12px",
-  borderRadius: "10px",
+  padding: "10px 0",
   color: "#17211b",
   textDecoration: "none",
-  fontWeight: 700,
-};
-
-const expandableRowStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  borderRadius: "10px",
-};
-
-const expandableLinkStyle: CSSProperties = {
-  flex: 1,
-  padding: "10px 12px",
-  color: "#17211b",
-  textDecoration: "none",
-  fontWeight: 700,
-};
-
-const arrowButtonStyle: CSSProperties = {
-  border: "none",
-  background: "transparent",
-  cursor: "pointer",
-  fontSize: "1rem",
-  padding: "10px 12px",
-  color: "#17211b",
+  fontWeight: 800,
+  fontSize: "1.05rem",
 };
 
 const subMenuStyle: CSSProperties = {
-  marginLeft: "14px",
-  paddingLeft: "8px",
-  borderLeft: "1px solid #d7e3dc",
+  marginTop: "2px",
+  marginLeft: "28px",
 };
 
 const subMenuLinkStyle: CSSProperties = {
   display: "block",
-  padding: "8px 12px",
-  borderRadius: "10px",
-  color: "#475569",
+  padding: "6px 0",
+  color: "#17211b",
   textDecoration: "none",
   fontWeight: 600,
+  fontSize: "1rem",
 };

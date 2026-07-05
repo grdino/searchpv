@@ -581,55 +581,30 @@ const placeJsonLd = {
             <MetricCard
               label="Closed Sales - 12 Mo"
               value={
-                <ContactLink
-                  row={row}
-                  market={selectedMarket}
-                  propertyType={selectedPropertyType}
-                  listingCount={row.sales_12mo ?? 0}
-                >
+                <ClosedSalesListingLink listingIds={getListingIds("sold_12mo", "all")}>
                   {row.sales_12mo ?? 0}
-                </ContactLink>
+                </ClosedSalesListingLink>
               }
               breakdown={{
                 studio: (
-                  <ContactLink
-                    row={row}
-                    market={selectedMarket}
-                    propertyType={selectedPropertyType}
-                    listingCount={row.sales_0br_12mo ?? 0}
-                  >
+                  <ClosedSalesListingLink listingIds={getListingIds("sold_12mo", "0br")}>
                     {row.sales_0br_12mo ?? 0}
-                  </ContactLink>
+                  </ClosedSalesListingLink>
                 ),
                 oneBed: (
-                  <ContactLink
-                    row={row}
-                    market={selectedMarket}
-                    propertyType={selectedPropertyType}
-                    listingCount={row.sales_1br_12mo ?? 0}
-                  >
+                  <ClosedSalesListingLink listingIds={getListingIds("sold_12mo", "1br")}>
                     {row.sales_1br_12mo ?? 0}
-                  </ContactLink>
+                  </ClosedSalesListingLink>
                 ),
                 twoBed: (
-                  <ContactLink
-                    row={row}
-                    market={selectedMarket}
-                    propertyType={selectedPropertyType}
-                    listingCount={row.sales_2br_12mo ?? 0}
-                  >
+                  <ClosedSalesListingLink listingIds={getListingIds("sold_12mo", "2br")}>
                     {row.sales_2br_12mo ?? 0}
-                  </ContactLink>
+                  </ClosedSalesListingLink>
                 ),
                 threeBedPlus: (
-                  <ContactLink
-                    row={row}
-                    market={selectedMarket}
-                    propertyType={selectedPropertyType}
-                    listingCount={row.sales_3br_plus_12mo ?? 0}
-                  >
+                  <ClosedSalesListingLink listingIds={getListingIds("sold_12mo", "3br_plus")}>
                     {row.sales_3br_plus_12mo ?? 0}
-                  </ContactLink>
+                  </ClosedSalesListingLink>
                 ),
               }}
             />
@@ -891,11 +866,8 @@ const placeJsonLd = {
                             </TdRight>
 
                             <TdRight>
-                              <ContactDevelopmentLink
-                                development={development}
-                                market={selectedMarket}
-                                propertyType={selectedPropertyType}
-                                listingCount={
+                              <ClosedSalesListingLink
+                                listingIds={
                                   developmentDrilldownLookup.get(
                                     developmentDrilldownKey(
                                       development.zone_slug,
@@ -904,11 +876,11 @@ const placeJsonLd = {
                                       development.development_slug,
                                       "sold_12mo"
                                     )
-                                  )?.listing_count ?? development.sales_12mo ?? 0
+                                  )?.listing_ids
                                 }
                               >
                                 {development.sales_12mo ?? 0}
-                              </ContactDevelopmentLink>
+                              </ClosedSalesListingLink>
                             </TdRight>
 
                             <TdRight>{formatMoney(development.median_sold_price)}</TdRight>
@@ -1104,6 +1076,26 @@ function IdxListingLink({
   );
 }
 
+function ClosedSalesListingLink({
+  listingIds,
+  children,
+}: {
+  listingIds?: string | null;
+  children: React.ReactNode;
+}) {
+  if (!listingIds) {
+    return <span>{children}</span>;
+  }
+
+  return (
+    <Link
+      href={`/market-intelligence/closed-sales/search-results?mls=${listingIds}`}
+      className="font-semibold text-blue-700 hover:underline"
+    >
+      {children}
+    </Link>
+  );
+}
 
 function developmentDrilldownKey(
   zoneSlug: string | null,

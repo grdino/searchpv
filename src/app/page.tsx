@@ -9,6 +9,7 @@ import MainSloganBranding from "@/app/components/MainSloganBranding";
 import MainText from "./components/MainText";
 import Header from "@/app/components/Header";
 import HamburgerMenu from "@/app/components/HamburgerMenu";
+import SPVHeroMission from "@/app/components/SPVHeroMission";
 
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
@@ -560,8 +561,11 @@ const organizationJsonLd = {
             </div>
           </div>
 
+          <SPVHeroMission />
+{/*    
           <MainSloganBranding />
           <MainText />
+*/}
 
           <HomeSelectors
             selectedMarket={selectedMarket}
@@ -842,22 +846,15 @@ const organizationJsonLd = {
                         </IdxListingLink>
                       </Td>
                       <Td>
-                        <ContactListingLink
-                          communityName=""
-                          zoneName={row.zone_name}
-                          areaName={row.area_name}
-                          market={selectedMarket}
-                          propertyType={selectedPropertyType}
-                          metricGroup="sold_12mo"
-                          bedroomSegment="all"
-                          listingCount={
+                        <ClosedSalesListingLink
+                          listingIds={
                             areaDrilldownLookup.get(
                               areaDrilldownKey(row.zone_slug, row.area_slug, "sold_12mo")
-                            )?.listing_count ?? row.sales_12mo ?? 0
+                            )?.listing_ids
                           }
                         >
                           {row.sales_12mo}
-                        </ContactListingLink>
+                        </ClosedSalesListingLink>
                       </Td>
                       <Td>{formatMoney(row.median_sold_price)}</Td>
                       <Td>{formatMoney(row.avg_sold_price_ft2)}</Td>
@@ -918,22 +915,9 @@ const organizationJsonLd = {
                           </Td>
 
                           <Td>
-                            <ContactListingLink
-                              communityName={row.community_name}
-                              zoneName={row.zone_name}
-                              areaName={row.area_name}
-                              market={selectedMarket}
-                              propertyType={selectedPropertyType}
-                              metricGroup="sold_12mo"
-                              bedroomSegment="all"
-                              listingCount={
-                                soldDrilldown?.listing_count ??
-                                row.sales_12mo ??
-                                0
-                              }
-                            >
+                            <ClosedSalesListingLink listingIds={soldDrilldown?.listing_ids}>
                               {row.sales_12mo ?? 0}
-                            </ContactListingLink>
+                            </ClosedSalesListingLink>
                           </Td>
 
                           <Td>{formatMoney(row.median_sold_price)}</Td>
@@ -999,16 +983,8 @@ const organizationJsonLd = {
                           </IdxListingLink>
                         </Td>
                         <Td>
-                          <ContactDevelopmentListingLink
-                            developmentName={row.development_name}
-                            communityName={row.community_name}
-                            zoneName={row.zone_name}
-                            areaName={row.area_name}
-                            market={selectedMarket}
-                            propertyType={selectedPropertyType}
-                            metricGroup="sold_12mo"
-                            bedroomSegment="all"
-                            listingCount={
+                          <ClosedSalesListingLink
+                            listingIds={
                               developmentDrilldownLookup.get(
                                 developmentDrilldownKey(
                                   row.zone_slug ?? "",
@@ -1017,11 +993,11 @@ const organizationJsonLd = {
                                   row.development_slug,
                                   "sold_12mo"
                                 )
-                              )?.listing_count ?? row.sales_12mo ?? 0
+                              )?.listing_ids
                             }
                           >
                             {row.sales_12mo ?? 0}
-                          </ContactDevelopmentListingLink>
+                          </ClosedSalesListingLink>
                         </Td>
                         <Td>{formatMoney(row.median_sold_price)}</Td>
                         <Td>{formatMoney(row.avg_sold_price_ft2)}</Td>
@@ -1084,13 +1060,14 @@ function HomeSelectors({
     ...baseStyle,
     backgroundColor: "#ffffff",
     color: "#020617",
-    borderColor: "#ffffff",
+    border: "1px solid #ffffff",
   };
 
   const unselectedStyle: React.CSSProperties = {
     ...baseStyle,
     backgroundColor: "transparent",
     color: "#ffffff",
+    border: "1px solid #94a3b8",
   };
 
   return (
@@ -1282,41 +1259,20 @@ function IdxListingLink({
   );
 }
 
-function ContactListingLink({
-  communityName,
-  zoneName,
-  areaName,
-  market,
-  propertyType,
-  metricGroup,
-  bedroomSegment,
-  listingCount,
+function ClosedSalesListingLink({
+  listingIds,
   children,
 }: {
-  communityName: string;
-  zoneName: string | null;
-  areaName: string | null;
-  market: MarketSegment;
-  propertyType: PropertyTypeSegment;
-  metricGroup: MetricGroup;
-  bedroomSegment: string;
-  listingCount: number;
+  listingIds: string | null | undefined;
   children: React.ReactNode;
 }) {
-  const params = new URLSearchParams();
-
-  if (zoneName) params.set("zone", zoneName);
-  if (areaName) params.set("area", areaName);
-  params.set("community", communityName);
-  params.set("market", market);
-  params.set("propertyType", propertyType);
-  params.set("metric", metricGroup);
-  params.set("bedroom", bedroomSegment);
-  params.set("count", String(listingCount));
+  if (!listingIds) {
+    return <>{children}</>;
+  }
 
   return (
     <Link
-      href={`/contact?${params.toString()}`}
+      href={`/market-intelligence/closed-sales/search-results?mls=${listingIds}`}
       className="font-semibold text-blue-700 hover:underline"
     >
       {children}
@@ -1491,7 +1447,7 @@ function homeHref(
 
   const queryString = params.toString();
 
-  return queryString ? `/?${queryString}` : "/";
+  return queryString ? `/?${queryString}#market-explorer` : "/#market-explorer";
 }
 
 function areaHref(
@@ -1730,7 +1686,7 @@ function sortHref(
   area: string,
   community: string
 ) {
-  return `${homeHref(
+  return homeHref(
     market,
     propertyType,
     sort,
@@ -1738,5 +1694,5 @@ function sortHref(
     zone,
     area,
     community
-  )}#community-snapshot`;
+  );
 }

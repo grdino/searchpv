@@ -209,7 +209,7 @@ if (params.zone) {
     return (
       <main style={pageStyle}>
         <h1>Active Listings Report</h1>
-        <p>Error loading active listings.</p>
+        <p>Error loading active listings report.</p>
         <pre>{fetchError}</pre>
       </main>
     );
@@ -245,7 +245,7 @@ if (params.zone) {
             width: "100%",
           }}
         >
-          <ReportExportButtons reportKey="active-listings" />
+          <ReportExportButtons reportKey="active-listings-report" />
         </div>
       </div>
 
@@ -333,7 +333,7 @@ if (params.zone) {
       </div>
 
       <div style={summaryStyle}>
-        Showing <strong>{totalCount ?? rows.length}</strong> active listings
+        Showing <strong>{totalCount ?? rows.length}</strong> active listings report
       </div>
 
       <p className="mt-2 text-xs text-slate-500 md:hidden">

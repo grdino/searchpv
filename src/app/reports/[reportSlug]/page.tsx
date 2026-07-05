@@ -2,9 +2,9 @@ import Header from "@/app/components/Header";
 import Link from "next/link";
 
 const REPORT_TITLES: Record<string, string> = {
-  "active-listings": "Active Listings",
-  "pending-sales": "Pending Sales",
-  "closed-sales": "Closed Sales",
+  "active-listings-report": "Active Listings",
+  "pending-sales-report": "Pending Sales Report",
+  "closed-sales-report": "Closed Sales Report",
 };
 
 function formatReportTitle(slug: string) {
@@ -55,7 +55,7 @@ export default async function ReportComingSoonPage({
                 marginBottom: "16px",
               }}
             >
-              SearchPV Market Intelligence
+              SearchPV Reporting
             </p>
 
             <h1
@@ -77,25 +77,12 @@ export default async function ReportComingSoonPage({
                 marginBottom: "40px",
               }}
             >
-              <span
-                style={{
-                  display: "inline-block",
-                  background: "#f59e0b",
-                  color: "#111827",
-                  fontWeight: 700,
-                  padding: "4px 10px",
-                  borderRadius: "999px",
-                  marginRight: "10px",
-                }}
-              >
-                🚧 IN DEVELOPMENT
-              </span>
-
-              This report will be available soon.
+              This report is currently in development and will be available
+              soon.
             </p>
 
             <Link
-              href="/market-intelligence"
+              href="/reports"
               style={{
                 display: "inline-block",
                 background: "#0ea5e9",
@@ -106,7 +93,7 @@ export default async function ReportComingSoonPage({
                 fontWeight: 600,
               }}
             >
-              Back to Market Intelligence
+              Back to Reports
             </Link>
           </div>
         </div>
