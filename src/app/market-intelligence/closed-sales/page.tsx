@@ -596,11 +596,11 @@ export default async function ClosedSalesPage({
                 <tr key={listing.mls} className="border-t">
                   <Td stickyLeft>
                     <Link
-                    href={closedSalesHref}
-                    className="font-semibold text-blue-700 hover:underline"
-                  >
-                    {listing.mls}
-                  </Link>
+                      href={`/market-intelligence/closed-sales/${listing.mls}`}
+                      className="font-semibold text-blue-700 hover:underline"
+                    >
+                      {listing.mls}
+                    </Link>
                   </Td>
                   <Td>{listing.development_name || listing.address || "-"}</Td>
                   <Td>{listing.unit || "-"}</Td>
