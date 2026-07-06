@@ -335,7 +335,7 @@ export default async function ClosedSalesPage({
       </section>
 
       <div className="sticky top-0 z-40 border-b border-slate-800 bg-slate-700 px-4 py-3">
-        <div className="mx-auto max-w-6xl overflow-hidden text-center text-sm font-bold text-white">
+        <div className="mx-auto max-w-6xl text-center text-sm font-bold text-white">
           <div className="truncate">
             <Link href="/" className="underline hover:text-sky-200">
               SearchPV
@@ -360,7 +360,7 @@ export default async function ClosedSalesPage({
             </Link>
           </div>
 
-          <div className="mt-1 truncate text-xs font-semibold text-slate-200">
+          <div className="mt-1 text-xs font-semibold leading-snug text-slate-200">
             {formatSelectedFilters(
               selectedMarket,
               selectedPropertyType,
