@@ -166,7 +166,7 @@ function closedSalesHref(
   }
 
   const queryString = params.toString();
-  return queryString ? `closed-sales?${queryString}` : "/closed-sales";
+  return queryString ? `  closed-sales?${queryString}` : "/closed-sales";
 }
 
 const baseStyle: React.CSSProperties = {

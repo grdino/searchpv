@@ -258,8 +258,8 @@ export default async function ClosedSalesPage({
   const queryString = queryParams.toString();
 
   return queryString
-    ? `/closed-sales?${queryString}#closed-sales`
-    : "/closed-sales#closed-sales";
+    ? `/market-intelligence/closed-sales?${queryString}#closed-sales`
+    : "/market-intelligence/closed-sales#closed-sales";
 }
 
   function summaryHref(
@@ -291,8 +291,8 @@ export default async function ClosedSalesPage({
     const queryString = queryParams.toString();
 
     return queryString
-      ? `/closed-sales?${queryString}#closed-sales-summary`
-      : "/closed-sales#closed-sales-summary";
+      ? `/market-intelligence/closed-sales?${queryString}#closed-sales-summary`
+      : "/market-intelligence/closed-sales#closed-sales-summary";
       }
 
   return (
@@ -333,6 +333,47 @@ export default async function ClosedSalesPage({
           />
         </div>
       </section>
+
+      <div className="sticky top-0 z-40 border-b border-slate-800 bg-slate-700 px-4 py-3">
+        <div className="mx-auto max-w-6xl overflow-hidden text-center text-sm font-bold text-white">
+          <div className="truncate">
+            <Link href="/" className="underline hover:text-sky-200">
+              SearchPV
+            </Link>
+
+            {" > "}
+
+            <Link
+              href="/market-intelligence"
+              className="underline hover:text-sky-200"
+            >
+              Market Intelligence
+            </Link>
+
+            {" > "}
+
+            <Link
+              href="/market-intelligence/closed-sales"
+              className="underline hover:text-sky-200"
+            >
+              Closed Sales
+            </Link>
+          </div>
+
+          <div className="mt-1 truncate text-xs font-semibold text-slate-200">
+            {formatSelectedFilters(
+              selectedMarket,
+              selectedPropertyType,
+              selectedZone,
+              selectedArea,
+              selectedCommunity,
+              selectedDevelopment,
+              selectedStartDate,
+              selectedEndDate
+            )}
+          </div>
+        </div>
+      </div>
 
       <section className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10">
         <div
@@ -744,5 +785,60 @@ function formatDateLong(value: string | null) {
     year: "numeric",
     month: "long",
     day: "numeric",
+  });
+}
+
+function formatSelectedFilters(
+  market: MarketSegment,
+  propertyType: PropertyTypeSegment,
+  zone: string,
+  area: string,
+  community: string,
+  development: string,
+  startDate: string,
+  endDate: string
+) {
+  const parts: string[] = [];
+
+  parts.push(
+    market === "all"
+      ? "All Markets"
+      : market === "pre_construction"
+        ? "Pre-Construction"
+        : "Resale"
+  );
+
+  parts.push(
+    propertyType === "all"
+      ? "All Property Types"
+      : propertyType === "condos"
+        ? "Condos"
+        : "Houses"
+  );
+
+  if (zone) parts.push(zone);
+  if (area !== "all") parts.push(area);
+  if (community !== "all") parts.push(community);
+  if (development !== "all") parts.push(development);
+
+  if (startDate || endDate) {
+    parts.push(
+      `${formatDateShort(startDate) || "All Time"} – ${
+        formatDateShort(endDate) || "Today"
+      }`
+    );
+  }
+
+  return parts.join(" • ");
+}
+
+function formatDateShort(value: string | null) {
+  if (!value) return "";
+  const [year, month, day] = value.split("-").map(Number);
+
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 }
