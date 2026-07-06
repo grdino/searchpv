@@ -6,6 +6,13 @@ import HamburgerMenu from "@/app/components/HamburgerMenu";
 import MainSloganBranding from "@/app/components/MainSloganBranding";
 import ClosedListingFilters from "@/app/components/ClosedListingFilters";
 
+// ***********************************************
+// Import dynamic Metadata
+// ***********************************************
+import { buildMarketSeo } from "@/lib/seo";
+// 
+// ***********************************************
+
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
 type SortKey =
@@ -27,11 +34,37 @@ type AreaUnit = "ft2" | "m2";
 
 const DEFAULT_ZONE_NAME = "Puerto Vallarta";
 
-export const metadata: Metadata = {
-  title: "Closed Sales | SearchPV",
-  description:
-    "Search Puerto Vallarta and Riviera Nayarit closed sales with sold price, list price, days on market, and market context.",
-};
+// ******************************************************************
+// function generateMetadata
+// Generates dynamic metadata with the help of buildMarketSeo in lib
+// ******************************************************************
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    market?: string;
+    propertyType?: string;
+    zone?: string;
+    area?: string;
+    community?: string;
+    development?: string;
+    range?: string;
+  }>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+
+  return buildMarketSeo({
+    pageType: "closed-sales",
+    market: getMarketSegment(params.market),
+    propertyType: getPropertyTypeSegment(params.propertyType),
+    zone: params.zone,
+    area: params.area,
+    community: params.community,
+    development: params.development,
+    range: getRangeKey(params.range),
+    canonicalPath: "/market-intelligence/closed-sales",
+  });
+}
 
 export default async function ClosedSalesPage({
   searchParams,
