@@ -477,10 +477,10 @@ export default async function ClosedSalesPage({
         </p>
 
         <div className="mt-3 max-h-[70vh] overflow-auto rounded-xl bg-white shadow">
-          <table className="min-w-[1050px] text-sm">
+          <table className="min-w-[1050px] border-separate border-spacing-0 text-sm">
             <thead className="bg-slate-100 text-slate-700">
               <tr>
-                <SortableTh label="MLS" sortKey="mls" selectedSort={selectedSort} selectedDir={selectedDir} href={tableSortHref("mls")} />
+                <SortableTh label="MLS" sortKey="mls" selectedSort={selectedSort} selectedDir={selectedDir} href={tableSortHref("mls")} stickyLeft />
                 <SortableTh label="Property" sortKey="development_name" selectedSort={selectedSort} selectedDir={selectedDir} href={tableSortHref("development_name")} />
                 <SortableTh label="Unit" sortKey="unit" selectedSort={selectedSort} selectedDir={selectedDir} href={tableSortHref("unit")} />
                 <SortableTh label="Community" sortKey="community_name" selectedSort={selectedSort} selectedDir={selectedDir} href={tableSortHref("community_name")} />
@@ -497,7 +497,7 @@ export default async function ClosedSalesPage({
             <tbody>
               {listings.map((listing) => (
                 <tr key={listing.mls} className="border-t">
-                  <Td>
+                  <Td stickyLeft>
                     <Link
                       href={`/market-intelligence/closed-sales/${listing.mls}`}
                       className="font-semibold text-blue-700 hover:underline"
@@ -717,18 +717,24 @@ function SortableTh({
   selectedSort,
   selectedDir,
   href,
+  stickyLeft = false,
 }: {
   label: string;
   sortKey: SortKey;
   selectedSort: SortKey;
   selectedDir: SortDir;
   href: string;
+  stickyLeft?: boolean;
 }) {
   const isSelected = selectedSort === sortKey;
   const arrow = isSelected ? (selectedDir === "asc" ? " ▲" : " ▼") : "";
 
   return (
-    <th className="whitespace-nowrap px-4 py-3 text-left font-semibold">
+    <th
+      className={`sticky top-0 z-20 whitespace-nowrap bg-slate-100 px-4 py-3 text-left font-semibold ${
+        stickyLeft ? "left-0 z-30 shadow-[2px_0_0_#e2e8f0]" : ""
+      }`}
+    >
       <Link href={href} className="hover:underline">
         {label}
         {arrow}
@@ -745,8 +751,22 @@ function Th({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="whitespace-nowrap px-4 py-3">{children}</td>;
+function Td({
+  children,
+  stickyLeft = false,
+}: {
+  children: React.ReactNode;
+  stickyLeft?: boolean;
+}) {
+  return (
+    <td
+      className={`whitespace-nowrap bg-white px-4 py-3 ${
+        stickyLeft ? "sticky left-0 z-10 shadow-[2px_0_0_#e2e8f0]" : ""
+      }`}
+    >
+      {children}
+    </td>
+  );
 }
 
 function formatMoney(value: number | null) {
