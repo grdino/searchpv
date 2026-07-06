@@ -109,7 +109,7 @@ export default async function ClosedSalesPage({
   let optionQuery = supabase
     .from("closed_listing_list")
     .select("zone_name, area_name, community_name, development_name")
-    .limit(1000);
+    .limit(10000);
 
   if (selectedMarket !== "all") optionQuery = optionQuery.eq("market_segment", selectedMarket);
   if (selectedPropertyType !== "all") optionQuery = optionQuery.eq("property_type_segment", selectedPropertyType);
@@ -120,7 +120,7 @@ export default async function ClosedSalesPage({
     .from("closed_listing_list")
     .select("*", { count: "exact" })
     .order(selectedSort, { ascending: selectedDir === "asc" })
-    .limit(500);
+    .limit(10000);
 
   query = applyFilters(query, {
     selectedMarket,
@@ -135,12 +135,11 @@ export default async function ClosedSalesPage({
 
   const { data, error, count } = await query;
 
-  let summaryQuery = supabase
+  let summaryQueryBase = supabase
     .from("closed_listing_list")
-    .select("sold_price, sold_price_per_sqft, sold_price_per_sqm, bedroom_segment")
-    .limit(1000);
+    .select("mls, sold_price, sold_price_per_sqft, sold_price_per_sqm, bedroom_segment");
 
-  summaryQuery = applyFilters(summaryQuery, {
+  summaryQueryBase = applyFilters(summaryQueryBase, {
     selectedMarket,
     selectedPropertyType,
     selectedZone,
@@ -151,7 +150,25 @@ export default async function ClosedSalesPage({
     selectedEndDate,
   });
 
-  const { data: summaryRows, error: summaryError } = await summaryQuery;
+  const pageSize = 1000;
+  let summaryRows: any[] = [];
+  let summaryError: any = null;
+
+  for (let from = 0; from < 10000; from += pageSize) {
+    const { data: batch, error } = await summaryQueryBase.range(
+      from,
+      from + pageSize - 1
+    );
+
+    if (error) {
+      summaryError = error;
+      break;
+    }
+
+    summaryRows = summaryRows.concat(batch ?? []);
+
+    if (!batch || batch.length < pageSize) break;
+  }
 
   if (error || optionError || summaryError) {
     return (
@@ -168,6 +185,31 @@ export default async function ClosedSalesPage({
   const listings = data ?? [];
   const optionRows = optionData ?? [];
   const summary = summaryRows ?? [];
+
+  function closedSalesSearchHref(rows: typeof summary) {
+    return `/market-intelligence/closed-sales/search-results?mls=${rows
+      .map((row) => row.mls)
+      .filter(Boolean)
+      .join(",")}`;
+  }
+
+  const closedSalesHref = closedSalesSearchHref(summary);
+
+  const studioHref = closedSalesSearchHref(
+    summary.filter((row) => row.bedroom_segment === "0br")
+  );
+
+  const oneBrHref = closedSalesSearchHref(
+    summary.filter((row) => row.bedroom_segment === "1br")
+  );
+
+  const twoBrHref = closedSalesSearchHref(
+    summary.filter((row) => row.bedroom_segment === "2br")
+  );
+
+  const threeBrHref = closedSalesSearchHref(
+    summary.filter((row) => row.bedroom_segment === "3br_plus")
+  );
 
   const zones = Array.from(
     new Set(optionRows.map((row) => row.zone_name).filter(Boolean))
@@ -427,7 +469,29 @@ export default async function ClosedSalesPage({
           <SummaryCard
             label="Closed Sales"
             value={totalClosedSales.toLocaleString()}
-            byBedroom={countByBedroom}
+            valueHref={closedSalesHref}
+            byBedroom={[
+              {
+                label: "Studio",
+                value: countByBedroom[0].value,
+                href: studioHref,
+              },
+              {
+                label: "1BR",
+                value: countByBedroom[1].value,
+                href: oneBrHref,
+              },
+              {
+                label: "2BR",
+                value: countByBedroom[2].value,
+                href: twoBrHref,
+              },
+              {
+                label: "3BR+",
+                value: countByBedroom[3].value,
+                href: threeBrHref,
+              },
+            ]}
           />
 
           <SummaryCard
@@ -532,11 +596,11 @@ export default async function ClosedSalesPage({
                 <tr key={listing.mls} className="border-t">
                   <Td stickyLeft>
                     <Link
-                      href={`/market-intelligence/closed-sales/${listing.mls}`}
-                      className="font-semibold text-blue-700 hover:underline"
-                    >
-                      {listing.mls}
-                    </Link>
+                    href={closedSalesHref}
+                    className="font-semibold text-blue-700 hover:underline"
+                  >
+                    {listing.mls}
+                  </Link>
                   </Td>
                   <Td>{listing.development_name || listing.address || "-"}</Td>
                   <Td>{listing.unit || "-"}</Td>
@@ -561,13 +625,19 @@ export default async function ClosedSalesPage({
 function SummaryCard({
   label,
   value,
+  valueHref,
   controls,
   byBedroom,
 }: {
   label: string;
   value: string;
+  valueHref?: string;
   controls?: React.ReactNode;
-  byBedroom: { label: string; value: string }[];
+  byBedroom: {
+    label: string;
+    value: string;
+    href?: string;
+  }[];
 }) {
   return (
     <div className="rounded-xl bg-white p-6 shadow">
@@ -575,7 +645,18 @@ function SummaryCard({
 
       <p className="text-sm text-slate-500">{label}</p>
 
-      <p className="mt-3 text-4xl font-bold text-slate-950">{value}</p>
+      {valueHref ? (
+        <Link
+          href={valueHref}
+          className="mt-3 block text-4xl font-bold text-blue-700 hover:underline"
+        >
+          {value}
+        </Link>
+      ) : (
+        <p className="mt-3 text-4xl font-bold text-slate-950">
+          {value}
+        </p>
+      )}
 
       <div className="mt-4 border-t border-slate-200 pt-3">
         <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
@@ -587,7 +668,18 @@ function SummaryCard({
             <span key={item.label}>
               {index > 0 && <span className="mr-2 text-slate-300">|</span>}
               {item.label}{" "}
-              <span className="font-bold text-blue-700">{item.value}</span>
+              {item.href ? (
+                <Link
+                  href={item.href}
+                  className="font-bold text-blue-700 hover:underline"
+                >
+                  {item.value}
+                </Link>
+              ) : (
+                <span className="font-bold text-slate-950">
+                  {item.value}
+                </span>
+              )}
             </span>
           ))}
         </div>

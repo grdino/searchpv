@@ -56,7 +56,7 @@ function parseMlsList(searchParams: SearchParams) {
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean)
-    .slice(0, 150);
+    .slice(0, 10000);
 }
 
 function formatCurrency(value: number | null) {
