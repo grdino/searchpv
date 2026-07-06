@@ -857,7 +857,7 @@ function SortableTh({
   return (
     <th
       className={`sticky top-0 z-20 whitespace-nowrap bg-slate-100 px-4 py-3 text-left font-semibold ${
-        stickyLeft ? "left-0 z-30 shadow-[2px_0_0_#e2e8f0]" : ""
+        stickyLeft ? "left-0 z-40 shadow-[2px_0_0_#e2e8f0]" : ""
       }`}
     >
       <Link href={href} className="hover:underline">
@@ -885,8 +885,10 @@ function Td({
 }) {
   return (
     <td
-      className={`whitespace-nowrap bg-white px-4 py-3 ${
-        stickyLeft ? "sticky left-0 z-10 shadow-[2px_0_0_#e2e8f0]" : ""
+      className={`whitespace-nowrap px-4 py-3 ${
+        stickyLeft
+          ? "sticky left-0 z-20 bg-white shadow-[2px_0_0_#e2e8f0]"
+          : "bg-white"
       }`}
     >
       {children}
