@@ -16,7 +16,7 @@ const reports = [
     description: "Current inventory with pricing, DOM, and listing details.",
     href: "/market-intelligence/active-listings",
     Icon: ClipboardList,
-    inDevelopment: false,
+    inDevelopment: true,
   },
   {
     title: "Pending Sales",
@@ -30,7 +30,7 @@ const reports = [
     description: "Historical sales activity, sold pricing, and market results.",
     href: "/market-intelligence/closed-sales",
     Icon: BadgeDollarSign,
-    inDevelopment: true,
+    inDevelopment: false,
   },
   {
     title: "Price Reductions",
