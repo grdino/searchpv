@@ -652,6 +652,7 @@ function getSortKey(value?: string): SortKey {
   const allowed: SortKey[] = [
     "mls",
     "development_name",
+    "unit",
     "community_name",
     "beds",
     "sold_price",
