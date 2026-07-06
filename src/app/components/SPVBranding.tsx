@@ -1,12 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 
-export default function SPVBranding({
-  rmpBadge = false,
-}: {
-  rmpBadge?: boolean;
-}) {
+export default function SPVBranding() {
   return (
+  <div style={brandStackStyle}>
     <div style={brandWrapStyle}>
       <Link href="/" style={brandLinkStyle}>
         <h1 style={titleStyle}>SearchPV</h1>
@@ -23,24 +20,27 @@ export default function SPVBranding({
             style={spvLogoStyle}
           />
         </Link>
-
-        <a
-          href="https://ronmorgan.net"
-          aria-label="Ron Morgan Properties"
-          style={rmpBadge ? rmpBadgeStyle : logoLinkStyle}
-        >
-          <Image
-            src="/rmp_logo_white.png"
-            alt="RMP Logo"
-            width={32}
-            height={40}
-            priority
-            style={rmpLogoStyle}
-          />
-        </a>
       </div>
     </div>
-  );
+
+    <a
+      href="https://ronmorgan.net"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Visit Ron Morgan Properties"
+      style={{ display: "flex" }}
+    >
+      <Image
+        src="/RMPLogoHorizontal.png"
+        alt="Ron Morgan Properties"
+        width={220}
+        height={28}
+        priority
+        style={rmpHorizontalLogoStyle}
+      />
+    </a>
+  </div>
+);
 }
 
 const brandWrapStyle: React.CSSProperties = {
@@ -77,16 +77,6 @@ const logoLinkStyle: React.CSSProperties = {
   flexShrink: 0,
 };
 
-const rmpBadgeStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: "#020617",
-  borderRadius: "8px",
-  padding: "2px 4px",
-  flexShrink: 0,
-};
-
 const spvLogoStyle: React.CSSProperties = {
   width: "clamp(18px, 3vw, 30px)",
   height: "clamp(18px, 3vw, 30px)",
@@ -96,10 +86,14 @@ const spvLogoStyle: React.CSSProperties = {
   flexShrink: 0,
 };
 
-const rmpLogoStyle: React.CSSProperties = {
-  width: "clamp(18px, 3vw, 30px)",
-  height: "clamp(22px, 3.5vw, 36px)",
-  objectFit: "contain",
-  cursor: "pointer",
-  flexShrink: 0,
+const brandStackStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+};
+
+const rmpHorizontalLogoStyle: React.CSSProperties = {
+  height: "clamp(12px, 1.8vw, 18px)",
+  width: "auto",
+  marginTop: "2px",
 };

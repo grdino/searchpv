@@ -46,6 +46,8 @@ function hasMarketActivity(development: DevelopmentSnapshotRow) {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const urls: MetadataRoute.Sitemap = [
+
+    // Core Pages
     {
       url: BASE_URL,
       lastModified: new Date(),
@@ -63,6 +65,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.5,
+    },
+
+    // Market Intelligence
+    {
+      url: `${BASE_URL}/market-intelligence`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/market-intelligence/closed-sales`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.85,
+    },
+
+    // Reports
+    {
+      url: `${BASE_URL}/reports`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/reports/active-listings-report`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.75,
     },
   ];
 
