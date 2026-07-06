@@ -5,6 +5,7 @@ type PropertyTypeSegment = "all" | "condos" | "houses";
 type SortKey =
   | "mls"
   | "development_name"
+  | "unit"
   | "community_name"
   | "beds"
   | "sold_price"
