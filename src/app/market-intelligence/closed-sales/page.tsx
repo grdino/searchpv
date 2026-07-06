@@ -11,6 +11,7 @@ type PropertyTypeSegment = "all" | "condos" | "houses";
 type SortKey =
   | "mls"
   | "development_name"
+  | "unit"
   | "community_name"
   | "beds"
   | "sold_price"
@@ -440,6 +441,7 @@ export default async function ClosedSalesPage({
               <tr>
                 <SortableTh label="MLS" sortKey="mls" selectedSort={selectedSort} selectedDir={selectedDir} href={tableSortHref("mls")} />
                 <SortableTh label="Property" sortKey="development_name" selectedSort={selectedSort} selectedDir={selectedDir} href={tableSortHref("development_name")} />
+                <SortableTh label="Unit" sortKey="unit" selectedSort={selectedSort} selectedDir={selectedDir} href={tableSortHref("unit")} />
                 <SortableTh label="Community" sortKey="community_name" selectedSort={selectedSort} selectedDir={selectedDir} href={tableSortHref("community_name")} />
                 <SortableTh label="Beds" sortKey="beds" selectedSort={selectedSort} selectedDir={selectedDir} href={tableSortHref("beds")} />
                 <SortableTh label="Sold Price" sortKey="sold_price" selectedSort={selectedSort} selectedDir={selectedDir} href={tableSortHref("sold_price")} />
@@ -463,6 +465,7 @@ export default async function ClosedSalesPage({
                     </Link>
                   </Td>
                   <Td>{listing.development_name || listing.address || "-"}</Td>
+                  <Td>{listing.unit || "-"}</Td>
                   <Td>{listing.community_name || "-"}</Td>
                   <Td>{formatNumber(listing.beds)}</Td>
                   <Td>{formatMoney(listing.sold_price)}</Td>

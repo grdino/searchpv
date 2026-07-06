@@ -1353,10 +1353,11 @@ function SortableTh({
         padding: "12px 16px",
         textAlign: "left",
         fontWeight: 700,
-        whiteSpace: "nowrap",
-        width: stickyLeft ? "180px" : undefined,
-        minWidth: stickyLeft ? "180px" : undefined,
-        maxWidth: stickyLeft ? "180px" : undefined,
+        whiteSpace: stickyLeft ? "normal" : "nowrap",
+        width: stickyLeft ? "clamp(115px, 34vw, 180px)" : undefined,
+        minWidth: stickyLeft ? "clamp(115px, 34vw, 180px)" : undefined,
+        maxWidth: stickyLeft ? "clamp(115px, 34vw, 180px)" : undefined,
+        lineHeight: stickyLeft ? 1.2 : undefined,
         borderBottom: "1px solid #e2e8f0",
         boxShadow: stickyLeft ? "2px 0 0 #e2e8f0" : undefined,
       }}
@@ -1403,18 +1404,27 @@ function StickyTd({ children }: { children: React.ReactNode }) {
         left: 0,
         zIndex: 10,
         backgroundColor: "#ffffff",
-        padding: "12px 16px",
-        whiteSpace: "nowrap",
-        width: "180px",
-        minWidth: "180px",
-        maxWidth: "180px",
+        padding: "10px 12px",
+        whiteSpace: "normal",
+        width: "clamp(115px, 34vw, 180px)",
+        minWidth: "clamp(115px, 34vw, 180px)",
+        maxWidth: "clamp(115px, 34vw, 180px)",
         overflow: "hidden",
-        textOverflow: "ellipsis",
         borderTop: "1px solid #e2e8f0",
         boxShadow: "2px 0 0 #e2e8f0",
+        lineHeight: 1.2,
       }}
     >
-      {children}
+      <div
+        style={{
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+        }}
+      >
+        {children}
+      </div>
     </td>
   );
 }

@@ -12,6 +12,7 @@ type ClosedListing = {
   area_name: string | null;
   community_name: string | null;
   development_name: string | null;
+  unit: string | null;
   address: string | null;
   prprty_type: string | null;
   beds: number | null;
@@ -95,7 +96,9 @@ export default async function ClosedListingDetailPage({ params }: PageProps) {
   const listing = data as ClosedListing;
 
   const propertyTitle =
-    listing.development_name || listing.address || `MLS ${listing.mls}`;
+    listing.development_name
+      ? `${listing.development_name}${listing.unit ? ` ${listing.unit}` : ""}`
+      : listing.address || `MLS ${listing.mls}`;
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
