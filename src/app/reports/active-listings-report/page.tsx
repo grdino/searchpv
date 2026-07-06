@@ -232,7 +232,7 @@ if (params.zone) {
             gap: "12px",
           }}
         >
-          <SPVBranding rmpBadge />
+          <SPVBranding />
           <HamburgerMenu />
         </div>
 
