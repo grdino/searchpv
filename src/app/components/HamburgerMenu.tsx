@@ -39,7 +39,7 @@ export default function HamburgerMenu() {
       {open && (
         <div style={menuPanelStyle}>
           <Link href="/#market-explorer" onClick={closeMenu} style={menuLinkStyle}>
-            Market Explorer
+            Explore Market
           </Link>
 
           <div style={sectionStyle}>
@@ -132,10 +132,10 @@ const sectionStyle: CSSProperties = {
 const menuLinkStyle: CSSProperties = {
   display: "block",
   padding: "10px 0",
-  color: "#17211b",
+  color: "#1e40af",
   textDecoration: "none",
-  fontWeight: 800,
-  fontSize: "1.05rem",
+  fontWeight: 900,
+  fontSize: "1.12rem",
 };
 
 const subMenuStyle: CSSProperties = {
