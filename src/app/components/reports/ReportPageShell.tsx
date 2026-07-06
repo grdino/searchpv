@@ -23,7 +23,7 @@ export default function ReportPageShell({
     <main style={pageStyle}>
       <div className="no-print report-topbar" style={{ marginBottom: "24px" }}>
         <div style={topbarStyle}>
-          <SPVBranding rmpBadge />
+          <SPVBranding />
           <HamburgerMenu />
         </div>
 
