@@ -103,8 +103,6 @@ export default function ZoneAreaFilters({
               </option>
             ))}
           </select>
-
-          <AreaGuideModal />
         </div>
        </div>
     </div>
