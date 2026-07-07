@@ -108,13 +108,43 @@ export default async function ClosedSalesPage({
 
   let optionQuery = supabase
     .from("closed_listing_list")
-    .select("zone_name, area_name, community_name, development_name")
-    .limit(10000);
+    .select("zone_name, area_name, community_name, development_name");
 
-  if (selectedMarket !== "all") optionQuery = optionQuery.eq("market_segment", selectedMarket);
-  if (selectedPropertyType !== "all") optionQuery = optionQuery.eq("property_type_segment", selectedPropertyType);
+  if (selectedMarket !== "all") {
+    optionQuery = optionQuery.eq("market_segment", selectedMarket);
+  }
 
-  const { data: optionData, error: optionError } = await optionQuery;
+  if (selectedPropertyType !== "all") {
+    optionQuery = optionQuery.eq("property_type_segment", selectedPropertyType);
+  }
+
+  if (selectedStartDate) {
+    optionQuery = optionQuery.gte("sold_date", selectedStartDate);
+  }
+
+  if (selectedEndDate) {
+    optionQuery = optionQuery.lte("sold_date", selectedEndDate);
+  }
+
+  const optionPageSize = 1000;
+  let optionRows: any[] = [];
+  let optionError: any = null;
+
+  for (let from = 0; from < 50000; from += optionPageSize) {
+    const { data: batch, error } = await optionQuery.range(
+      from,
+      from + optionPageSize - 1
+    );
+
+    if (error) {
+      optionError = error;
+      break;
+    }
+
+    optionRows = optionRows.concat(batch ?? []);
+
+    if (!batch || batch.length < optionPageSize) break;
+  }
 
   let query = supabase
     .from("closed_listing_list")
@@ -183,7 +213,6 @@ export default async function ClosedSalesPage({
   }
 
   const listings = data ?? [];
-  const optionRows = optionData ?? [];
   const summary = summaryRows ?? [];
 
   function closedSalesSearchHref(rows: typeof summary) {
@@ -224,27 +253,32 @@ export default async function ClosedSalesPage({
     )
   ).sort();
 
-  const communities = Array.from(
-    new Set(
-      optionRows
-        .filter((row) => selectedArea !== "all" && row.area_name === selectedArea)
-        .map((row) => row.community_name)
-        .filter(Boolean)
-    )
-  ).sort();
+  const communities =
+    selectedArea === "all"
+      ? []
+      : Array.from(
+          new Set(
+            optionRows
+              .filter((row) => selectedZone === "all" || row.zone_name === selectedZone)
+              .filter((row) => row.area_name === selectedArea)
+              .map((row) => row.community_name)
+              .filter(Boolean)
+          )
+        ).sort();
 
-  const developments = Array.from(
-    new Set(
-      optionRows
-        .filter(
-          (row) =>
-            selectedCommunity !== "all" &&
-            row.community_name === selectedCommunity
-        )
-        .map((row) => row.development_name)
-        .filter(Boolean)
-    )
-  ).sort();
+  const developments =
+    selectedCommunity === "all"
+      ? []
+      : Array.from(
+          new Set(
+            optionRows
+              .filter((row) => selectedZone === "all" || row.zone_name === selectedZone)
+              .filter((row) => selectedArea === "all" || row.area_name === selectedArea)
+              .filter((row) => row.community_name === selectedCommunity)
+              .map((row) => row.development_name)
+              .filter(Boolean)
+          )
+        ).sort();
 
   const totalClosedSales = count ?? listings.length;
 

@@ -590,64 +590,30 @@ const placeJsonLd = {
             <MetricCard
               label="Closed Sales - 12 Mo"
               value={
-                <ContactAreaLink
-                  zoneName={rollup.zone_name}
-                  areaName={rollup.area_name}
-                  market={selectedMarket}
-                  propertyType={selectedPropertyType}
-                  listingCount={rollup.sales_12mo}
-                >
+                <ClosedSalesListingLink listingIds={getAreaListingIds("sold_12mo", "all")}>
                   {rollup.sales_12mo}
-                </ContactAreaLink>
+                </ClosedSalesListingLink>
               }
               breakdown={{
                 studio: (
-                  <ContactAreaLink
-                    zoneName={rollup.zone_name}
-                    areaName={rollup.area_name}
-                    market={selectedMarket}
-                    propertyType={selectedPropertyType}
-                    listingCount={rollup.sales_0br_12mo}
-                    bedroom="0br"
-                  >
+                  <ClosedSalesListingLink listingIds={getAreaListingIds("sold_12mo", "0br")}>
                     {rollup.sales_0br_12mo}
-                  </ContactAreaLink>
+                  </ClosedSalesListingLink>
                 ),
                 oneBed: (
-                  <ContactAreaLink
-                    zoneName={rollup.zone_name}
-                    areaName={rollup.area_name}
-                    market={selectedMarket}
-                    propertyType={selectedPropertyType}
-                    listingCount={rollup.sales_1br_12mo}
-                    bedroom="1br"
-                  >
+                  <ClosedSalesListingLink listingIds={getAreaListingIds("sold_12mo", "1br")}>
                     {rollup.sales_1br_12mo}
-                  </ContactAreaLink>
+                  </ClosedSalesListingLink>
                 ),
                 twoBed: (
-                  <ContactAreaLink
-                    zoneName={rollup.zone_name}
-                    areaName={rollup.area_name}
-                    market={selectedMarket}
-                    propertyType={selectedPropertyType}
-                    listingCount={rollup.sales_2br_12mo}
-                    bedroom="2br"
-                  >
+                  <ClosedSalesListingLink listingIds={getAreaListingIds("sold_12mo", "2br")}>
                     {rollup.sales_2br_12mo}
-                  </ContactAreaLink>
+                  </ClosedSalesListingLink>
                 ),
                 threeBedPlus: (
-                  <ContactAreaLink
-                    zoneName={rollup.zone_name}
-                    areaName={rollup.area_name}
-                    market={selectedMarket}
-                    propertyType={selectedPropertyType}
-                    listingCount={rollup.sales_3br_plus_12mo}
-                    bedroom="3br_plus"
-                  >
+                  <ClosedSalesListingLink listingIds={getAreaListingIds("sold_12mo", "3br_plus")}>
                     {rollup.sales_3br_plus_12mo}
-                  </ContactAreaLink>
+                  </ClosedSalesListingLink>
                 ),
               }}
             />

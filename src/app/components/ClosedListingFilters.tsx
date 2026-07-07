@@ -67,25 +67,70 @@ export default function ClosedListingFilters({
       </div>
 
       <div style={selectGridStyle}>
-        <select value={selectedZone} onChange={(e) => go(e.target.value, "all", "all", "all")} style={selectStyle}>
+        <select
+          value={selectedZone}
+          onChange={(e) => go(e.target.value, "all", "all", "all")}
+          style={selectStyle}
+        >
           <option value={DEFAULT_ZONE_NAME}>{DEFAULT_ZONE_NAME}</option>
           <option value="all">All Zones</option>
-          {zones.map((z) => <option key={z} value={z}>{z}</option>)}
+          {zones.map((z) => (
+            <option key={z} value={z}>
+              {z}
+            </option>
+          ))}
         </select>
 
-        <select value={selectedArea} onChange={(e) => go(selectedZone, e.target.value, "all", "all")} style={selectStyle}>
-          <option value="all">All Areas</option>
-          {areas.map((a) => <option key={a} value={a}>{a}</option>)}
+        <select
+          value={selectedArea}
+          onChange={(e) => go(selectedZone, e.target.value, "all", "all")}
+          style={selectStyle}
+          disabled={selectedZone === "all"}
+        >
+          <option value="all">
+            {selectedZone === "all" ? "Choose Zone First" : "All Areas"}
+          </option>
+          {areas.map((a) => (
+            <option key={a} value={a}>
+              {a}
+            </option>
+          ))}
         </select>
 
-        <select value={selectedCommunity} onChange={(e) => go(selectedZone, selectedArea, e.target.value, "all")} style={selectStyle}>
-          <option value="all">All Communities</option>
-          {communities.map((c) => <option key={c} value={c}>{c}</option>)}
+        <select
+          value={selectedCommunity}
+          onChange={(e) => go(selectedZone, selectedArea, e.target.value, "all")}
+          style={selectStyle}
+          disabled={selectedArea === "all"}
+        >
+          <option value="all">
+            {selectedArea === "all" ? "Choose Area First" : "All Communities"}
+          </option>
+          {communities.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
         </select>
 
-        <select value={selectedDevelopment} onChange={(e) => go(selectedZone, selectedArea, selectedCommunity, e.target.value)} style={selectStyle}>
-          <option value="all">All Developments</option>
-          {developments.map((d) => <option key={d} value={d}>{d}</option>)}
+        <select
+          value={selectedDevelopment}
+          onChange={(e) =>
+            go(selectedZone, selectedArea, selectedCommunity, e.target.value)
+          }
+          style={selectStyle}
+          disabled={selectedCommunity === "all"}
+        >
+          <option value="all">
+            {selectedCommunity === "all"
+              ? "Choose Community First"
+              : "All Developments"}
+          </option>
+          {developments.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -224,6 +269,7 @@ const selectStyle: React.CSSProperties = {
   color: "#ffffff",
   fontSize: "12px",
   fontWeight: 700,
+  opacity: 1,
 };
 
 const sectionLabelStyle: React.CSSProperties = {
