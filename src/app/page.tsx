@@ -527,17 +527,24 @@ const organizationJsonLd = {
   const developmentOptions =
     selectedCommunity === "all"
       ? []
-      : developmentRows.map((development) => ({
-          label: development.development_name,
-          href: developmentHref(
-            development.zone_slug,
-            development.area_slug,
-            development.community_slug,
-            development.development_slug,
-            selectedMarket,
-            selectedPropertyType
-          ),
-        }));
+      : developmentRows
+          .map((development) => ({
+            label: development.development_name,
+            href: developmentHref(
+              development.zone_slug,
+              development.area_slug,
+              development.community_slug,
+              development.development_slug,
+              selectedMarket,
+              selectedPropertyType
+            ),
+          }))
+          .sort((a, b) =>
+            a.label.localeCompare(b.label, "en", {
+              sensitivity: "base",
+              numeric: true,
+            })
+          );
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
