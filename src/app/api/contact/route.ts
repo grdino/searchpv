@@ -10,10 +10,12 @@ export async function POST(request: Request) {
     await resend.emails.send({
       from: "SearchPV <requests@searchpv.com>",
       to: "gerry@ronmorgan.net",
-      subject: `SearchPV Request - ${body.community}`,
+      subject: `SearchPV Request`,
       text: `
 Name: ${body.name}
-Contact: ${body.contact}
+Email: ${body.email}
+Phone: ${body.phone || "Not provided"}
+WhatsApp: ${body.whatsapp || "Not provided"}
 
 ${body.message}
       `,

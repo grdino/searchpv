@@ -38,6 +38,10 @@ export default function HamburgerMenu() {
 
       {open && (
         <div style={menuPanelStyle}>
+          <Link href="/" onClick={closeMenu} style={menuLinkStyle}>
+            Home
+          </Link>
+
           <Link href="/#market-explorer" onClick={closeMenu} style={menuLinkStyle}>
             Explore Market
           </Link>
@@ -88,6 +92,10 @@ export default function HamburgerMenu() {
 
           <Link href="/about" onClick={closeMenu} style={menuLinkStyle}>
             About SearchPV
+          </Link>
+
+          <Link href="/contact" onClick={closeMenu} style={menuLinkStyle}>
+            Contact
           </Link>
         </div>
       )}
