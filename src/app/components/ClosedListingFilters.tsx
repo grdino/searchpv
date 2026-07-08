@@ -145,7 +145,7 @@ export default function ClosedListingFilters({
             From
             <DatePicker
               selected={selectedStartDate ? new Date(selectedStartDate + "T00:00:00") : null}
-              onChange={(date) =>
+              onChange={(date: Date | null) =>
                 goDate(date ? formatDateForUrl(date) : "", selectedEndDate)
               }
               dateFormat="MMM d, yyyy"
@@ -159,7 +159,7 @@ export default function ClosedListingFilters({
             Through
             <DatePicker
               selected={selectedEndDate ? new Date(selectedEndDate + "T00:00:00") : null}
-              onChange={(date) =>
+              onChange={(date: Date | null) =>
                 goDate(selectedStartDate, date ? formatDateForUrl(date) : "")
               }
               dateFormat="MMM d, yyyy"
