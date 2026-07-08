@@ -144,31 +144,34 @@ export default function ClosedListingFilters({
           <label style={dateLabelStyle}>
             From
             <DatePicker
-              selected={selectedStartDate ? new Date(selectedStartDate + "T00:00:00") : null}
+              selected={parseUrlDate(selectedStartDate)}
               onChange={(date: Date | null) =>
                 goDate(date ? formatDateForUrl(date) : "", selectedEndDate)
               }
               dateFormat="MMM d, yyyy"
+              strictParsing={false}
               placeholderText="From"
               className="date-picker-input"
               popperClassName="searchpv-date-picker-popper"
-              withPortal
+              showPopperArrow={false}
+              popperPlacement="bottom-start"
             />
           </label>
 
           <label style={dateLabelStyle}>
             Through
             <DatePicker
-              selected={selectedEndDate ? new Date(selectedEndDate + "T00:00:00") : null}
+              selected={parseUrlDate(selectedEndDate)}
               onChange={(date: Date | null) =>
                 goDate(selectedStartDate, date ? formatDateForUrl(date) : "")
               }
               dateFormat="MMM d, yyyy"
+              strictParsing={false}
               placeholderText="Through"
               className="date-picker-input"
               popperClassName="searchpv-date-picker-popper"
-              withPortal
-              
+              showPopperArrow={false}
+              popperPlacement="bottom-end"
             />
           </label>
         </div>
@@ -197,10 +200,30 @@ export default function ClosedListingFilters({
 
   function formatDateForUrl(date: Date) {
   const year = date.getFullYear();
+
+  if (year < 2000 || year > 2100) return "";
+
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+  }
+
+function parseUrlDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
 }
 
   function rangeHref(range: RangeKey) {
