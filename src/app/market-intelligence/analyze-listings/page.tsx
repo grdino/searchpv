@@ -5,7 +5,6 @@ import Header from "@/app/components/Header";
 import HamburgerMenu from "@/app/components/HamburgerMenu";
 import MainSloganBranding from "@/app/components/MainSloganBranding";
 import ClosedListingFilters from "@/app/components/ClosedListingFilters";
-import ClosedSalesMonthlyChart from "@/app/components/ClosedSalesMonthlyChart";
 
 // ***********************************************
 // Import dynamic Metadata
@@ -63,11 +62,11 @@ export async function generateMetadata({
     community: params.community,
     development: params.development,
     range: getRangeKey(params.range),
-    canonicalPath: "/market-intelligence/closed-sales",
+    canonicalPath: "/market-intelligence/market-activity",
   });
 }
 
-export default async function ClosedSalesPage({
+export default async function MarketActivityPage({
   searchParams,
 }: {
   searchParams: Promise<{
@@ -106,9 +105,6 @@ export default async function ClosedSalesPage({
 
   const { startDate: selectedStartDate, endDate: selectedEndDate } =
     resolveDateRange(selectedRange, params.startDate, params.endDate);
-
-  const chartStartDate = getChartStartDate();
-  const chartEndDate = formatISODate(new Date());
 
   let optionQuery = supabase
     .from("closed_listing_list")
@@ -171,7 +167,7 @@ export default async function ClosedSalesPage({
 
   let summaryQueryBase = supabase
     .from("closed_listing_list")
-    .select("mls, sold_date, sold_price, sold_price_per_sqft, sold_price_per_sqm, bedroom_segment");
+    .select("mls, sold_price, sold_price_per_sqft, sold_price_per_sqm, bedroom_segment");
 
   summaryQueryBase = applyFilters(summaryQueryBase, {
     selectedMarket,
@@ -204,33 +200,13 @@ export default async function ClosedSalesPage({
     if (!batch || batch.length < pageSize) break;
   }
 
-  let chartQueryBase = supabase
-    .from("closed_listing_list")
-    .select("mls, sold_date");
-
-  chartQueryBase = applyFilters(chartQueryBase, {
-    selectedMarket,
-    selectedPropertyType,
-    selectedZone,
-    selectedArea,
-    selectedCommunity,
-    selectedDevelopment,
-    selectedStartDate: chartStartDate,
-    selectedEndDate: chartEndDate,
-  });
-
-  const { data: chartData, error: chartError } = await chartQueryBase.limit(10000);
-
-  if (error || optionError || summaryError || chartError) {
+  if (error || optionError || summaryError) {
     return (
       <main className="min-h-screen p-8">
         <h1 className="text-3xl font-bold">SearchPV</h1>
         <p className="mt-4 text-red-600">Error loading closed sales.</p>
         <pre className="mt-4 text-sm">
-          {error?.message ??
-            optionError?.message ??
-            summaryError?.message ??
-            chartError?.message}
+          {error?.message ?? optionError?.message ?? summaryError?.message}
         </pre>
       </main>
     );
@@ -238,8 +214,6 @@ export default async function ClosedSalesPage({
 
   const listings = data ?? [];
   const summary = summaryRows ?? [];
-
-  const chartRows = chartData ?? [];
 
   function closedSalesSearchHref(rows: typeof summary) {
     return `/market-intelligence/closed-sales/search-results?mls=${rows
@@ -488,10 +462,10 @@ export default async function ClosedSalesPage({
             {" > "}
 
             <Link
-              href="/market-intelligence/closed-sales"
+              href="/market-intelligence/market-activity"
               className="underline hover:text-sky-200"
             >
-              Closed Sales
+              Market Activity
             </Link>
           </div>
 
@@ -525,15 +499,7 @@ export default async function ClosedSalesPage({
           </p>
         </div>
 
-          <div className="mt-6 mx-auto max-w-3xl">
-            <ClosedSalesMonthlyChart
-              rows={chartRows}
-              selectedRange={selectedRange}
-              variant="compact"
-            />
-          </div>
-
-          <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
           <SummaryCard
             label="Closed Sales"
             value={totalClosedSales.toLocaleString()}
@@ -839,30 +805,15 @@ function resolveDateRange(range: RangeKey, startDate?: string, endDate?: string)
   const today = new Date();
   const end = formatISODate(today);
 
-  if (range === "custom") {
-    return { startDate: startDate ?? "", endDate: endDate ?? "" };
-  }
+  if (range === "custom") return { startDate: startDate ?? "", endDate: endDate ?? "" };
+  if (range === "all") return { startDate: "", endDate: "" };
 
-  if (range === "all") {
-    return { startDate: "", endDate: "" };
-  }
+  const start = new Date(today);
+  if (range === "90d") start.setDate(start.getDate() - 90);
+  if (range === "6mo") start.setMonth(start.getMonth() - 6);
+  if (range === "12mo") start.setFullYear(start.getFullYear() - 1);
 
-  const monthCount =
-    range === "90d" ? 3 : range === "6mo" ? 6 : 12;
-
-  const start = new Date(today.getFullYear(), today.getMonth() - (monthCount - 1), 1);
-
-  return {
-    startDate: formatISODate(start),
-    endDate: end,
-  };
-}
-
-function getChartStartDate() {
-  const today = new Date();
-  const start = new Date(today.getFullYear(), today.getMonth() - 12, 1);
-
-  return formatISODate(start);
+  return { startDate: formatISODate(start), endDate: end };
 }
 
 function formatISODate(date: Date) {

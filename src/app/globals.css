@@ -24,3 +24,22 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.date-picker-input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #94a3b8;
+  background: #020617;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.date-picker-input::placeholder {
+  color: #cbd5e1;
+}
+
+.searchpv-date-picker-popper {
+  z-index: 9999 !important;
+}

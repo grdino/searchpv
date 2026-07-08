@@ -1,8 +1,5 @@
 "use client";
 
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
 type SortKey =
@@ -143,35 +140,17 @@ export default function ClosedListingFilters({
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "8px" }}>
           <label style={dateLabelStyle}>
             From
-            <DatePicker
-              selected={selectedStartDate ? new Date(selectedStartDate + "T00:00:00") : null}
-              onChange={(date) =>
-                goDate(date ? formatDateForUrl(date) : "", selectedEndDate)
-              }
-              dateFormat="MMM d, yyyy"
-              placeholderText="From"
-              className="date-picker-input"
-              popperClassName="searchpv-date-picker-popper"
-            />
+            <input type="date" value={selectedStartDate} onChange={(e) => goDate(e.target.value, selectedEndDate)} style={{ ...selectStyle, marginTop: "4px" }} />
           </label>
 
           <label style={dateLabelStyle}>
             Through
-            <DatePicker
-              selected={selectedEndDate ? new Date(selectedEndDate + "T00:00:00") : null}
-              onChange={(date) =>
-                goDate(selectedStartDate, date ? formatDateForUrl(date) : "")
-              }
-              dateFormat="MMM d, yyyy"
-              placeholderText="Through"
-              className="date-picker-input"
-              popperClassName="searchpv-date-picker-popper"
-            />
+            <input type="date" value={selectedEndDate} onChange={(e) => goDate(selectedStartDate, e.target.value)} style={{ ...selectStyle, marginTop: "4px" }} />
           </label>
         </div>
 
         <div style={{ marginTop: "10px", display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "8px" }}>
-          <FilterLink href={rangeHref("90d")} selected={selectedRange === "90d"}>3 Months</FilterLink>
+          <FilterLink href={rangeHref("90d")} selected={selectedRange === "90d"}>90 Days</FilterLink>
           <FilterLink href={rangeHref("6mo")} selected={selectedRange === "6mo"}>6 Months</FilterLink>
           <FilterLink href={rangeHref("12mo")} selected={selectedRange === "12mo"}>12 Months</FilterLink>
           <FilterLink href={rangeHref("all")} selected={selectedRange === "all"}>All Time</FilterLink>
@@ -191,14 +170,6 @@ export default function ClosedListingFilters({
   function goDate(startDate: string, endDate: string) {
     window.location.href = closedSalesHref(selectedMarket, selectedPropertyType, selectedSort, selectedDir, selectedZone, selectedArea, selectedCommunity, selectedDevelopment, "custom", startDate, endDate);
   }
-
-  function formatDateForUrl(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
 
   function rangeHref(range: RangeKey) {
     return closedSalesHref(selectedMarket, selectedPropertyType, selectedSort, selectedDir, selectedZone, selectedArea, selectedCommunity, selectedDevelopment, range, "", "");
@@ -240,7 +211,7 @@ function closedSalesHref(
   }
 
   const queryString = params.toString();
-  const basePath = "/market-intelligence/closed-sales";
+  const basePath = "/market-intelligence/market-activity";
 
   return queryString ? `${basePath}?${queryString}` : basePath;
 }
