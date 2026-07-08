@@ -38,22 +38,26 @@ export default function ClosedSalesMonthlyChart({
           : "rounded-xl border border-blue-300 bg-gradient-to-b from-sky-50 via-slate-50 to-slate-200 p-4 shadow"
       }
     >
-      <div className="mb-2 flex items-center justify-between gap-3">
+      <div className="mb-3">
         <h2
           className={
             isCompact
-              ? "text-xs font-bold text-slate-800"
+              ? "text-sm font-bold text-slate-800"
               : "text-sm font-bold text-slate-800"
           }
         >
           {title}
         </h2>
 
-        {!isCompact && (
-          <p className="text-xs text-slate-500">
-            Click a number to view matching sales
-          </p>
-        )}
+        <p
+          className={
+            isCompact
+              ? "mt-0.5 text-[11px] text-slate-500"
+              : "mt-1 text-xs text-slate-500"
+          }
+        >
+          Monthly closed sales • Current month shown <span className="font-semibold">MTD</span>
+        </p>
       </div>
 
       <div className="overflow-x-auto md:overflow-visible">
@@ -82,45 +86,50 @@ export default function ClosedSalesMonthlyChart({
 
             return (
               <div key={bucket.key} className="flex flex-col items-center">
-                {bucket.count > 0 ? (
-                  <Link
-                    href={href}
-                    className={
-                      isCompact
-                        ? "mb-1 text-[10px] font-bold text-blue-700 hover:underline"
-                        : "mb-1 rounded-full border border-blue-200 bg-white px-2 py-0.5 text-xs font-bold text-blue-700 shadow-sm hover:bg-blue-50 hover:underline"
-                    }
-                  >
-                    {bucket.count}
-                  </Link>
-                ) : (
-                  <span
-                    className={
-                      isCompact
-                        ? "mb-1 text-[10px] font-bold text-slate-400"
-                        : "mb-1 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-bold text-slate-400"
-                    }
-                  >
-                    0
-                  </span>
-                )}
-
                 <div
                   className={
                     isCompact
-                      ? "flex h-14 w-full items-end justify-center border-b border-slate-300"
-                      : "flex h-32 w-full items-end justify-center rounded-t border border-slate-300 bg-slate-50"
+                      ? "relative flex h-16 w-full items-end justify-center border-b border-slate-300"
+                      : "relative flex h-36 w-full items-end justify-center rounded-t border border-slate-300 bg-slate-50"
                   }
                 >
                   <div
-                    className={`rounded-t-sm ${
-                      isCompact ? "w-4" : "w-8"
-                    } ${
-                      bucket.isCurrentMonth ? "bg-blue-500" : "bg-slate-500"
+                    className={`flex flex-col items-center justify-end ${
+                      isCompact ? "h-14" : "h-32"
                     }`}
                     style={{ height: `${heightPct}%` }}
-                    title={`${bucket.label}: ${bucket.count} closed sales`}
-                  />
+                  >
+                    {bucket.count > 0 ? (
+                      <Link
+                        href={href}
+                        className={
+                          isCompact
+                            ? "mb-1 text-[10px] font-bold leading-none text-blue-700 hover:underline"
+                            : "mb-1 rounded-full border border-blue-200 bg-white px-2 py-0.5 text-xs font-bold leading-none text-blue-700 shadow-sm hover:bg-blue-50 hover:underline"
+                        }
+                      >
+                        {bucket.count}
+                      </Link>
+                    ) : (
+                      <span
+                        className={
+                          isCompact
+                            ? "mb-1 text-[10px] font-bold leading-none text-slate-400"
+                            : "mb-1 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-bold leading-none text-slate-400"
+                        }
+                      >
+                        0
+                      </span>
+                    )}
+
+                    <div
+                      className={`rounded-t-sm ${
+                        isCompact ? "w-4" : "w-8"
+                      } ${bucket.isCurrentMonth ? "bg-blue-500" : "bg-slate-500"}`}
+                      style={{ height: "100%" }}
+                      title={`${bucket.label}: ${bucket.count} closed sales`}
+                    />
+                  </div>
                 </div>
 
                 <div className="mt-1 text-center leading-tight">

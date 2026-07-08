@@ -511,9 +511,17 @@ export default async function ClosedSalesPage({
       </div>
 
       <section className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10">
+        <div className="mx-auto max-w-3xl">
+          <ClosedSalesMonthlyChart
+            rows={chartRows}
+            selectedRange={selectedRange}
+            variant="compact"
+          />
+        </div>
+
         <div
           id="closed-sales-summary"
-          className="scroll-mt-6 mt-8 rounded-xl bg-white p-6 shadow"
+          className="scroll-mt-6 mt-6 rounded-xl bg-white p-6 shadow"
         >
           <p className="text-sm font-semibold text-slate-500">
             Showing Sales From
@@ -524,14 +532,6 @@ export default async function ClosedSalesPage({
             {formatDateLong(selectedEndDate) || "Today"}
           </p>
         </div>
-
-          <div className="mt-6 mx-auto max-w-3xl">
-            <ClosedSalesMonthlyChart
-              rows={chartRows}
-              selectedRange={selectedRange}
-              variant="compact"
-            />
-          </div>
 
           <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
           <SummaryCard
