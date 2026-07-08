@@ -152,6 +152,7 @@ export default function ClosedListingFilters({
               placeholderText="From"
               className="date-picker-input"
               popperClassName="searchpv-date-picker-popper"
+              withPortal
             />
           </label>
 
@@ -166,6 +167,8 @@ export default function ClosedListingFilters({
               placeholderText="Through"
               className="date-picker-input"
               popperClassName="searchpv-date-picker-popper"
+              withPortal
+              
             />
           </label>
         </div>
