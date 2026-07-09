@@ -11,7 +11,7 @@ export default function SPVHeroMission() {
         Puerto Vallarta Market Intelligence
       </p>
 
-      <h1 className="mt-3 max-w-3xl text-[1.55rem] font-black leading-tight text-white sm:text-4xl md:text-5xl">
+      <h1 className="mt-3 max-w-3xl text-xl font-black leading-tight text-white sm:text-3xl md:text-3xl">
         <span className="block whitespace-nowrap">Explore Neighborhoods</span>
         <span className="block whitespace-nowrap">Analyze Market Trends</span>
         <span className="block whitespace-nowrap">
@@ -20,9 +20,7 @@ export default function SPVHeroMission() {
       </h1>
 
       <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300 md:text-base">
-        SearchPV brings Puerto Vallarta and Riviera Nayarit real estate data
-        together in one place — from area and community exploration to active,
-        pending, and closed sales analysis.
+        SearchPV ┃ Puerto Vallarta Real Estate ┃ Explore — Analyze — Share
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2">
@@ -31,11 +29,11 @@ export default function SPVHeroMission() {
         </a>
 
         <Link href="/market-intelligence" className={heroButtonClass}>
-          Market Analytics
+          Market Intelligence
         </Link>
 
         <Link href="/reports" className={heroButtonClass}>
-          Reports
+          Professional Reports
         </Link>
       </div>
 
@@ -54,8 +52,8 @@ export default function SPVHeroMission() {
 
       <div className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
         <p>
-          Explore Puerto Vallarta and Riviera Nayarit by geographic hierarchy.
-          Select a zone, area, community, or development to discover market
+          Explore Puerto Vallarta real estate by geographic hierarchy.
+          Select from zones, areas, communities and developments to discover market
           statistics, active listings, and recent sales.
         </p>
 
