@@ -687,7 +687,7 @@ const organizationJsonLd = {
             Selected Market
           </div>
 
-          <div className="ml-2 mt-3 grid grid-cols-3 gap-2 text-center text-xs text-slate-700 sm:ml-4 sm:text-sm">
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm text-slate-700">
             <div>
               <div className="text-lg font-bold leading-none text-slate-950">
                 {totalActive.toLocaleString()}
