@@ -599,40 +599,7 @@ const organizationJsonLd = {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10">
-        <div className="rounded-lg border border-slate-200 bg-white px-4 py-4 shadow-sm">
-          <div className="text-sm font-bold uppercase tracking-[0.12em] text-slate-900">
-            Current Market
-          </div>
-
-          <div className="ml-4 mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-700">
-            <span>
-              <strong className="text-lg text-slate-950">
-                {totalActive.toLocaleString()}
-              </strong>{" "}
-              Active
-            </span>
-
-            <span className="text-slate-400">•</span>
-
-            <span>
-              <strong className="text-lg text-slate-950">
-                {totalPending.toLocaleString()}
-              </strong>{" "}
-              Pending
-            </span>
-
-            <span className="text-slate-400">•</span>
-
-            <span>
-              <strong className="text-lg text-slate-950">
-                {totalSales.toLocaleString()}
-              </strong>{" "}
-              Closed Sales - 12 Mo
-            </span>
-          </div>
-        </div>
-
+      <section className="mx-auto max-w-6xl px-4 pt-0 pb-6 md:px-8 md:pt-2 md:pb-10">
         <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
           <div className="text-sm font-bold uppercase tracking-[0.12em] text-slate-900">
             Current Filters
@@ -714,8 +681,41 @@ const organizationJsonLd = {
             shown
           </div>
         </div>
+        
+        <div className="rounded-lg border border-slate-200 bg-white px-4 py-4 shadow-sm">
+          <div className="text-sm font-bold uppercase tracking-[0.12em] text-slate-900">
+            Current Market
+          </div>
 
-        <h2 id="community-snapshot" className="mt-3 text-2xl font-bold">
+          <div className="ml-4 mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-700">
+            <span>
+              <strong className="text-lg text-slate-950">
+                {totalActive.toLocaleString()}
+              </strong>{" "}
+              Active
+            </span>
+
+            <span className="text-slate-400">•</span>
+
+            <span>
+              <strong className="text-lg text-slate-950">
+                {totalPending.toLocaleString()}
+              </strong>{" "}
+              Pending
+            </span>
+
+            <span className="text-slate-400">•</span>
+
+            <span>
+              <strong className="text-lg text-slate-950">
+                {totalSales.toLocaleString()}
+              </strong>{" "}
+              Closed Sales - 12 Mo
+            </span>
+          </div>
+        </div>
+
+        <h2 id="community-snapshot" className="mt-8 text-2xl font-bold">
           {displayMode === "area"
             ? "Area Snapshot"
             : displayMode === "community"
