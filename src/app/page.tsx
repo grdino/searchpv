@@ -684,7 +684,7 @@ const organizationJsonLd = {
         
         <div className="rounded-lg border border-slate-200 bg-white px-4 py-4 shadow-sm">
           <div className="text-sm font-bold uppercase tracking-[0.12em] text-slate-900">
-            Current Market
+            Selected Market
           </div>
 
           <div className="ml-2 mt-3 grid grid-cols-3 gap-2 text-center text-xs text-slate-700 sm:ml-4 sm:text-sm">
@@ -707,7 +707,7 @@ const organizationJsonLd = {
                 {totalSales.toLocaleString()}
               </div>
               <div className="mt-1 hidden sm:block">Closed Sales - 12 Mo</div>
-              <div className="mt-1 sm:hidden">Closed-12 Mo</div>
+              <div className="mt-1 sm:hidden">Closed Sales-12 Mo</div>
             </div>
           </div>
         </div>
