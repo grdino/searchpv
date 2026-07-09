@@ -1,16 +1,22 @@
 import Link from "next/link";
 import AreaGuideModal from "@/app/components/AreaGuideModal";
 
+const heroButtonClass =
+  "rounded-full border border-[#00E5FF] bg-[#00E5FF] px-4 py-2 text-xs font-black text-slate-950 shadow-[0_0_12px_rgba(0,229,255,.45)] hover:bg-cyan-300";
+
 export default function SPVHeroMission() {
   return (
     <section className="mt-8 max-w-4xl">
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
         Puerto Vallarta Market Intelligence
       </p>
 
-      <h1 className="mt-3 max-w-3xl text-3xl font-bold leading-tight text-white md:text-5xl">
-        Explore neighborhoods. Analyze market trends. Generate professional
-        reports.
+      <h1 className="mt-3 max-w-3xl text-[1.55rem] font-black leading-tight text-white sm:text-4xl md:text-5xl">
+        <span className="block whitespace-nowrap">Explore Neighborhoods</span>
+        <span className="block whitespace-nowrap">Analyze Market Trends</span>
+        <span className="block whitespace-nowrap">
+          Generate Professional Reports
+        </span>
       </h1>
 
       <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300 md:text-base">
@@ -20,24 +26,15 @@ export default function SPVHeroMission() {
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2">
-        <a
-          href="#market-explorer"
-          className="rounded-full bg-white px-4 py-2 text-xs font-bold text-slate-950 hover:bg-slate-200"
-        >
+        <a href="#market-explorer" className={heroButtonClass}>
           Explore the Market
         </a>
 
-        <Link
-          href="/market-intelligence"
-          className="rounded-full border border-slate-500 px-4 py-2 text-xs font-bold text-white hover:bg-white/10"
-        >
+        <Link href="/market-intelligence" className={heroButtonClass}>
           Market Analytics
         </Link>
 
-        <Link
-          href="/reports"
-          className="rounded-full border border-slate-500 px-4 py-2 text-xs font-bold text-white hover:bg-white/10"
-        >
+        <Link href="/reports" className={heroButtonClass}>
           Reports
         </Link>
       </div>
@@ -47,9 +44,11 @@ export default function SPVHeroMission() {
         className="mt-8 flex scroll-mt-4 items-center gap-4 md:mt-10"
       >
         <div className="h-px flex-1 bg-white/20" />
-        <span className="whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.18em] text-white/60">
+
+        <span className="whitespace-nowrap text-[11px] font-black uppercase tracking-[0.18em] text-white">
           Market Explorer
         </span>
+
         <div className="h-px flex-1 bg-white/20" />
       </div>
 
