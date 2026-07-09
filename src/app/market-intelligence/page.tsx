@@ -116,10 +116,7 @@ export default function ReportsPage() {
                 color: "#dbe4f0",
               }}
             >
-              Build interactive reports using current inventory, pending listings,
-              closed sales, pricing history, and market statistics. Filter by
-              location, property type, market segment, bedrooms, and more to
-              discover meaningful market insights.
+              Analyze Listings ┃ Market Updates ┃ Market Trends
             </p>
           </div>
         </div>

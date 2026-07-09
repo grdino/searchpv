@@ -59,8 +59,7 @@ export default function ReportsPage() {
             <h1 style={heroTitleStyle}>Reports</h1>
 
             <p style={heroTextStyle}>
-              Download professionally formatted reports using current inventory,
-              pending sales, closed sales, pricing history, and market statistics.
+              Professional Reports ┃ Current Market Data ┃ Ready to Share
             </p>
           </div>
         </div>
