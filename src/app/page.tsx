@@ -687,31 +687,28 @@ const organizationJsonLd = {
             Current Market
           </div>
 
-          <div className="ml-4 mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-700">
-            <span>
-              <strong className="text-lg text-slate-950">
+          <div className="ml-2 mt-3 grid grid-cols-3 gap-2 text-center text-xs text-slate-700 sm:ml-4 sm:text-sm">
+            <div>
+              <div className="text-lg font-bold leading-none text-slate-950">
                 {totalActive.toLocaleString()}
-              </strong>{" "}
-              Active
-            </span>
+              </div>
+              <div className="mt-1">Active</div>
+            </div>
 
-            <span className="text-slate-400">•</span>
-
-            <span>
-              <strong className="text-lg text-slate-950">
+            <div>
+              <div className="text-lg font-bold leading-none text-slate-950">
                 {totalPending.toLocaleString()}
-              </strong>{" "}
-              Pending
-            </span>
+              </div>
+              <div className="mt-1">Pending</div>
+            </div>
 
-            <span className="text-slate-400">•</span>
-
-            <span>
-              <strong className="text-lg text-slate-950">
+            <div>
+              <div className="text-lg font-bold leading-none text-slate-950">
                 {totalSales.toLocaleString()}
-              </strong>{" "}
-              Closed Sales - 12 Mo
-            </span>
+              </div>
+              <div className="mt-1 hidden sm:block">Closed Sales - 12 Mo</div>
+              <div className="mt-1 sm:hidden">Closed-12 Mo</div>
+            </div>
           </div>
         </div>
 
