@@ -20,7 +20,7 @@ export default function SPVHeroMission() {
       </h1>
 
       <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300 md:text-base">
-        SearchPV ┃ Puerto Vallarta Real Estate ┃ Explore — Analyze — Share
+        SearchPV ┃ Puerto Vallarta Real Estate ┃ Explore • Analyze • Share
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2">
