@@ -5,6 +5,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
+      disallow: [
+        "/market-intelligence/closed-sales/search-results",
+      ],
     },
     sitemap: "https://searchpv.com/sitemap.xml",
   };

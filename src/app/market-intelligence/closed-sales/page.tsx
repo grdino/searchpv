@@ -14,6 +14,14 @@ import { buildMarketSeo } from "@/lib/seo";
 // 
 // ***********************************************
 
+export const metadata = {
+  title: "Closed Sales Search Results | SearchPV",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
 type SortKey =
