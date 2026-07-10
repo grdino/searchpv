@@ -14,14 +14,6 @@ import { buildMarketSeo } from "@/lib/seo";
 // 
 // ***********************************************
 
-export const metadata = {
-  title: "Closed Sales Search Results | SearchPV",
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
-
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
 type SortKey =
@@ -62,7 +54,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const params = await searchParams;
 
-  return buildMarketSeo({
+  const seo = buildMarketSeo({
     pageType: "closed-sales",
     market: getMarketSegment(params.market),
     propertyType: getPropertyTypeSegment(params.propertyType),
@@ -73,6 +65,8 @@ export async function generateMetadata({
     range: getRangeKey(params.range),
     canonicalPath: "/market-intelligence/closed-sales",
   });
+
+  return seo;
 }
 
 export default async function ClosedSalesPage({
