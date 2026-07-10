@@ -102,6 +102,7 @@ export default function ClosedSalesMonthlyChart({
                     {bucket.count > 0 ? (
                       <Link
                         href={href}
+                        rel="nofollow"
                         className={
                           isCompact
                             ? "mb-1 text-[10px] font-bold leading-none text-blue-700 hover:underline"

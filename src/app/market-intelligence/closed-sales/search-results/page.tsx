@@ -119,7 +119,7 @@ function SortableTh({
 
   return (
     <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-      <Link href={href} className="hover:text-slate-950">
+      <Link href={href} rel="nofollow" className="hover:text-slate-950">
         {label}
         {arrow}
       </Link>
