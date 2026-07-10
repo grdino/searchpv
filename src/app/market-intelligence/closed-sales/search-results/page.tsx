@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
 import Header from "@/app/components/Header";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Closed Sales Search Results | SearchPV",
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
 
 type SearchParams = {
   ListingId?: string;
