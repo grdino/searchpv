@@ -1306,6 +1306,7 @@ function ClosedSalesListingLink({
   return (
     <Link
       href={`/market-intelligence/closed-sales/search-results?mls=${listingIds}`}
+      rel="nofollow"
       className="font-semibold text-blue-700 hover:underline"
     >
       {children}
