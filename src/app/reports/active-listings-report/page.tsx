@@ -623,8 +623,8 @@ function buildHref(params: SearchParams, updates: Partial<SearchParams>) {
   const qs = next.toString();
 
   return qs
-    ? `/market-intelligence/active-listings?${qs}#active-listings-report`
-    : "/market-intelligence/active-listings#active-listings-report";
+    ? `/reports/active-listings-report?${qs}#active-listings-report`
+    : "/reports/active-listings-report#active-listings-report";
 }
 
 function formatCurrency(value: number | null) {
