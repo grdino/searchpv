@@ -97,6 +97,11 @@ export default function HamburgerMenu() {
           <Link href="/contact" onClick={closeMenu} style={menuLinkStyle}>
             Contact
           </Link>
+
+          <Link href="/office" onClick={closeMenu} style={menuLinkStyle}>
+            🔒 Office
+          </Link>
+
         </div>
       )}
     </div>
