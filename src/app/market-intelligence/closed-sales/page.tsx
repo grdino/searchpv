@@ -109,8 +109,9 @@ export default async function ClosedSalesPage({
   const { startDate: selectedStartDate, endDate: selectedEndDate } =
     resolveDateRange(selectedRange, params.startDate, params.endDate);
 
-  const chartStartDate = getChartStartDate();
-  const chartEndDate = formatISODate(new Date());
+  const chartToday = new Date();
+  const chartStartDate = getChartStartDate(chartToday);
+  const chartEndDate = formatLocalISODate(chartToday);
 
   let optionQuery = supabase
     .from("closed_listing_list")
@@ -516,7 +517,6 @@ export default async function ClosedSalesPage({
         <div className="mx-auto max-w-3xl">
           <ClosedSalesMonthlyChart
             rows={chartRows}
-            selectedRange={selectedRange}
             variant="compact"
           />
         </div>
@@ -860,11 +860,22 @@ function resolveDateRange(range: RangeKey, startDate?: string, endDate?: string)
   };
 }
 
-function getChartStartDate() {
-  const today = new Date();
-  const start = new Date(today.getFullYear(), today.getMonth() - 12, 1);
+function getChartStartDate(today: Date) {
+  /*
+   * Displays the latest 12 months and retrieves the matching
+   * 12 prior-year comparison months.
+   *
+   * Example for July 2026:
+   * - displayed period begins August 2025
+   * - comparison period begins August 2024
+   */
+  const start = new Date(
+    today.getFullYear(),
+    today.getMonth() - 23,
+    1
+  );
 
-  return formatISODate(start);
+  return formatLocalISODate(start);
 }
 
 function formatISODate(date: Date) {
@@ -1073,4 +1084,17 @@ function formatDateShort(value: string | null) {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function parseISODate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function formatLocalISODate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }

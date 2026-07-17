@@ -1,8 +1,5 @@
-// src/app/components/ClosedSalesMonthlyChart.tsx
-
 import Link from "next/link";
 
-type RangeKey = "90d" | "6mo" | "12mo" | "all" | "custom";
 type ChartVariant = "card" | "compact";
 
 type ClosedSaleChartRow = {
@@ -13,20 +10,41 @@ type ClosedSaleChartRow = {
 type ClosedSalesMonthlyChartProps = {
   title?: string;
   rows: ClosedSaleChartRow[];
-  selectedRange: RangeKey;
   variant?: ChartVariant;
 };
 
+type BarData = {
+  count: number;
+  mlsList: string[];
+};
+
+type ComparisonBucket = {
+  key: string;
+  label: string;
+  currentYear: number;
+  previousYear: number;
+  isCurrentMonth: boolean;
+  current: BarData;
+  previous: BarData;
+};
+
 export default function ClosedSalesMonthlyChart({
-  title = "13-Month Market Snapshot",
+  title = "12-Month Year-over-Year Closed Sales",
   rows,
-  selectedRange,
   variant = "card",
 }: ClosedSalesMonthlyChartProps) {
-  const buckets = buildMonthlyBuckets(rows);
-  const maxCount = Math.max(...buckets.map((bucket) => bucket.count), 1);
+  const today = new Date();
+  const buckets = buildMonthlyBuckets(rows, today);
 
   if (!buckets.length) return null;
+
+  const maxCount = Math.max(
+    ...buckets.flatMap((bucket) => [
+      bucket.current.count,
+      bucket.previous.count,
+    ]),
+    1
+  );
 
   const isCompact = variant === "compact";
 
@@ -39,15 +57,7 @@ export default function ClosedSalesMonthlyChart({
       }
     >
       <div className="mb-3">
-        <h2
-          className={
-            isCompact
-              ? "text-sm font-bold text-slate-800"
-              : "text-sm font-bold text-slate-800"
-          }
-        >
-          {title}
-        </h2>
+        <h2 className="text-sm font-bold text-slate-800">{title}</h2>
 
         <p
           className={
@@ -56,168 +66,280 @@ export default function ClosedSalesMonthlyChart({
               : "mt-1 text-xs text-slate-500"
           }
         >
-          Monthly closed sales • Current month shown <span className="font-semibold">MTD</span>
+          Each month compares the prior year with the most recent 12 months.
+          Current-month results are compared through{" "}
+          <span className="font-semibold">
+            {formatMonthDay(today)}
+          </span>
+          .
         </p>
+
+        <div
+          className={
+            isCompact
+              ? "mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-600"
+              : "mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-600"
+          }
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-slate-400" />
+            Previous year
+          </span>
+
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-blue-500" />
+            Current 12 months
+          </span>
+        </div>
       </div>
 
       <div className="overflow-x-auto md:overflow-visible">
         <div
           className={`grid items-end ${
-            isCompact ? "min-w-[520px] gap-2" : "min-w-[420px] gap-3"
+            isCompact ? "min-w-[720px] gap-2" : "min-w-[840px] gap-3"
           }`}
           style={{
             gridTemplateColumns: `repeat(${buckets.length}, minmax(${
-              isCompact ? "30px" : "42px"
+              isCompact ? "48px" : "60px"
             }, 1fr))`,
           }}
         >
-          {buckets.map((bucket) => {
-            const heightPct =
-              bucket.count > 0
-                ? Math.max((bucket.count / maxCount) * 100, isCompact ? 10 : 8)
-                : 0;
+          {buckets.map((bucket) => (
+            <div key={bucket.key} className="flex flex-col items-center">
+              <div
+                className={
+                  isCompact
+                    ? "relative flex h-20 w-full items-end justify-center gap-1 border-b border-slate-300"
+                    : "relative flex h-40 w-full items-end justify-center gap-1 rounded-t border border-slate-300 bg-slate-50 px-1"
+                }
+              >
+                <ChartBar
+                  bar={bucket.previous}
+                  maxCount={maxCount}
+                  label={`${bucket.label} ${bucket.previousYear}`}
+                  barClassName="bg-slate-400"
+                  isCompact={isCompact}
+                />
 
-            const href =
-              bucket.mlsList.length > 0
-                ? `/market-intelligence/closed-sales/search-results?mls=${bucket.mlsList.join(
-                    ","
-                  )}`
-                : "#";
+                <ChartBar
+                  bar={bucket.current}
+                  maxCount={maxCount}
+                  label={`${bucket.label} ${bucket.currentYear}`}
+                  barClassName="bg-blue-500"
+                  isCompact={isCompact}
+                />
+              </div>
 
-            return (
-              <div key={bucket.key} className="flex flex-col items-center">
+              <div className="mt-1 text-center leading-tight">
                 <div
                   className={
                     isCompact
-                      ? "relative flex h-16 w-full items-end justify-center border-b border-slate-300"
-                      : "relative flex h-36 w-full items-end justify-center rounded-t border border-slate-300 bg-slate-50"
+                      ? "text-[10px] font-medium text-slate-700"
+                      : "text-xs font-medium text-slate-700"
                   }
                 >
-                  <div
-                    className={`flex flex-col items-center justify-end ${
-                      isCompact ? "h-14" : "h-32"
-                    }`}
-                    style={{ height: `${heightPct}%` }}
-                  >
-                    {bucket.count > 0 ? (
-                      <Link
-                        href={href}
-                        rel="nofollow"
-                        className={
-                          isCompact
-                            ? "mb-1 text-[10px] font-bold leading-none text-blue-700 hover:underline"
-                            : "mb-1 rounded-full border border-blue-200 bg-white px-2 py-0.5 text-xs font-bold leading-none text-blue-700 shadow-sm hover:bg-blue-50 hover:underline"
-                        }
-                      >
-                        {bucket.count}
-                      </Link>
-                    ) : (
-                      <span
-                        className={
-                          isCompact
-                            ? "mb-1 text-[10px] font-bold leading-none text-slate-400"
-                            : "mb-1 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-bold leading-none text-slate-400"
-                        }
-                      >
-                        0
-                      </span>
-                    )}
-
-                    <div
-                      className={`rounded-t-sm ${
-                        isCompact ? "w-4" : "w-8"
-                      } ${bucket.isCurrentMonth ? "bg-blue-500" : "bg-slate-500"}`}
-                      style={{ height: "100%" }}
-                      title={`${bucket.label}: ${bucket.count} closed sales`}
-                    />
-                  </div>
+                  {bucket.label}
                 </div>
 
-                <div className="mt-1 text-center leading-tight">
-                  <div
-                    className={
-                      isCompact
-                        ? "text-[10px] font-medium text-slate-700"
-                        : "text-xs font-medium text-slate-700"
-                    }
-                  >
-                    {bucket.label}
-                  </div>
-
-                  <div className={isCompact ? "h-3 text-[9px]" : "h-3 text-[10px]"}>
-                    {bucket.showYear && (
-                      <span className="text-slate-500">{bucket.year}</span>
-                    )}
-
-                    {bucket.showYear && bucket.isCurrentMonth && " "}
-
-                    {bucket.isCurrentMonth && (
-                      <span
-                        className={
-                          isCompact
-                            ? "font-semibold text-blue-600"
-                            : "font-semibold text-blue-600"
-                        }
-                      >
-                        MTD
-                      </span>
-                    )}
-                  </div>
+                <div
+                  className={
+                    isCompact
+                      ? "h-3 text-[9px] text-slate-500"
+                      : "h-3 text-[10px] text-slate-500"
+                  }
+                >
+                  {bucket.isCurrentMonth ? (
+                    <span className="font-semibold text-blue-600">MTD</span>
+                  ) : (
+                    <span>
+                      {String(bucket.previousYear).slice(-2)}/
+                      {String(bucket.currentYear).slice(-2)}
+                    </span>
+                  )}
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
-function buildMonthlyBuckets(rows: ClosedSaleChartRow[]) {
-  const monthCount = 13;
+function ChartBar({
+  bar,
+  maxCount,
+  label,
+  barClassName,
+  isCompact,
+}: {
+  bar: BarData;
+  maxCount: number;
+  label: string;
+  barClassName: string;
+  isCompact: boolean;
+}) {
+  const heightPct =
+    bar.count > 0
+      ? Math.max((bar.count / maxCount) * 100, isCompact ? 10 : 6)
+      : 0;
 
-  const today = new Date();
+  const href =
+    bar.mlsList.length > 0
+      ? `/market-intelligence/closed-sales/search-results?mls=${bar.mlsList.join(
+          ","
+        )}`
+      : "#";
+
+  return (
+    <div
+      className={`flex h-full flex-1 flex-col items-center justify-end ${
+        isCompact ? "max-w-5" : "max-w-7"
+      }`}
+    >
+      {bar.count > 0 ? (
+        <Link
+          href={href}
+          rel="nofollow"
+          className={
+            isCompact
+              ? "mb-1 text-[9px] font-bold leading-none text-blue-700 hover:underline"
+              : "mb-1 rounded-full border border-blue-200 bg-white px-1.5 py-0.5 text-[10px] font-bold leading-none text-blue-700 shadow-sm hover:bg-blue-50 hover:underline"
+          }
+        >
+          {bar.count}
+        </Link>
+      ) : (
+        <span
+          className={
+            isCompact
+              ? "mb-1 text-[9px] font-bold leading-none text-slate-400"
+              : "mb-1 px-1.5 py-0.5 text-[10px] font-bold leading-none text-slate-400"
+          }
+        >
+          0
+        </span>
+      )}
+
+      <div
+        className={`w-full rounded-t-sm ${barClassName}`}
+        style={{ height: `${heightPct}%` }}
+        title={`${label}: ${bar.count} closed sales`}
+      />
+    </div>
+  );
+}
+
+function buildMonthlyBuckets(
+  rows: ClosedSaleChartRow[],
+  today: Date
+): ComparisonBucket[] {
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth();
+  const currentDay = today.getDate();
 
-  const buckets = Array.from({ length: monthCount }, (_, index) => {
-    const date = new Date(currentYear, currentMonth - (monthCount - 1 - index), 1);
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const key = `${year}-${String(month + 1).padStart(2, "0")}`;
+  const buckets = Array.from({ length: 12 }, (_, index) => {
+      const currentDate = new Date(
+        currentYear,
+        currentMonth - (11 - index),
+        1
+      );
 
-    return {
-      key,
-      label: date.toLocaleDateString("en-US", { month: "short" }),
-      year,
-      month,
-      count: 0,
-      mlsList: [] as string[],
-      isCurrentMonth: year === currentYear && month === currentMonth,
-      showYear: false,
-    };
-  });
+      const bucketYear = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const previousYear = bucketYear - 1;
 
-  buckets.forEach((bucket, index) => {
-    bucket.showYear = index === 0 || bucket.month === 0;
-  });
+      return {
+        key: `${bucketYear}-${String(month + 1).padStart(2, "0")}`,
+        label: currentDate.toLocaleDateString("en-US", {
+          month: "short",
+        }),
+        currentYear: bucketYear,
+        previousYear,
+        month,
+        isCurrentMonth:
+          bucketYear === currentYear && month === currentMonth,
+        current: {
+          count: 0,
+          mlsList: [] as string[],
+        },
+        previous: {
+          count: 0,
+          mlsList: [] as string[],
+        },
+      };
+    });
 
-  const bucketMap = new Map(buckets.map((bucket) => [bucket.key, bucket]));
+  const bucketMap = new Map(
+    buckets.map((bucket) => [
+      `${bucket.currentYear}-${String(bucket.month + 1).padStart(2, "0")}`,
+      bucket,
+    ])
+  );
 
   rows.forEach((row) => {
     if (!row.sold_date || !row.mls) return;
 
-    const [year, month] = row.sold_date.split("-").map(Number);
-    if (!year || !month) return;
+    const soldDate = parseISODate(row.sold_date);
 
-    const key = `${year}-${String(month).padStart(2, "0")}`;
-    const bucket = bucketMap.get(key);
+    if (!soldDate) return;
 
-    if (!bucket) return;
+    const soldYear = soldDate.getFullYear();
+    const soldMonth = soldDate.getMonth();
+    const soldDay = soldDate.getDate();
 
-    bucket.count += 1;
-    bucket.mlsList.push(String(row.mls));
+    const currentKey = `${soldYear}-${String(soldMonth + 1).padStart(2, "0")}`;
+    const currentBucket = bucketMap.get(currentKey);
+
+    if (currentBucket) {
+      /*
+       * The current period is already restricted by the query's
+       * snapshotDate ending boundary.
+       */
+      currentBucket.current.count += 1;
+      currentBucket.current.mlsList.push(String(row.mls));
+      return;
+    }
+
+    const comparisonKey = `${soldYear + 1}-${String(soldMonth + 1).padStart(
+      2,
+      "0"
+    )}`;
+
+    const comparisonBucket = bucketMap.get(comparisonKey);
+
+    if (!comparisonBucket) return;
+
+    /*
+     * For the currently incomplete month, compare only through the same
+     * day in the previous year.
+     *
+     * Example:
+     * snapshotDate = 2026-07-10
+     * July 2025 includes July 1 through July 10 only.
+     */
+    if (comparisonBucket.isCurrentMonth && soldDay > currentDay) {
+      return;
+    }
+
+    comparisonBucket.previous.count += 1;
+    comparisonBucket.previous.mlsList.push(String(row.mls));
   });
 
   return buckets;
+}
+
+function parseISODate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) return null;
+
+  return new Date(year, month - 1, day);
+}
+
+function formatMonthDay(date: Date) {
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+  });
 }
