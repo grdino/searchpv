@@ -1,9 +1,13 @@
 import Link from "next/link";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 import Header from "@/app/components/Header";
 import HamburgerMenu from "@/app/components/HamburgerMenu";
 import MainSloganBranding from "@/app/components/MainSloganBranding";
+
+import type {
+  SupabaseClient,
+} from "@supabase/supabase-js";
 
 import AgencyClosedSalesFilters from "./AgencyClosedSalesFilters";
 import {
@@ -48,6 +52,8 @@ export default async function ClosedSalesByAgencyPage({
     dir?: string;
   }>;
 }) {
+  const supabase = await createClient();
+
   const params = await searchParams;
 
   const selectedMarket = getMarketSegment(params.market);
@@ -77,7 +83,7 @@ export default async function ClosedSalesByAgencyPage({
   const [agencyResponse, summaryResponse, optionResponse] = await Promise.all([
     supabase.rpc("closed_sales_by_agency", rpcParams),
     supabase.rpc("closed_sales_agency_report_summary", rpcParams),
-    loadFilterOptions({ selectedMarket, selectedPropertyType, selectedStartDate, selectedEndDate }),
+    loadFilterOptions({ supabase, selectedMarket, selectedPropertyType, selectedStartDate, selectedEndDate }),
   ]);
 
   const error = agencyResponse.error || summaryResponse.error || optionResponse.error;
@@ -250,22 +256,93 @@ function Td({ children, stickyLeft = false }: { children: React.ReactNode; stick
   return <td className={`whitespace-nowrap border-t border-slate-100 px-4 py-3 ${stickyLeft ? "sticky left-0 z-10 bg-white shadow-[2px_0_0_#e2e8f0]" : "bg-white"}`}>{children}</td>;
 }
 
-async function loadFilterOptions({ selectedMarket, selectedPropertyType, selectedStartDate, selectedEndDate }: { selectedMarket: string; selectedPropertyType: string; selectedStartDate: string; selectedEndDate: string }) {
-  let query = supabase.from("closed_listing_list").select("zone_name, area_name, community_name, development_name");
-  if (selectedMarket !== "all") query = query.eq("market_segment", selectedMarket);
-  if (selectedPropertyType !== "all") query = query.eq("property_type_segment", selectedPropertyType);
-  if (selectedStartDate) query = query.gte("sold_date", selectedStartDate);
-  if (selectedEndDate) query = query.lte("sold_date", selectedEndDate);
+async function loadFilterOptions({
+  supabase,
+  selectedMarket,
+  selectedPropertyType,
+  selectedStartDate,
+  selectedEndDate,
+}: {
+  supabase: SupabaseClient;
+  selectedMarket: string;
+  selectedPropertyType: string;
+  selectedStartDate: string;
+  selectedEndDate: string;
+}) {
+  let query = supabase
+    .from("closed_listing_list")
+    .select(
+      "zone_name, area_name, community_name, development_name",
+    );
 
-  const rows: { zone_name: string | null; area_name: string | null; community_name: string | null; development_name: string | null }[] = [];
-  const pageSize = 1000;
-  for (let from = 0; from < 50000; from += pageSize) {
-    const response = await query.range(from, from + pageSize - 1);
-    if (response.error) return { rows, error: response.error };
-    rows.push(...(response.data ?? []));
-    if (!response.data || response.data.length < pageSize) break;
+  if (selectedMarket !== "all") {
+    query = query.eq(
+      "market_segment",
+      selectedMarket,
+    );
   }
-  return { rows, error: null };
+
+  if (selectedPropertyType !== "all") {
+    query = query.eq(
+      "property_type_segment",
+      selectedPropertyType,
+    );
+  }
+
+  if (selectedStartDate) {
+    query = query.gte(
+      "sold_date",
+      selectedStartDate,
+    );
+  }
+
+  if (selectedEndDate) {
+    query = query.lte(
+      "sold_date",
+      selectedEndDate,
+    );
+  }
+
+  const rows: {
+    zone_name: string | null;
+    area_name: string | null;
+    community_name: string | null;
+    development_name: string | null;
+  }[] = [];
+
+  const pageSize = 1000;
+
+  for (
+    let from = 0;
+    from < 50000;
+    from += pageSize
+  ) {
+    const response = await query.range(
+      from,
+      from + pageSize - 1,
+    );
+
+    if (response.error) {
+      return {
+        rows,
+        error: response.error,
+      };
+    }
+
+    rows.push(...(response.data ?? []));
+
+    if (
+      !response.data ||
+      response.data.length < pageSize
+    ) {
+      break;
+    }
+  }
+
+  return {
+    rows,
+    error: null,
+  };
 }
 
 function uniqueSorted(values: Array<string | null>) {
