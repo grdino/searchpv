@@ -1,59 +1,55 @@
--- ============================================================================
--- CLOSED SALES AGENT DETAIL
--- ============================================================================
--- Returns the individual closed transactions that make up an agent's totals.
---
--- The agent and agency must match the listing side, selling side, or both.
--- The same market filters used by closed_sales_by_agent() are supported.
--- ============================================================================
+begin;
 
-create or replace function public.closed_sales_agent_detail(
+drop function if exists public.closed_sales_agent_detail(
+    text,
+    text,
+    date,
+    date,
+    text,
+    text,
+    text,
+    text,
+    text,
+    text
+);
+
+create function public.closed_sales_agent_detail(
     p_agent_nm text,
     p_agency_nm text,
-
-    p_start_date date default null::date,
-    p_end_date date default null::date,
-
-    p_zone_nm text default null::text,
-    p_area_nm text default null::text,
-    p_community_nm text default null::text,
-    p_development_nm text default null::text,
-
-    p_property_type_cd text default null::text,
-    p_market_type_nm text default null::text
+    p_start_date date default null,
+    p_end_date date default null,
+    p_zone_nm text default null,
+    p_area_nm text default null,
+    p_community_nm text default null,
+    p_development_nm text default null,
+    p_property_type_cd text default null,
+    p_market_type_nm text default null
 )
-returns table (
+returns table(
     clsd_sale_ky bigint,
     lstng_nb text,
-
     sold_dt date,
-
     zone_nm text,
     area_nm text,
     community_nm text,
     development_nm text,
-
+    unit_id text,
     prprty_type_cd text,
     market_type_nm text,
-
     sold_price_usd numeric,
     dom_nb numeric,
-
     sold_to_list_pc numeric,
     sold_vs_list_pc numeric,
-
     participation_nm text,
-
     listing_agent_nm text,
     listing_agency_nm text,
-
     selling_agent_nm text,
     selling_agency_nm text
 )
 language sql
 stable
 security definer
-set search_path to 'public', 'internal', 'pg_temp'
+set search_path to public, internal, pg_temp
 as $function$
 
 with filtered_sales as (
@@ -66,6 +62,7 @@ with filtered_sales as (
         d.area_nm,
         d.community_nm,
         d.development_nm,
+        d.unit_id,
 
         d.prprty_type_cd,
         d.market_type_nm,
@@ -143,13 +140,13 @@ agent_matches as (
 select
     a.clsd_sale_ky,
     a.lstng_nb,
-
     a.sold_dt,
 
     a.zone_nm,
     a.area_nm,
     a.community_nm,
     a.development_nm,
+    a.unit_id,
 
     a.prprty_type_cd,
     a.market_type_nm,
@@ -191,3 +188,5 @@ order by
     a.lstng_nb;
 
 $function$;
+
+commit;

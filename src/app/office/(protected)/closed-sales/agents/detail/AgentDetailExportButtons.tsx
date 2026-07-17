@@ -163,6 +163,7 @@ export default function AgentDetailExportButtons({
           "Sold Date",
           "Participation",
           "Development",
+          "Unit",
           "Community",
           "Area",
           "Type",
@@ -183,6 +184,7 @@ export default function AgentDetailExportButtons({
         formatDate(row.sold_dt),
         row.participation_nm ?? "",
         row.development_nm ?? "",
+        row.unit_id ?? "",
         row.community_nm ?? "",
         row.area_nm ?? "",
         row.prprty_type_cd ?? "",
@@ -215,19 +217,20 @@ export default function AgentDetailExportButtons({
         0: { cellWidth: 34 },
         1: { cellWidth: 43 },
         2: { cellWidth: 47 },
-        3: { cellWidth: 58 },
-        4: { cellWidth: 51 },
-        5: { cellWidth: 43 },
-        6: { cellWidth: 38 },
-        7: { cellWidth: 42 },
-        8: { cellWidth: 48, halign: "right" },
-        9: { cellWidth: 26, halign: "right" },
-        10: { cellWidth: 38, halign: "right" },
-        11: { cellWidth: 42, halign: "right" },
-        12: { cellWidth: 58 },
-        13: { cellWidth: 62 },
-        14: { cellWidth: 58 },
-        15: { cellWidth: 62 },
+        3: { cellWidth: 54 },      // Development
+        4: { cellWidth: 32 },      // Unit
+        5: { cellWidth: 46 },      // Community
+        6: { cellWidth: 40 },      // Area
+        7: { cellWidth: 36 },      // Type
+        8: { cellWidth: 40 },      // Market
+        9: { cellWidth: 46, halign: "right" }, // Sold Price
+        10:{ cellWidth: 24, halign: "right" }, // DOM
+        11:{ cellWidth: 36, halign: "right" }, // Sold/List
+        12:{ cellWidth: 40, halign: "right" }, // Above/Below
+        13:{ cellWidth: 56 },      // Listing Agent
+        14:{ cellWidth: 60 },      // Listing Agency
+        15:{ cellWidth: 56 },      // Selling Agent
+        16:{ cellWidth: 60 },      // Selling Agency
       },
 
       margin: {
@@ -408,6 +411,7 @@ export default function AgentDetailExportButtons({
       Participation: row.participation_nm ?? "",
       Development: row.development_nm ?? "",
       Community: row.community_nm ?? "",
+      Unit: row.unit_id ?? "",
       Area: row.area_nm ?? "",
       "Property Type": row.prprty_type_cd ?? "",
       Market: formatMarket(row.market_type_nm),
@@ -429,9 +433,10 @@ export default function AgentDetailExportButtons({
       { wch: 12 },
       { wch: 13 },
       { wch: 16 },
-      { wch: 24 },
-      { wch: 20 },
-      { wch: 18 },
+      { wch: 24 }, // Development
+      { wch: 10 }, // Unit
+      { wch: 20 }, // Community
+      { wch: 18 }, // Area
       { wch: 15 },
       { wch: 18 },
       { wch: 14 },

@@ -37,6 +37,7 @@ export type AgentDetailRow = {
   area_nm: string | null;
   community_nm: string | null;
   development_nm: string | null;
+  unit_id: string | null;
 
   prprty_type_cd: string | null;
   market_type_nm: string | null;
@@ -370,6 +371,7 @@ export default async function AgentClosedSalesDetailPage({
                     <Th>Sold Date</Th>
                     <Th>Participation</Th>
                     <Th>Development</Th>
+                    <Th>Unit</Th>
                     <Th>Community</Th>
                     <Th>Area</Th>
                     <Th>Property Type</Th>
@@ -411,6 +413,8 @@ export default async function AgentClosedSalesDetailPage({
                       <Td>
                         {row.development_nm || "—"}
                       </Td>
+
+                      <Td>{row.unit_id || "—"}</Td>
 
                       <Td>
                         {row.community_nm || "—"}
