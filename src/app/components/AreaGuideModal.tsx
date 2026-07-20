@@ -15,7 +15,6 @@ const AREA_GUIDE: AreaGuide[] = [
     communities: [
       "Emiliano Zapata — Romantic Zone",
       "Alta Vista",
-      "Amapas",
       "Olas Altas",
       "El Caloso",
     ],
@@ -53,6 +52,7 @@ const AREA_GUIDE: AreaGuide[] = [
   {
     area: "South Shore",
     communities: [
+      "Amapas",
       "Conchas Chinas",
       "Punta Negra",
       "Garza Blanca",

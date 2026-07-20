@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="PostgreSQL" database="PostgreSQL" id="9846acb8-cf45-460e-8ccf-9446ff597e3b" >
+	<schema name="geo" >
+		<table name="confidence_lu" spec="" >
+			<column name="confidence_cd" type="text" mandatory="y" />
+			<column name="confidence_nm" type="text" mandatory="y" />
+			<column name="sort_order_nb" type="smallint" mandatory="y" />
+			<column name="active_fl" type="boolean" mandatory="y" >
+				<defo><![CDATA[true]]></defo>
+			</column>
+			<column name="description_tx" type="text" />
+			<index name="confidence_lu_pk" unique="PRIMARY_KEY" >
+				<column name="confidence_cd" />
+			</index>
+		</table>
+		<table name="entity" spec="" >
+			<comment><![CDATA[Each row represents one specific geographic thing:
+
+one zone
+one area
+one community
+one development
+one building
+one neighborhood
+one other named place
+
+For example:
+
+entity_id: 1042
+entity_cd: DEV_SIERRA_DEL_MAR
+entity_type_cd: DEVELOPMENT
+canonical_name_tx: Sierra del Mar
+
+Everything else in the model attaches to that row.]]></comment>
+			<column name="entity_ky" prior="entity_id" type="bigserial" >
+				<comment><![CDATA[The internal numeric identifier. This is the true identity of the entity inside SearchPV.
+Example: 1042
+Why it matters: names are not always unique. You could have two developments named Las Palmas
+Their names may match, but their entity_id values will be different.]]></comment>
+			</column>
+			<column name="entity_identifier_cd" prior="entity_identifier_nm" type="text" mandatory="y" >
+				<comment><![CDATA[A stable, human-readable business cd. 
+Example: SIERRA_DEL_MAR
+Unlike entity_id, this code is meaningful to a person and may be useful in configuration files, ETL mappings, or APIs.
+It should remain stable even if the canonical display name changes.]]></comment>
+			</column>
+			<column name="entity_type_cd" type="text" mandatory="y" >
+				<comment><![CDATA[Defines what kind of entity this is.
+It links to: entity_type_lu
+Possible values include: ZONE, AREA, COMMUNITY, DEVELOPMENT, ...]]></comment>
+			</column>
+			<column name="longitude_nb" type="numeric" length="11" decimal="7" >
+				<comment><![CDATA[Longitude coordinate of the representative point for the entity, expressed
+in decimal degrees using the WGS 84 coordinate system.
+
+Valid values range from -180 to 180.
+
+Positive values are east of the prime meridian. Negative values are west of
+the prime meridian.
+
+For a building, this normally represents the approximate center of the
+building. For a larger geographic entity, it represents the selected
+reference or center point.
+
+Example: -105.225812]]></comment>
+			</column>
+			<column name="latitude_nb" type="numeric" length="10" decimal="7" >
+				<comment><![CDATA[Latitude coordinate of the representative point for the entity, expressed
+in decimal degrees using the WGS 84 coordinate system.
+
+Valid values range from -90 to 90.
+
+Positive values are north of the equator. Negative values are south of the
+equator.
+
+For a building, this normally represents the approximate center of the
+building. For a larger geographic entity, it represents the selected
+reference or center point.
+
+Example: 20.653421]]></comment>
+			</column>
+			<index name="entity_pk" unique="UNIQUE_KEY" >
+				<column name="entity_ky" />
+			</index>
+			<index name="entity_ak1" unique="UNIQUE_KEY" >
+				<column name="entity_identifier_cd" />
+			</index>
+			<index name="entity_type_ix" unique="NORMAL" >
+				<column name="entity_type_cd" />
+			</index>
+			<constraint name="entity_code_not_blank_ck" type="CHECK" options="" >
+				<string><![CDATA[btrim(entity_cd) <> '']]></string>
+			</constraint>
+			<constraint name="entity_name_not_blank_ck" type="CHECK" options="" >
+				<string><![CDATA[btrim(canonical_name_tx) <> '']]></string>
+			</constraint>
+			<constraint name="entity_review_ck" type="CHECK" options="" >
+				<string><![CDATA[reviewed_fl = false OR reviewed_dt IS NOT NULL]]></string>
+			</constraint>
+			<fk name="entity_type_cd" to_schema="geo" to_table="entity_type_lu" >
+				<fk_column name="entity_type_cd" pk="entity_type_cd" />
+			</fk>
+			<fk name="fk_entity_entity_source_lu" to_schema="geo" to_table="entity_source_lu" >
+				<fk_column name="entity_type_cd" pk="entity_source_cd" />
+			</fk>
+			<post_script><![CDATA[CONSTRAINT ck_entity_latitude
+    CHECK (
+        latitude_nb IS NULL
+        OR latitude_nb BETWEEN -90 AND 90
+    ),
+
+CONSTRAINT ck_entity_longitude
+    CHECK (
+        longitude_nb IS NULL
+        OR longitude_nb BETWEEN -180 AND 180
+    )]]></post_script>
+		</table>
+		<table name="entity_change_log" spec="" >
+			<column name="entity_change_log_id" type="bigserial" />
+			<column name="entity_id" type="bigint" />
+			<column name="table_nm" type="text" mandatory="y" />
+			<column name="row_id_tx" type="text" />
+			<column name="operation_cd" type="text" mandatory="y" />
+			<column name="changed_by_nm" type="text" />
+			<column name="changed_ts" type="timestamptz" mandatory="y" >
+				<defo><![CDATA[now()]]></defo>
+			</column>
+			<column name="before_value_js" type="jsonb" />
+			<column name="after_value_js" type="jsonb" />
+			<column name="notes_tx" type="text" />
+			<index name="entity_change_log_pk" unique="UNIQUE_KEY" >
+				<column name="entity_change_log_id" />
+			</index>
+			<index name="entity_change_log_entity_ix" unique="NORMAL" >
+				<column name="entity_id" />
+			</index>
+			<index name="entity_change_log_changed_ts_ix" unique="NORMAL" >
+				<column name="changed_ts" />
+			</index>
+			<constraint name="entity_change_log_operation_ck" type="CHECK" options="" >
+				<string><![CDATA[operation_cd IN ('INSERT', 'UPDATE', 'DELETE', 'MERGE')]]></string>
+			</constraint>
+			<options><![CDATA[;
+ALTER TABLE geo.entity
+    ADD CONSTRAINT entity_entity_type_fk
+    FOREIGN KEY (entity_type_cd)
+    REFERENCES geo.entity_type_lu (entity_type_cd)]]></options>
+		</table>
+		<table name="entity_name" spec="" >
+			<comment><![CDATA[Stores every name associated with an entity, (an ALIAS table) including:
+alternate names, MLS spellings, abbreviations, historical names, common misspellings, names in different languages
+One entity can have many rows in entity_name.
+*This is where Sp/En is handled for canonicle name.
+1042	es	✓	CANONICAL	Zona Romántica
+1042	en	✓	CANONICAL	Romantic Zone]]></comment>
+			<column name="entity_name_ky" prior="entity_name_id" type="bigserial" >
+				<comment><![CDATA[Unique identifier for this specific name record.]]></comment>
+			</column>
+			<column name="entity_ky" prior="entity_id" type="bigserial" mandatory="y" >
+				<comment><![CDATA[dentifies the geographic entity that owns this name.
+Foreign key to: geo.entity
+Example: 
+1042
+Every name belongs to exactly one entity.]]></comment>
+			</column>
+			<column name="entity_name_type_cd" prior="name_type_cd" type="text" mandatory="y" >
+				<comment><![CDATA[Classifies what kind of name this is.
+Foreign key to: name_type_lu
+Examples: CANONICAL, MLS, COMMON, ALIAS, ABBREVIATION, LEGACY, MISSPELLING]]></comment>
+			</column>
+			<column name="entity_name_ds" prior="name_tx" type="text" mandatory="y" >
+				<comment><![CDATA[Stores the exact text of this name variant. This may be a canonical name, an alias, an MLS spelling, 
+a historical name, an abbreviation, or another recognized form. Whether it is displayed by default 
+depends on name_type_cd, preferred_fl, and the language requested.]]></comment>
+			</column>
+			<column name="entity_name_language_cd" prior="language_cd" type="text" />
+			<column name="entity_source_cd" prior="source_cd" type="text" />
+			<index name="entity_name_pk" unique="UNIQUE_KEY" >
+				<column name="entity_name_ky" />
+			</index>
+			<index name="entity_name_ak1" unique="UNIQUE_KEY" >
+				<column name="entity_ky" />
+				<column name="entity_name_type_cd" />
+				<column name="entity_name_language_cd" />
+			</index>
+			<index name="entity_name_entity_ix" unique="NORMAL" >
+				<column name="entity_ky" />
+			</index>
+			<constraint name="entity_name_not_blank_ck" type="CHECK" options="" >
+				<string><![CDATA[btrim(name_tx) <> '']]></string>
+			</constraint>
+			<constraint name="entity_name_normalized_not_blank_ck" type="CHECK" options="" >
+				<string><![CDATA[btrim(normalized_name_tx) <> '']]></string>
+			</constraint>
+			<constraint name="entity_name_priority_ck" type="CHECK" options="" >
+				<string><![CDATA[match_priority_nb >= 0]]></string>
+			</constraint>
+			<fk name="entity_name_entity_fk" to_schema="geo" to_table="entity" delete_action="cascade" options="" >
+				<fk_column name="entity_ky" pk="entity_ky" />
+			</fk>
+			<fk name="entity_name_type_fk" to_schema="geo" to_table="entity_name_type_lu" options="" >
+				<fk_column name="entity_name_type_cd" pk="entity_name_type_cd" />
+			</fk>
+			<fk name="entity_name_source_fk" to_schema="geo" to_table="entity_source_lu" options="" >
+				<fk_column name="entity_source_cd" pk="entity_source_cd" />
+			</fk>
+			<post_script><![CDATA[create unique index uq_entity_name_canonical_language
+    on geo.entity_name (
+        entity_id,
+        language_cd
+    )
+    where name_type_cd = 'CA'
+      and active_fl = true;
+
+alter table geo.entity_name
+add constraint uq_entity_name_variant
+unique (
+    entity_id,
+    name_type_cd,
+    language_cd,
+    name_tx
+);]]></post_script>
+		</table>
+		<table name="entity_name_type_lu" prior="name_type_lu" spec="" >
+			<comment><![CDATA[_cd  _mn                  _ds
+CA	Canonical	Official SearchPV name for a language. One active canonical name per entity and language.
+ML	MLS			Name exactly as it appears in FlexMLS.
+CO	Common		Commonly used local name.
+AL	Alias		Alternate recognized name.
+AB	Abbreviation	Shortened version of the name.
+LE	Legacy		Historical name.
+MS	Misspelling	Common misspelling retained for searching.]]></comment>
+			<column name="entity_name_type_cd" prior="name_type_cd" type="text" mandatory="y" />
+			<column name="entity_name_type_nm" prior="name_type_nm" type="text" mandatory="y" />
+			<column name="entity_name_type_ds" prior="name_type_ds" type="text" />
+			<index name="name_type_lu_pk" unique="PRIMARY_KEY" >
+				<column name="entity_name_type_cd" />
+			</index>
+		</table>
+		<table name="entity_point" spec="" >
+			<column name="entity_point_ky" prior="entity_point_id" type="bigserial" />
+			<column name="entity_ky" prior="entity_id" type="bigserial" mandatory="y" />
+			<column name="point_type_cd" type="text" mandatory="y" >
+				<defo><![CDATA['REPRESENTATIVE']]></defo>
+			</column>
+			<column name="latitude_nb" type="numeric" length="10" decimal="7" mandatory="y" />
+			<column name="longitude_nb" type="numeric" length="11" decimal="7" mandatory="y" />
+			<column name="accuracy_m_nb" type="numeric" length="12" decimal="2" />
+			<column name="confidence_cd" type="text" mandatory="y" >
+				<defo><![CDATA['MEDIUM']]></defo>
+			</column>
+			<column name="entity_source_cd" prior="source_cd" type="text" />
+			<column name="calculation_method_cd" type="text" />
+			<column name="primary_fl" type="boolean" mandatory="y" >
+				<defo><![CDATA[true]]></defo>
+			</column>
+			<column name="active_fl" type="boolean" mandatory="y" >
+				<defo><![CDATA[true]]></defo>
+			</column>
+			<column name="reviewed_fl" type="boolean" mandatory="y" >
+				<defo><![CDATA[false]]></defo>
+			</column>
+			<column name="reviewed_by_nm" type="text" />
+			<column name="reviewed_dt" type="date" />
+			<column name="notes_tx" type="text" />
+			<column name="created_ts" type="timestamptz" mandatory="y" >
+				<defo><![CDATA[now()]]></defo>
+			</column>
+			<column name="created_by_nm" type="text" />
+			<column name="updated_ts" type="timestamptz" mandatory="y" >
+				<defo><![CDATA[now()]]></defo>
+			</column>
+			<column name="updated_by_nm" type="text" />
+			<index name="entity_point_pk" unique="UNIQUE_KEY" >
+				<column name="entity_point_ky" />
+			</index>
+			<index name="entity_point_entity_ix" unique="NORMAL" >
+				<column name="entity_ky" />
+			</index>
+			<index name="entity_point_coordinate_ix" unique="NORMAL" >
+				<column name="latitude_nb" />
+				<column name="longitude_nb" />
+			</index>
+			<constraint name="entity_point_latitude_ck" type="CHECK" options="" >
+				<string><![CDATA[latitude_nb BETWEEN -90 AND 90]]></string>
+			</constraint>
+			<constraint name="entity_point_longitude_ck" type="CHECK" options="" >
+				<string><![CDATA[longitude_nb BETWEEN -180 AND 180]]></string>
+			</constraint>
+			<constraint name="entity_point_accuracy_ck" type="CHECK" options="" >
+				<string><![CDATA[accuracy_m_nb IS NULL OR accuracy_m_nb >= 0]]></string>
+			</constraint>
+			<constraint name="entity_point_review_ck" type="CHECK" options="" >
+				<string><![CDATA[reviewed_fl = false OR reviewed_dt IS NOT NULL]]></string>
+			</constraint>
+			<fk name="entity_point_entity_fk" to_schema="geo" to_table="entity" delete_action="cascade" options="" >
+				<fk_column name="entity_ky" pk="entity_ky" />
+			</fk>
+			<fk name="entity_point_type_fk" to_schema="geo" to_table="point_type_lu" options="" >
+				<fk_column name="point_type_cd" pk="point_type_cd" />
+			</fk>
+			<fk name="entity_point_confidence_fk" to_schema="geo" to_table="confidence_lu" options="" >
+				<fk_column name="confidence_cd" pk="confidence_cd" />
+			</fk>
+			<fk name="entity_point_source_fk" to_schema="geo" to_table="entity_source_lu" options="" >
+				<fk_column name="entity_source_cd" pk="entity_source_cd" />
+			</fk>
+		</table>
+		<table name="entity_relationship" spec="" >
+			<comment><![CDATA[Child	Relationship	Parent	
+Amapas	Contained By	South Shore
+The Reef	Contained By	Amapas	
+Tower 1	Part Of		The Reef	
+
+_ky	child_ky	relationship_cd	parent_ky	
+1	200		CB				100
+2	300		CB				200
+3	400		PO				300]]></comment>
+			<column name="entity_relationship_ky" prior="entity_relationship_id" type="bigserial" />
+			<column name="child_entity_id" type="bigserial" mandatory="y" />
+			<column name="relationship_type_cd" type="text" mandatory="y" />
+			<column name="parent_entity_id" type="bigserial" mandatory="y" />
+			<index name="entity_relationship_pk" unique="UNIQUE_KEY" >
+				<column name="entity_relationship_ky" />
+			</index>
+			<index name="entity_relationship_ak1" unique="UNIQUE_KEY" >
+				<column name="child_entity_id" />
+				<column name="parent_entity_id" />
+				<column name="relationship_type_cd" />
+			</index>
+			<index name="entity_relationship_child_ix" unique="NORMAL" >
+				<column name="child_entity_id" />
+			</index>
+			<index name="entity_relationship_parent_ix" unique="NORMAL" >
+				<column name="parent_entity_id" />
+			</index>
+			<index name="entity_relationship_type_ix" unique="NORMAL" >
+				<column name="relationship_type_cd" />
+			</index>
+			<constraint name="entity_relationship_no_self_ck" type="CHECK" options="" >
+				<string><![CDATA[child_entity_id <> parent_entity_id]]></string>
+			</constraint>
+			<constraint name="entity_relationship_review_ck" type="CHECK" options="" >
+				<string><![CDATA[reviewed_fl = false OR reviewed_dt IS NOT NULL]]></string>
+			</constraint>
+			<fk name="entity_relationship_child_fk" to_schema="geo" to_table="entity" delete_action="cascade" options="" >
+				<fk_column name="child_entity_id" pk="entity_ky" />
+			</fk>
+			<fk name="entity_relationship_parent_fk" to_schema="geo" to_table="entity" delete_action="cascade" options="" >
+				<fk_column name="parent_entity_id" pk="entity_ky" />
+			</fk>
+			<fk name="entity_relationship_type_fk" to_schema="geo" to_table="relationship_type_lu" options="" >
+				<fk_column name="relationship_type_cd" pk="relationship_type_cd" />
+			</fk>
+			<post_script><![CDATA[CREATE UNIQUE INDEX uq_entity_cb_parent
+ON geo.entity_relationship (
+    child_entity_id,
+    relationship_type_cd
+)
+WHERE relationship_type_cd = 'CB';]]></post_script>
+		</table>
+		<table name="entity_source_lu" prior="source_lu" spec="" >
+			<comment><![CDATA[_cd		_nm				-ds
+MLS		MLS
+ME		Manual Entry
+GM		Google Maps
+GE		Google Earth
+INEGI	INEGI
+OSM	OpenStreetMap]]></comment>
+			<column name="entity_source_cd" prior="source_cd" type="text" mandatory="y" />
+			<column name="entity_source_nm" prior="source_nm" type="text" mandatory="y" />
+			<column name="entity_source_ds" prior="source_type_cd" type="text" />
+			<index name="source_lu_pk" unique="PRIMARY_KEY" >
+				<column name="entity_source_cd" />
+			</index>
+		</table>
+		<table name="entity_status_lu" spec="" >
+			<column name="entity_status_cd" type="text" mandatory="y" />
+			<column name="entity_status_nm" type="text" mandatory="y" />
+			<column name="active_fl" type="boolean" mandatory="y" >
+				<defo><![CDATA[true]]></defo>
+			</column>
+			<column name="description_tx" type="text" />
+			<index name="entity_status_lu_pk" unique="PRIMARY_KEY" >
+				<column name="entity_status_cd" />
+			</index>
+		</table>
+		<table name="entity_type_lu" prior="tbl" >
+			<comment><![CDATA[Defines the kinds of geographic entities that can exist in the geography model.
+It answers the question: "What is this thing?"
+Examples: Zone, Area, Community, Development, Building
+Code	Meaning
+ZN		Zone
+AR		Area
+CM		Community
+DV		Development
+BD		Building
+NB		Neighborhood
+PL		Place]]></comment>
+			<column name="entity_type_cd" type="text" mandatory="y" />
+			<column name="entity_type_ds" prior="description_tx" type="text" />
+			<index name="pk_entity_type_lu" unique="PRIMARY_KEY" >
+				<column name="entity_type_cd" />
+			</index>
+		</table>
+		<table name="external_reference" spec="" >
+			<column name="external_reference_ky" prior="external_reference_id" type="bigserial" />
+			<column name="entity_ky" prior="entity_id" type="bigserial" mandatory="y" />
+			<column name="entity_source_cd" prior="source_cd" type="text" mandatory="y" />
+			<column name="external_entity_type_cd" type="text" />
+			<column name="external_identifier_tx" type="text" mandatory="y" />
+			<column name="external_name_tx" type="text" />
+			<column name="source_url_tx" type="text" />
+			<column name="primary_fl" type="boolean" mandatory="y" >
+				<defo><![CDATA[false]]></defo>
+			</column>
+			<column name="active_fl" type="boolean" mandatory="y" >
+				<defo><![CDATA[true]]></defo>
+			</column>
+			<column name="effective_from_dt" type="date" />
+			<column name="effective_through_dt" type="date" />
+			<column name="notes_tx" type="text" />
+			<column name="created_ts" type="timestamptz" mandatory="y" >
+				<defo><![CDATA[now()]]></defo>
+			</column>
+			<column name="created_by_nm" type="text" />
+			<column name="updated_ts" type="timestamptz" mandatory="y" >
+				<defo><![CDATA[now()]]></defo>
+			</column>
+			<column name="updated_by_nm" type="text" />
+			<index name="external_reference_pk" unique="UNIQUE_KEY" >
+				<column name="external_reference_ky" />
+			</index>
+			<index name="external_reference_ak1" unique="UNIQUE_KEY" >
+				<column name="entity_source_cd" />
+				<column name="external_identifier_tx" />
+			</index>
+			<index name="external_reference_entity_ix" unique="NORMAL" >
+				<column name="entity_ky" />
+			</index>
+			<index name="external_reference_source_ix" unique="NORMAL" >
+				<column name="entity_source_cd" />
+			</index>
+			<constraint name="external_reference_identifier_not_blank_ck" type="CHECK" options="" >
+				<string><![CDATA[btrim(external_identifier_tx) <> '']]></string>
+			</constraint>
+			<constraint name="external_reference_dates_ck" type="CHECK" options="" >
+				<string><![CDATA[effective_through_dt IS NULL
+            OR effective_from_dt IS NULL
+            OR effective_through_dt >= effective_from_dt]]></string>
+			</constraint>
+			<fk name="external_reference_entity_fk" to_schema="geo" to_table="entity" delete_action="cascade" options="" >
+				<fk_column name="entity_ky" pk="entity_ky" />
+			</fk>
+			<fk name="external_reference_source_fk" to_schema="geo" to_table="entity_source_lu" options="" >
+				<fk_column name="entity_source_cd" pk="entity_source_cd" />
+			</fk>
+		</table>
+		<table name="point_type_lu" spec="" >
+			<column name="point_type_cd" type="text" mandatory="y" />
+			<column name="point_type_nm" type="text" mandatory="y" />
+			<column name="active_fl" type="boolean" mandatory="y" >
+				<defo><![CDATA[true]]></defo>
+			</column>
+			<column name="description_tx" type="text" />
+			<index name="point_type_lu_pk" unique="PRIMARY_KEY" >
+				<column name="point_type_cd" />
+			</index>
+		</table>
+		<table name="relationship_type_lu" spec="" >
+			<comment><![CDATA[_cd	_nm				_ds
+CB	Contained By	Immediate geographic parent
+PO	Part Of			Immediate physical or organizational parent (Tower in development)]]></comment>
+			<column name="relationship_type_cd" type="text" mandatory="y" />
+			<column name="relationship_type_nm" type="text" mandatory="y" />
+			<column name="relationship_type_ds" prior="description_tx" type="text" />
+			<index name="relationship_type_lu_pk" unique="PRIMARY_KEY" >
+				<column name="relationship_type_cd" />
+			</index>
+		</table>
+	</schema>
+	<diagram_group name="Default" id="e9625439-5bb4-4ffe-9f4e-48b690f23a88" >
+		<diagram name="Diagram" id="73851f8e-1ad9-4e22-bc05-732ce9cd2c12" show_relation="columns" >
+			<entity schema="geo" name="entity" color="3986C1" x="380" y="266" />
+			<entity schema="geo" name="entity_name" color="3986C1" x="532" y="456" />
+			<entity schema="geo" name="entity_name_type_lu" color="3986C1" x="608" y="57" />
+			<entity schema="geo" name="entity_point" color="3986C1" x="437" y="912" />
+			<entity schema="geo" name="entity_relationship" color="3986C1" x="76" y="532" />
+			<entity schema="geo" name="entity_source_lu" color="3986C1" x="57" y="57" />
+			<entity schema="geo" name="entity_type_lu" color="C1D8EE" x="380" y="57" />
+			<entity schema="geo" name="point_type_lu" color="3986C1" x="494" y="665" />
+			<entity schema="geo" name="relationship_type_lu" color="3986C1" x="76" y="304" />
+		</diagram>
+	</diagram_group>
+</project>
