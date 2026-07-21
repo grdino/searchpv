@@ -467,10 +467,7 @@ function ChartTooltip({
       height={height}
       pointerEvents="none"
     >
-      <div
-        xmlns="http://www.w3.org/1999/xhtml"
-        className="h-full rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-xl"
-      >
+      <div className="h-full rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-xl">
         <p className="text-xs font-bold text-slate-600">
           {formatDateLong(point.snapshotDate)}
         </p>
