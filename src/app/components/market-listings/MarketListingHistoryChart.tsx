@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 type MarketListingHistoryRow = {
   snapshot_date: string | null;
   active_listing_count: number | string | null;
@@ -10,13 +14,29 @@ type MarketListingHistoryRow = {
 
 type MarketListingHistoryChartProps = {
   rows: MarketListingHistoryRow[];
-  title?: string;
   className?: string;
 };
 
+type ChartMetric =
+  | "active_listing_count"
+  | "inventory_value"
+  | "median_list_price"
+  | "median_price_per_sqm";
+
 type ChartPoint = {
   snapshotDate: string;
-  listingCount: number;
+  value: number;
+};
+
+type MetricDefinition = {
+  label: string;
+  title: string;
+  subtitle: string;
+  axisLabel: string;
+  valueLabel: string;
+  getValue: (row: MarketListingHistoryRow) => number | string | null | undefined;
+  formatValue: (value: number) => string;
+  formatAxis: (value: number) => string;
 };
 
 const CHART_WIDTH = 900;
@@ -26,33 +46,94 @@ const PADDING = {
   top: 24,
   right: 24,
   bottom: 48,
-  left: 72,
+  left: 82,
 };
+
+const METRICS: Record<ChartMetric, MetricDefinition> = {
+  active_listing_count: {
+    label: "Active Listings",
+    title: "Active Listing History",
+    subtitle: "Active listings by snapshot date",
+    axisLabel: "Active Listings",
+    valueLabel: "active listings",
+    getValue: (row) => row.active_listing_count,
+    formatValue: formatInteger,
+    formatAxis: formatChartNumber,
+  },
+
+  inventory_value: {
+    label: "Inventory Value",
+    title: "Inventory Value History",
+    subtitle: "Total active listing value by snapshot date",
+    axisLabel: "Inventory Value",
+    valueLabel: "inventory value",
+    getValue: (row) => row.inventory_value,
+    formatValue: formatCurrency,
+    formatAxis: formatCompactCurrency,
+  },
+
+  median_list_price: {
+    label: "Median List Price",
+    title: "Median List Price History",
+    subtitle: "Median active listing price by snapshot date",
+    axisLabel: "Median List Price",
+    valueLabel: "median list price",
+    getValue: (row) => row.median_list_price,
+    formatValue: formatCurrency,
+    formatAxis: formatCompactCurrency,
+  },
+
+  median_price_per_sqm: {
+    label: "Median $/m²",
+    title: "Median Price per m² History",
+    subtitle: "Median active listing price per square meter",
+    axisLabel: "Median $/m²",
+    valueLabel: "median price per m²",
+    getValue: (row) => row.median_price_per_sqm,
+    formatValue: formatCurrency,
+    formatAxis: formatCurrency,
+  },
+};
+
+const METRIC_OPTIONS: ChartMetric[] = [
+  "active_listing_count",
+  "inventory_value",
+  "median_list_price",
+  "median_price_per_sqm",
+];
 
 export default function MarketListingHistoryChart({
   rows,
-  title = "Active Listing History",
   className = "",
 }: MarketListingHistoryChartProps) {
-  const points = normalizeRows(rows);
+  const [selectedMetric, setSelectedMetric] =
+    useState<ChartMetric>("active_listing_count");
+
+  const metric = METRICS[selectedMetric];
+  const points = normalizeRows(rows, metric);
 
   if (points.length === 0) {
     return (
       <section
         className={`rounded-xl bg-white p-6 shadow ${className}`.trim()}
       >
-        <ChartHeader title={title} />
+        <ChartHeader
+          metric={metric}
+          selectedMetric={selectedMetric}
+          onMetricChange={setSelectedMetric}
+        />
 
         <div className="mt-6 flex min-h-52 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 text-center text-sm text-slate-500">
-          No historical inventory data is available for the selected filters.
+          No historical data is available for this metric and the selected
+          filters.
         </div>
       </section>
     );
   }
 
-  const counts = points.map((point) => point.listingCount);
-  const rawMinimum = Math.min(...counts);
-  const rawMaximum = Math.max(...counts);
+  const values = points.map((point) => point.value);
+  const rawMinimum = Math.min(...values);
+  const rawMaximum = Math.max(...values);
 
   const yAxis = buildYAxis(rawMinimum, rawMaximum);
   const plotWidth = CHART_WIDTH - PADDING.left - PADDING.right;
@@ -82,7 +163,7 @@ export default function MarketListingHistoryChart({
   const linePath = points
     .map((point, index) => {
       const x = xForIndex(index);
-      const y = yForValue(point.listingCount);
+      const y = yForValue(point.value);
 
       return `${index === 0 ? "M" : "L"} ${x} ${y}`;
     })
@@ -90,38 +171,45 @@ export default function MarketListingHistoryChart({
 
   const firstPoint = points[0];
   const latestPoint = points[points.length - 1];
-  const listingChange =
-    latestPoint.listingCount - firstPoint.listingCount;
-  const listingChangePercent =
-    firstPoint.listingCount === 0
+
+  const change = latestPoint.value - firstPoint.value;
+
+  const changePercent =
+    firstPoint.value === 0
       ? null
-      : (listingChange / firstPoint.listingCount) * 100;
+      : (change / firstPoint.value) * 100;
 
   const xAxisLabels = getXAxisLabels(points);
+
+  const chartTitleId = `market-listing-history-${selectedMetric}-title`;
+  const chartDescriptionId =
+    `market-listing-history-${selectedMetric}-description`;
 
   return (
     <section
       className={`rounded-xl bg-white p-6 shadow ${className}`.trim()}
     >
       <ChartHeader
-        title={title}
+        metric={metric}
+        selectedMetric={selectedMetric}
+        onMetricChange={setSelectedMetric}
         latestDate={latestPoint.snapshotDate}
-        latestCount={latestPoint.listingCount}
-        change={listingChange}
-        changePercent={listingChangePercent}
+        latestValue={latestPoint.value}
+        change={change}
+        changePercent={changePercent}
       />
 
       <div className="mt-6 overflow-x-auto">
         <svg
           viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
           role="img"
-          aria-labelledby="active-listing-history-title active-listing-history-description"
+          aria-labelledby={`${chartTitleId} ${chartDescriptionId}`}
           className="h-auto min-w-[680px] w-full"
         >
-          <title id="active-listing-history-title">{title}</title>
+          <title id={chartTitleId}>{metric.title}</title>
 
-          <desc id="active-listing-history-description">
-            {`Active listing inventory by MLS snapshot date from ${formatDateLong(
+          <desc id={chartDescriptionId}>
+            {`${metric.title} from ${formatDateLong(
               firstPoint.snapshotDate
             )} through ${formatDateLong(latestPoint.snapshotDate)}.`}
           </desc>
@@ -147,7 +235,7 @@ export default function MarketListingHistoryChart({
                   dominantBaseline="middle"
                   className="fill-slate-500 text-[12px]"
                 >
-                  {formatCompactNumber(tick)}
+                  {metric.formatAxis(tick)}
                 </text>
               </g>
             );
@@ -182,7 +270,7 @@ export default function MarketListingHistoryChart({
 
           {points.map((point, index) => {
             const x = xForIndex(index);
-            const y = yForValue(point.listingCount);
+            const y = yForValue(point.value);
 
             return (
               <g key={`${point.snapshotDate}-${index}`}>
@@ -194,9 +282,9 @@ export default function MarketListingHistoryChart({
                   className="cursor-default"
                 >
                   <title>
-                    {`${formatDateLong(point.snapshotDate)}: ${point.listingCount.toLocaleString(
-                      "en-US"
-                    )} active listings`}
+                    {`${formatDateLong(
+                      point.snapshotDate
+                    )}: ${metric.formatValue(point.value)}`}
                   </title>
                 </circle>
 
@@ -228,10 +316,12 @@ export default function MarketListingHistoryChart({
             x="18"
             y={PADDING.top + plotHeight / 2}
             textAnchor="middle"
-            transform={`rotate(-90 18 ${PADDING.top + plotHeight / 2})`}
+            transform={`rotate(-90 18 ${
+              PADDING.top + plotHeight / 2
+            })`}
             className="fill-slate-500 text-[12px] font-semibold"
           >
-            Active Listings
+            {metric.axisLabel}
           </text>
         </svg>
       </div>
@@ -244,66 +334,100 @@ export default function MarketListingHistoryChart({
 }
 
 function ChartHeader({
-  title,
+  metric,
+  selectedMetric,
+  onMetricChange,
   latestDate,
-  latestCount,
+  latestValue,
   change,
   changePercent,
 }: {
-  title: string;
+  metric: MetricDefinition;
+  selectedMetric: ChartMetric;
+  onMetricChange: (metric: ChartMetric) => void;
   latestDate?: string;
-  latestCount?: number;
+  latestValue?: number;
   change?: number;
   changePercent?: number | null;
 }) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-      <div>
-        <h2 className="text-lg font-bold text-slate-950">{title}</h2>
+    <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-slate-950">
+            {metric.title}
+          </h2>
 
-        <p className="mt-1 text-sm text-slate-500">
-          Active listings by snapshot date
-        </p>
+          <p className="mt-1 text-sm text-slate-500">
+            {metric.subtitle}
+          </p>
+        </div>
+
+        {latestDate && latestValue !== undefined && (
+          <div className="sm:text-right">
+            <p className="text-2xl font-bold text-slate-950">
+              {metric.formatValue(latestValue)}
+            </p>
+
+            <p className="text-xs text-slate-500">
+              as of {formatDateLong(latestDate)}
+            </p>
+
+            {change !== undefined && (
+              <p className="mt-1 text-xs font-semibold text-slate-600">
+                {formatMetricChange(change, metric)}
+                {changePercent !== null &&
+                  changePercent !== undefined &&
+                  ` (${formatSignedPercent(changePercent)})`}{" "}
+                during displayed period
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
-      {latestDate && latestCount !== undefined && (
-        <div className="sm:text-right">
-          <p className="text-2xl font-bold text-slate-950">
-            {latestCount.toLocaleString("en-US")}
-          </p>
+      <div className="mt-5 flex flex-wrap gap-2">
+        {METRIC_OPTIONS.map((metricKey) => {
+          const option = METRICS[metricKey];
+          const selected = selectedMetric === metricKey;
 
-          <p className="text-xs text-slate-500">
-            as of {formatDateLong(latestDate)}
-          </p>
-
-          {change !== undefined && (
-            <p className="mt-1 text-xs font-semibold text-slate-600">
-              {formatSignedNumber(change)}
-              {changePercent !== null &&
-                changePercent !== undefined &&
-                ` (${formatSignedPercent(changePercent)})`}{" "}
-              during displayed period
-            </p>
-          )}
-        </div>
-      )}
+          return (
+            <button
+              key={metricKey}
+              type="button"
+              onClick={() => onMetricChange(metricKey)}
+              aria-pressed={selected}
+              className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                selected
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-function normalizeRows(rows: MarketListingHistoryRow[]): ChartPoint[] {
+function normalizeRows(
+  rows: MarketListingHistoryRow[],
+  metric: MetricDefinition
+): ChartPoint[] {
   const rowsByDate = new Map<string, ChartPoint>();
 
   for (const row of rows) {
     if (!row.snapshot_date) continue;
 
-    const listingCount = Number(row.active_listing_count);
+    const value = Number(metric.getValue(row));
 
-    if (!Number.isFinite(listingCount)) continue;
+    if (!Number.isFinite(value)) continue;
 
     rowsByDate.set(row.snapshot_date, {
       snapshotDate: row.snapshot_date,
-      listingCount,
+      value,
     });
   }
 
@@ -314,7 +438,7 @@ function normalizeRows(rows: MarketListingHistoryRow[]): ChartPoint[] {
 
 function buildYAxis(minimumValue: number, maximumValue: number) {
   if (minimumValue === maximumValue) {
-    const padding = Math.max(Math.round(maximumValue * 0.05), 10);
+    const padding = Math.max(Math.abs(maximumValue) * 0.05, 1);
     const minimum = Math.max(0, minimumValue - padding);
     const maximum = maximumValue + padding;
 
@@ -326,16 +450,20 @@ function buildYAxis(minimumValue: number, maximumValue: number) {
   }
 
   const range = maximumValue - minimumValue;
-  const padding = Math.max(range * 0.15, 5);
+  const padding = Math.max(range * 0.15, 1);
 
   const paddedMinimum = Math.max(0, minimumValue - padding);
   const paddedMaximum = maximumValue + padding;
+
   const tickStep = getNiceTickStep(
     (paddedMaximum - paddedMinimum) / 4
   );
 
-  const minimum = Math.floor(paddedMinimum / tickStep) * tickStep;
-  const maximum = Math.ceil(paddedMaximum / tickStep) * tickStep;
+  const minimum =
+    Math.floor(paddedMinimum / tickStep) * tickStep;
+
+  const maximum =
+    Math.ceil(paddedMaximum / tickStep) * tickStep;
 
   return {
     minimum,
@@ -353,7 +481,7 @@ function buildTicks(
 
   return Array.from(
     { length: intervalCount + 1 },
-    (_, index) => Math.round(minimum + interval * index)
+    (_, index) => minimum + interval * index
   );
 }
 
@@ -389,14 +517,23 @@ function getXAxisLabels(points: ChartPoint[]) {
   }
 
   const desiredLabelCount =
-    points.length <= 4 ? points.length : points.length <= 10 ? 4 : 5;
+    points.length <= 4
+      ? points.length
+      : points.length <= 10
+        ? 4
+        : 5;
 
   const indexes = new Set<number>();
 
-  for (let position = 0; position < desiredLabelCount; position += 1) {
+  for (
+    let position = 0;
+    position < desiredLabelCount;
+    position += 1
+  ) {
     indexes.add(
       Math.round(
-        (position / (desiredLabelCount - 1)) * (points.length - 1)
+        (position / (desiredLabelCount - 1)) *
+          (points.length - 1)
       )
     );
   }
@@ -409,7 +546,45 @@ function getXAxisLabels(points: ChartPoint[]) {
     }));
 }
 
-function formatCompactNumber(value: number) {
+function formatMetricChange(
+  value: number,
+  metric: MetricDefinition
+) {
+  if (value === 0) return "No change";
+
+  return `${value > 0 ? "+" : "−"}${metric.formatValue(
+    Math.abs(value)
+  )}`;
+}
+
+function formatSignedPercent(value: number) {
+  if (value === 0) return "0.0%";
+
+  return `${value > 0 ? "+" : "−"}${Math.abs(value).toFixed(1)}%`;
+}
+
+function formatInteger(value: number) {
+  return Math.round(value).toLocaleString("en-US");
+}
+
+function formatCurrency(value: number) {
+  return value.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  });
+}
+
+function formatCompactCurrency(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function formatChartNumber(value: number) {
   if (Math.abs(value) < 10_000) {
     return value.toLocaleString("en-US", {
       maximumFractionDigits: 0,
@@ -420,16 +595,6 @@ function formatCompactNumber(value: number) {
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(value);
-}
-
-function formatSignedNumber(value: number) {
-  if (value === 0) return "No change";
-
-  return `${value > 0 ? "+" : ""}${value.toLocaleString("en-US")}`;
-}
-
-function formatSignedPercent(value: number) {
-  return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
 }
 
 function formatDateShort(value: string) {

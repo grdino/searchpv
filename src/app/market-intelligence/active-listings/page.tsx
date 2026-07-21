@@ -249,7 +249,7 @@ export default async function ActiveListingsPage({
       p_property_type:
         selectedPropertyType === "all"
           ? null
-          : selectedPropertyType,
+          : propertyTypeDatabaseValue(selectedPropertyType),
 
       p_bedroom_segment:
         selectedBedrooms === "all"
