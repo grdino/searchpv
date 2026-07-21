@@ -43,3 +43,63 @@ body {
 .searchpv-date-picker-popper {
   z-index: 9999 !important;
 }
+
+.metric-chart-enter {
+  animation: metric-chart-fade 300ms ease-out;
+}
+
+.metric-chart-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: metric-line-draw 650ms ease-out forwards;
+}
+
+.metric-chart-point {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: metric-point-enter 220ms ease-out forwards;
+}
+
+@keyframes metric-chart-fade {
+  from {
+    opacity: 0.35;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes metric-line-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes metric-point-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metric-chart-enter,
+  .metric-chart-line,
+  .metric-chart-point {
+    animation: none;
+    opacity: 1;
+    stroke-dashoffset: 0;
+    transform: none;
+  }
+}

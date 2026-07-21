@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { CSSProperties } from "react";
 
 const marketIntelligenceLinks = [
@@ -60,30 +61,66 @@ const reportLinks = [
   },
 ];
 
+type MenuSection =
+  | "market-intelligence"
+  | "reports"
+  | null;
+
+function getSectionFromPathname(
+  pathname: string
+): MenuSection {
+  if (pathname.startsWith("/market-intelligence")) {
+    return "market-intelligence";
+  }
+
+  if (pathname.startsWith("/reports")) {
+    return "reports";
+  }
+
+  return null;
+}
+
 export default function HamburgerMenu() {
+  const pathname = usePathname();
+  const activeSection = getSectionFromPathname(pathname);
+
   const [open, setOpen] = useState(false);
-  const [marketIntelligenceOpen, setMarketIntelligenceOpen] =
-    useState(false);
-  const [reportsOpen, setReportsOpen] = useState(false);
+  const [expandedSection, setExpandedSection] =
+    useState<MenuSection>(activeSection);
+
+  useEffect(() => {
+    if (open) {
+      setExpandedSection(activeSection);
+    }
+  }, [activeSection, open]);
 
   const closeMenu = () => {
     setOpen(false);
-    setMarketIntelligenceOpen(false);
-    setReportsOpen(false);
   };
 
   const toggleMenu = () => {
     setOpen((current) => {
       const nextOpen = !current;
 
-      if (!nextOpen) {
-        setMarketIntelligenceOpen(false);
-        setReportsOpen(false);
+      if (nextOpen) {
+        setExpandedSection(activeSection);
       }
 
       return nextOpen;
     });
   };
+
+  const toggleSection = (section: MenuSection) => {
+    setExpandedSection((current) =>
+      current === section ? null : section
+    );
+  };
+
+  const marketIntelligenceOpen =
+    expandedSection === "market-intelligence";
+
+  const reportsOpen =
+    expandedSection === "reports";
 
   return (
     <div style={{ position: "relative" }}>
@@ -119,10 +156,16 @@ export default function HamburgerMenu() {
             <button
               type="button"
               onClick={() =>
-                setMarketIntelligenceOpen((value) => !value)
+                toggleSection("market-intelligence")
               }
               aria-expanded={marketIntelligenceOpen}
-              style={sectionButtonStyle}
+              style={{
+                ...sectionButtonStyle,
+                ...(activeSection ===
+                "market-intelligence"
+                  ? activeSectionButtonStyle
+                  : {}),
+              }}
             >
               <span>Market Intelligence</span>
 
@@ -136,26 +179,46 @@ export default function HamburgerMenu() {
                 <Link
                   href="/market-intelligence"
                   onClick={closeMenu}
-                  style={sectionOverviewLinkStyle}
+                  style={{
+                    ...sectionOverviewLinkStyle,
+                    ...(pathname ===
+                    "/market-intelligence"
+                      ? activeLinkStyle
+                      : {}),
+                  }}
                 >
                   Market Intelligence Overview
                 </Link>
 
-                {marketIntelligenceLinks.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={closeMenu}
-                    style={{
-                      ...subMenuLinkStyle,
-                      color: item.exists
-                        ? "#15803d"
-                        : "#ca8a04",
-                    }}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+                {marketIntelligenceLinks.map((item) => {
+                  const isActive =
+                    pathname === item.href ||
+                    pathname.startsWith(
+                      `${item.href}/`
+                    );
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={closeMenu}
+                      aria-current={
+                        isActive ? "page" : undefined
+                      }
+                      style={{
+                        ...subMenuLinkStyle,
+                        color: item.exists
+                          ? "#15803d"
+                          : "#ca8a04",
+                        ...(isActive
+                          ? activeLinkStyle
+                          : {}),
+                      }}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -164,10 +227,15 @@ export default function HamburgerMenu() {
             <button
               type="button"
               onClick={() =>
-                setReportsOpen((value) => !value)
+                toggleSection("reports")
               }
               aria-expanded={reportsOpen}
-              style={sectionButtonStyle}
+              style={{
+                ...sectionButtonStyle,
+                ...(activeSection === "reports"
+                  ? activeSectionButtonStyle
+                  : {}),
+              }}
             >
               <span>Reports</span>
 
@@ -181,26 +249,45 @@ export default function HamburgerMenu() {
                 <Link
                   href="/reports"
                   onClick={closeMenu}
-                  style={sectionOverviewLinkStyle}
+                  style={{
+                    ...sectionOverviewLinkStyle,
+                    ...(pathname === "/reports"
+                      ? activeLinkStyle
+                      : {}),
+                  }}
                 >
                   Reports Overview
                 </Link>
 
-                {reportLinks.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={closeMenu}
-                    style={{
-                      ...subMenuLinkStyle,
-                      color: item.exists
-                        ? "#15803d"
-                        : "#ca8a04",
-                    }}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+                {reportLinks.map((item) => {
+                  const isActive =
+                    pathname === item.href ||
+                    pathname.startsWith(
+                      `${item.href}/`
+                    );
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={closeMenu}
+                      aria-current={
+                        isActive ? "page" : undefined
+                      }
+                      style={{
+                        ...subMenuLinkStyle,
+                        color: item.exists
+                          ? "#15803d"
+                          : "#ca8a04",
+                        ...(isActive
+                          ? activeLinkStyle
+                          : {}),
+                      }}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -292,6 +379,10 @@ const sectionButtonStyle: CSSProperties = {
   cursor: "pointer",
 };
 
+const activeSectionButtonStyle: CSSProperties = {
+  color: "#1d4ed8",
+};
+
 const arrowStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
@@ -328,4 +419,10 @@ const subMenuLinkStyle: CSSProperties = {
   textDecoration: "none",
   fontWeight: 600,
   fontSize: "1rem",
+};
+
+const activeLinkStyle: CSSProperties = {
+  textDecoration: "underline",
+  textUnderlineOffset: "4px",
+  fontWeight: 900,
 };

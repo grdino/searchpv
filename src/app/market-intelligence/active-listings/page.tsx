@@ -4,12 +4,12 @@ import Link from "next/link";
 import Header from "@/app/components/Header";
 import HamburgerMenu from "@/app/components/HamburgerMenu";
 import MainSloganBranding from "@/app/components/MainSloganBranding";
-import AreaPriceMetricCard from "@/app/components/market-listings/AreaPriceMetricCard";
 import MarketListingFilters from "@/app/components/market-listings/MarketListingFilters";
-import MarketListingHistoryChart from "@/app/components/market-listings/MarketListingHistoryChart";
 
 import { buildIdxUrl } from "@/lib/idx";
 import { supabase } from "@/lib/supabase";
+
+import ActiveListingMetricsSection from "@/app/components/market-listings/ActiveListingMetricsSection";
 
 export const metadata: Metadata = {
   title: "Active Listings | SearchPV Market Intelligence",
@@ -520,101 +520,63 @@ export default async function ActiveListingsPage({
       </div>
 
       <section className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10">
-        <div className="mx-auto max-w-4xl">
-          <MarketListingHistoryChart rows={historyRows} />
-        </div>
-
-        <div
-          id="active-listing-summary"
-          className="scroll-mt-24 mt-6 grid grid-cols-1 gap-6 md:grid-cols-2"
-        >
-          <SummaryCard
-            label="Active Listings"
-            value={activeListingCount.toLocaleString("en-US")}
-            valueHref={activeListingsResultsHref("all")}
-            byBedroom={countByBedroom.map((item) => ({
-              ...item,
-              href: activeListingsResultsHref(
-                bedroomSegmentFromLabel(item.label)
-              ),
-            }))}
-          />
-
-          <SummaryCard
-            label="Inventory Value"
-            value={formatMoney(inventoryValue)}
-            byBedroom={volumeByBedroom}
-          />
-
-          <SummaryCard
-            label={`${
-              selectedPriceMode === "avg"
-                ? "Average"
-                : "Median"
-            } List Price`}
-            value={formatMoney(displayedListPrice)}
-            controls={
-              <ToggleLinks
-                options={[
-                  {
-                    label: "Med",
-                    href: summaryHref({
-                      priceMode: "median",
-                      areaMode: selectedAreaMode,
-                      areaUnit: selectedAreaUnit,
-                    }),
-                    selected:
-                      selectedPriceMode === "median",
-                  },
-                  {
-                    label: "Avg",
-                    href: summaryHref({
-                      priceMode: "avg",
-                      areaMode: selectedAreaMode,
-                      areaUnit: selectedAreaUnit,
-                    }),
-                    selected:
-                      selectedPriceMode === "avg",
-                  },
-                ]}
-              />
-            }
-            byBedroom={priceByBedroom}
-          />
-
-          <AreaPriceMetricCard
-            value={displayedAreaPrice}
-            selectedMode={selectedAreaMode}
-            selectedUnit={selectedAreaUnit}
-            medianHref={summaryHref({
-              priceMode: selectedPriceMode,
-              areaMode: "median",
-              areaUnit: selectedAreaUnit,
-            })}
-            averageHref={summaryHref({
-              priceMode: selectedPriceMode,
-              areaMode: "avg",
-              areaUnit: selectedAreaUnit,
-            })}
-            squareFeetHref={summaryHref({
-              priceMode: selectedPriceMode,
-              areaMode: selectedAreaMode,
-              areaUnit: "ft2",
-            })}
-            squareMetersHref={summaryHref({
-              priceMode: selectedPriceMode,
-              areaMode: selectedAreaMode,
-              areaUnit: "m2",
-            })}
-            byBedroom={areaPriceByBedroom}
-          />
-
-          <SummaryCard
-            label="Median Days on Market"
-            value={formatNumber(displayedDom)}
-            byBedroom={domByBedroom}
-          />
-        </div>
+        <ActiveListingMetricsSection
+          historyRows={historyRows}
+          activeListingCount={activeListingCount.toLocaleString("en-US")}
+          activeListingHref={activeListingsResultsHref("all")}
+          countByBedroom={countByBedroom.map((item) => ({
+            ...item,
+            href: activeListingsResultsHref(
+              bedroomSegmentFromLabel(item.label)
+            ),
+          }))}
+          inventoryValue={formatMoney(inventoryValue)}
+          volumeByBedroom={volumeByBedroom}
+          listPriceLabel={`${
+            selectedPriceMode === "avg"
+              ? "Average"
+              : "Median"
+          } List Price`}
+          listPriceValue={formatMoney(displayedListPrice)}
+          selectedPriceMode={selectedPriceMode}
+          medianPriceHref={summaryHref({
+            priceMode: "median",
+            areaMode: selectedAreaMode,
+            areaUnit: selectedAreaUnit,
+          })}
+          averagePriceHref={summaryHref({
+            priceMode: "avg",
+            areaMode: selectedAreaMode,
+            areaUnit: selectedAreaUnit,
+          })}
+          priceByBedroom={priceByBedroom}
+          areaPriceValue={displayedAreaPrice}
+          selectedAreaMode={selectedAreaMode}
+          selectedAreaUnit={selectedAreaUnit}
+          areaMedianHref={summaryHref({
+            priceMode: selectedPriceMode,
+            areaMode: "median",
+            areaUnit: selectedAreaUnit,
+          })}
+          areaAverageHref={summaryHref({
+            priceMode: selectedPriceMode,
+            areaMode: "avg",
+            areaUnit: selectedAreaUnit,
+          })}
+          squareFeetHref={summaryHref({
+            priceMode: selectedPriceMode,
+            areaMode: selectedAreaMode,
+            areaUnit: "ft2",
+          })}
+          squareMetersHref={summaryHref({
+            priceMode: selectedPriceMode,
+            areaMode: selectedAreaMode,
+            areaUnit: "m2",
+          })}
+          areaPriceByBedroom={areaPriceByBedroom}
+          medianDom={formatNumber(displayedDom)}
+          domByBedroom={domByBedroom}
+        />
 
         <div className="mt-8 flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -1181,112 +1143,6 @@ function bedroomBreakdown(
       )
     ),
   }));
-}
-
-function SummaryCard({
-  label,
-  value,
-  valueHref,
-  controls,
-  byBedroom,
-}: {
-  label: string;
-  value: string;
-  valueHref?: string;
-  controls?: React.ReactNode;
-  byBedroom: {
-    label: string;
-    value: string;
-    href?: string;
-  }[];
-}) {
-  return (
-    <div className="rounded-xl bg-white p-6 shadow">
-      {controls && (
-        <div className="mb-3">{controls}</div>
-      )}
-
-      <p className="text-sm text-slate-500">
-        {label}
-      </p>
-
-      <p className="mt-3 text-4xl font-bold text-slate-950">
-        {valueHref ? (
-          <Link
-            href={valueHref}
-            rel="nofollow"
-            className="text-blue-700 hover:underline"
-          >
-            {value}
-          </Link>
-        ) : (
-          value
-        )}
-      </p>
-
-      <div className="mt-4 border-t border-slate-200 pt-3">
-        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
-          By Bedroom
-        </p>
-
-        <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-sm text-slate-700">
-          {byBedroom.map((item, index) => (
-            <span key={item.label}>
-              {index > 0 && (
-                <span className="mr-2 text-slate-300">
-                  |
-                </span>
-              )}
-
-              {item.label}{" "}
-
-              {item.href ? (
-                <Link
-                  href={item.href}
-                  rel="nofollow"
-                  className="font-bold text-blue-700 hover:underline"
-                >
-                  {item.value}
-                </Link>
-              ) : (
-                <span className="font-bold text-slate-950">
-                  {item.value}
-                </span>
-              )}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ToggleLinks({
-  options,
-}: {
-  options: {
-    label: string;
-    href: string;
-    selected: boolean;
-  }[];
-}) {
-  return (
-    <div className="inline-flex overflow-hidden rounded-full border border-slate-300 text-[10px] font-bold">
-      {options.map((option) => (
-        <Link
-          key={option.label}
-          href={option.href}
-          className={`px-2 py-1 ${
-            option.selected
-              ? "bg-slate-900 text-white"
-              : "bg-white text-slate-600 hover:bg-slate-50"
-          }`}
-        >
-          {option.label}
-        </Link>
-      ))}
-    </div>
-  );
 }
 
 function SortableTh({
