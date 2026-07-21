@@ -5,103 +5,229 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 
 const marketIntelligenceLinks = [
-  { label: "Active Listings", href: "/market-intelligence/active-listings", exists: false },
-  { label: "Pending Sales", href: "/market-intelligence/pending-sales", exists: false },
-  { label: "Closed Sales", href: "/market-intelligence/closed-sales", exists: true },
-  { label: "Price Changes", href: "/market-intelligence/price-changes", exists: false },
-  { label: "New Listings", href: "/market-intelligence/new-listings", exists: false },
+  {
+    label: "Active Listings",
+    href: "/market-intelligence/active-listings",
+    exists: true,
+  },
+  {
+    label: "Pending Sales",
+    href: "/market-intelligence/pending-sales",
+    exists: false,
+  },
+  {
+    label: "Closed Sales",
+    href: "/market-intelligence/closed-sales",
+    exists: true,
+  },
+  {
+    label: "Price Changes",
+    href: "/market-intelligence/price-changes",
+    exists: false,
+  },
+  {
+    label: "New Listings",
+    href: "/market-intelligence/new-listings",
+    exists: false,
+  },
 ];
 
 const reportLinks = [
-  { label: "Active Listings Report", href: "/reports/active-listings-report", exists: true,},
-  { label: "Pending Sales Report", href: "/reports/pending-sales-report", exists: false,},
-  { label: "Closed Sales Report", href: "/reports/closed-sales-report", exists: false, },
-  { label: "Price Changes Report", href: "/reports/price-changes-report", exists: false,},
-  { label: "New Listings Report", href: "/reports/new-listings-report", exists: false,},
+  {
+    label: "Active Listings Report",
+    href: "/reports/active-listings-report",
+    exists: true,
+  },
+  {
+    label: "Pending Sales Report",
+    href: "/reports/pending-sales-report",
+    exists: false,
+  },
+  {
+    label: "Closed Sales Report",
+    href: "/reports/closed-sales-report",
+    exists: false,
+  },
+  {
+    label: "Price Changes Report",
+    href: "/reports/price-changes-report",
+    exists: false,
+  },
+  {
+    label: "New Listings Report",
+    href: "/reports/new-listings-report",
+    exists: false,
+  },
 ];
 
 export default function HamburgerMenu() {
   const [open, setOpen] = useState(false);
+  const [marketIntelligenceOpen, setMarketIntelligenceOpen] =
+    useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
 
-  const closeMenu = () => setOpen(false);
+  const closeMenu = () => {
+    setOpen(false);
+    setMarketIntelligenceOpen(false);
+    setReportsOpen(false);
+  };
+
+  const toggleMenu = () => {
+    setOpen((current) => {
+      const nextOpen = !current;
+
+      if (!nextOpen) {
+        setMarketIntelligenceOpen(false);
+        setReportsOpen(false);
+      }
+
+      return nextOpen;
+    });
+  };
 
   return (
     <div style={{ position: "relative" }}>
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-label="Open menu"
+        onClick={toggleMenu}
+        aria-label={open ? "Close menu" : "Open menu"}
+        aria-expanded={open}
         style={menuButtonStyle}
       >
-        ☰
+        {open ? "×" : "☰"}
       </button>
 
       {open && (
         <div style={menuPanelStyle}>
-          <Link href="/" onClick={closeMenu} style={menuLinkStyle}>
+          <Link
+            href="/"
+            onClick={closeMenu}
+            style={menuLinkStyle}
+          >
             Home
           </Link>
 
-          <Link href="/#market-explorer" onClick={closeMenu} style={menuLinkStyle}>
+          <Link
+            href="/#market-explorer"
+            onClick={closeMenu}
+            style={menuLinkStyle}
+          >
             Explore Market
           </Link>
 
           <div style={sectionStyle}>
-            <Link href="/market-intelligence" onClick={closeMenu} style={menuLinkStyle}>
-              Market Intelligence
-            </Link>
+            <button
+              type="button"
+              onClick={() =>
+                setMarketIntelligenceOpen((value) => !value)
+              }
+              aria-expanded={marketIntelligenceOpen}
+              style={sectionButtonStyle}
+            >
+              <span>Market Intelligence</span>
 
-            <div style={subMenuStyle}>
-              {marketIntelligenceLinks.map((item) => (
+              <span style={arrowStyle}>
+                {marketIntelligenceOpen ? "−" : "+"}
+              </span>
+            </button>
+
+            {marketIntelligenceOpen && (
+              <div style={subMenuStyle}>
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  href="/market-intelligence"
                   onClick={closeMenu}
-                  style={{
-                    ...subMenuLinkStyle,
-                    color: item.exists ? "#15803d" : "#ca8a04",
-                  }}
+                  style={sectionOverviewLinkStyle}
                 >
-                  {item.label}
+                  Market Intelligence Overview
                 </Link>
-              ))}
-            </div>
+
+                {marketIntelligenceLinks.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={closeMenu}
+                    style={{
+                      ...subMenuLinkStyle,
+                      color: item.exists
+                        ? "#15803d"
+                        : "#ca8a04",
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
 
           <div style={sectionStyle}>
-            <Link href="/reports" onClick={closeMenu} style={menuLinkStyle}>
-              Reports
-            </Link>
+            <button
+              type="button"
+              onClick={() =>
+                setReportsOpen((value) => !value)
+              }
+              aria-expanded={reportsOpen}
+              style={sectionButtonStyle}
+            >
+              <span>Reports</span>
 
-            <div style={subMenuStyle}>
-              {reportLinks.map((item) => (
+              <span style={arrowStyle}>
+                {reportsOpen ? "−" : "+"}
+              </span>
+            </button>
+
+            {reportsOpen && (
+              <div style={subMenuStyle}>
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  href="/reports"
                   onClick={closeMenu}
-                  style={{
-                    ...subMenuLinkStyle,
-                    color: item.exists ? "#15803d" : "#ca8a04",
-                  }}
+                  style={sectionOverviewLinkStyle}
                 >
-                  {item.label}
+                  Reports Overview
                 </Link>
-              ))}
-            </div>
+
+                {reportLinks.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={closeMenu}
+                    style={{
+                      ...subMenuLinkStyle,
+                      color: item.exists
+                        ? "#15803d"
+                        : "#ca8a04",
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
 
-          <Link href="/about" onClick={closeMenu} style={menuLinkStyle}>
+          <Link
+            href="/about"
+            onClick={closeMenu}
+            style={menuLinkStyle}
+          >
             About SearchPV
           </Link>
 
-          <Link href="/contact" onClick={closeMenu} style={menuLinkStyle}>
+          <Link
+            href="/contact"
+            onClick={closeMenu}
+            style={menuLinkStyle}
+          >
             Contact
           </Link>
 
-          <Link href="/office" onClick={closeMenu} style={menuLinkStyle}>
+          <Link
+            href="/office"
+            onClick={closeMenu}
+            style={menuLinkStyle}
+          >
             🔒 Office
           </Link>
-
         </div>
       )}
     </div>
@@ -138,8 +264,8 @@ const menuPanelStyle: CSSProperties = {
 };
 
 const sectionStyle: CSSProperties = {
-  marginTop: "12px",
-  marginBottom: "18px",
+  marginTop: "6px",
+  marginBottom: "6px",
 };
 
 const menuLinkStyle: CSSProperties = {
@@ -151,15 +277,54 @@ const menuLinkStyle: CSSProperties = {
   fontSize: "1.12rem",
 };
 
+const sectionButtonStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  width: "100%",
+  padding: "10px 0",
+  border: 0,
+  background: "transparent",
+  color: "#1e40af",
+  fontWeight: 900,
+  fontSize: "1.12rem",
+  textAlign: "left",
+  cursor: "pointer",
+};
+
+const arrowStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "24px",
+  height: "24px",
+  borderRadius: "50%",
+  background: "#eff6ff",
+  color: "#1e40af",
+  fontSize: "1.15rem",
+  lineHeight: 1,
+};
+
 const subMenuStyle: CSSProperties = {
   marginTop: "2px",
-  marginLeft: "28px",
+  marginBottom: "8px",
+  marginLeft: "20px",
+  paddingLeft: "12px",
+  borderLeft: "2px solid #dbeafe",
+};
+
+const sectionOverviewLinkStyle: CSSProperties = {
+  display: "block",
+  padding: "6px 0",
+  color: "#1e40af",
+  textDecoration: "none",
+  fontWeight: 700,
+  fontSize: "0.95rem",
 };
 
 const subMenuLinkStyle: CSSProperties = {
   display: "block",
   padding: "6px 0",
-  color: "#17211b",
   textDecoration: "none",
   fontWeight: 600,
   fontSize: "1rem",

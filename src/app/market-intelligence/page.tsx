@@ -16,7 +16,7 @@ const reports = [
     description: "Current inventory with pricing, DOM, and listing details.",
     href: "/market-intelligence/active-listings",
     Icon: ClipboardList,
-    inDevelopment: true,
+    inDevelopment: false,
   },
   {
     title: "Pending Sales",

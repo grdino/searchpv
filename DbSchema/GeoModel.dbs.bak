@@ -31,13 +31,7 @@ entity_cd: DEV_SIERRA_DEL_MAR
 entity_type_cd: DEVELOPMENT
 canonical_name_tx: Sierra del Mar
 
-Everything else in the model attaches to that row.
-
-I'd write one paragraph in the design document:
-
-An entity represents one unique geographic object.
-
-Variants represent every accepted textual representation of that entity, including canonical names, MLS names, abbreviations, alternate spellings, legacy names, common names, and names in multiple languages.]]></comment>
+Everything else in the model attaches to that row.]]></comment>
 			<column name="entity_ky" prior="entity_id" type="bigserial" >
 				<comment><![CDATA[The internal numeric identifier. This is the true identity of the entity inside SearchPV.
 Example: 1042
@@ -326,13 +320,7 @@ alternate names, MLS spellings, abbreviations, historical names, common misspell
 One entity can have many rows in entity_name.
 *This is where Sp/En is handled for canonicle name.
 1042	es	✓	CANONICAL	Zona Romántica
-1042	en	✓	CANONICAL	Romantic Zone
-
-I'd write one paragraph in the design document:
-
-An entity represents one unique geographic object.
-
-Variants represent every accepted textual representation of that entity, including canonical names, MLS names, abbreviations, alternate spellings, legacy names, common names, and names in multiple languages.]]></comment>
+1042	en	✓	CANONICAL	Romantic Zone]]></comment>
 			<column name="entity_variant_ky" prior="entity_name_ky" type="bigserial" >
 				<comment><![CDATA[Unique identifier for this specific name record.]]></comment>
 			</column>
@@ -354,6 +342,7 @@ a historical name, an abbreviation, or another recognized form. Whether it is di
 depends on name_type_cd, preferred_fl, and the language requested.]]></comment>
 			</column>
 			<column name="language_cd" prior="entity_name_language_cd" type="text" />
+			<column name="entity_source_cd" prior="source_cd" type="text" />
 			<index name="entity_name_pk" unique="UNIQUE_KEY" >
 				<column name="entity_variant_ky" />
 			</index>
