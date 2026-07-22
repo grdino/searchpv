@@ -12,9 +12,9 @@ import { supabase } from "@/lib/supabase";
 import ActiveListingMetricsSection from "@/app/components/market-listings/ActiveListingMetricsSection";
 
 export const metadata: Metadata = {
-  title: "Active Listings | SearchPV Market Intelligence",
+  title: "Pending Sales | SearchPV Market Intelligence",
   description:
-    "Explore active Puerto Vallarta real estate listings, inventory value, list prices, price per square foot, and days on market.",
+    "Explore pending Puerto Vallarta real estate listings, inventory value, list prices, price per square foot, and days on market.",
 };
 
 type MarketSegment = "all" | "pre_construction" | "resale";
@@ -35,7 +35,7 @@ type SortDir = "asc" | "desc";
 type SummaryMode = "median" | "avg";
 type AreaUnit = "ft2" | "m2";
 
-type ActiveListing = {
+type PendingListing = {
   snapshot_date: string | null;
   market_segment: string | null;
   bedroom_segment: string | null;
@@ -72,8 +72,8 @@ type ActiveListing = {
 
 type HistoryRow = {
   snapshot_date: string;
-  active_listing_count: number | null;
-  inventory_value: number | null;
+  pending_listing_count: number | null;
+  pending_value: number | null;
   median_list_price: number | null;
   median_price_per_sqft: number | null;
   median_price_per_sqm: number | null;
@@ -99,7 +99,7 @@ type SearchParams = {
 };
 
 const DEFAULT_ZONE_NAME = "Puerto Vallarta";
-const BASE_PATH = "/market-intelligence/active-listings";
+const BASE_PATH = "/market-intelligence/pending-sales";
 const MAX_LISTING_ROWS = 500;
 
 export default async function ActiveListingsPage({
@@ -131,7 +131,7 @@ export default async function ActiveListingsPage({
    * dropdown can contain only valid children of its selected parent.
    */
   let optionQuery = supabase
-    .from("active_listing")
+    .from("pending_listing")
     .select(
       `
         zone_name,
@@ -159,7 +159,7 @@ export default async function ActiveListingsPage({
    * 500 rows while summary values must represent the entire filtered result.
    */
   let summaryQuery = supabase
-    .from("active_listing")
+    .from("pending_listing")
     .select(
       `
         mls,
@@ -187,7 +187,7 @@ export default async function ActiveListingsPage({
    * Load the visible detail rows.
    */
   let listingQuery = supabase
-    .from("active_listing")
+    .from("pending_listing")
     .select(
       `
         snapshot_date,
@@ -241,7 +241,7 @@ export default async function ActiveListingsPage({
    * access to historical inventory rows.
    */
   const historyResult = await supabase.rpc(
-    "active_listing_history_summary",
+    "pending_sales_history_summary",
     {
       p_market_segment:
         selectedMarket === "all" ? null : selectedMarket,
@@ -290,7 +290,7 @@ export default async function ActiveListingsPage({
         <h1 className="text-3xl font-bold">SearchPV</h1>
 
         <p className="mt-4 font-semibold text-red-700">
-          Error loading active listings.
+          Error loading pending listings.
         </p>
 
         <pre className="mt-4 overflow-auto rounded-lg bg-white p-4 text-sm shadow">
@@ -302,8 +302,18 @@ export default async function ActiveListingsPage({
 
   const optionRows = optionResult.rows;
   const summaryRows = summaryResult.rows;
-  const listings = (listingResult.data ?? []) as ActiveListing[];
+  const listings = (listingResult.data ?? []) as PendingListing[];
   const historyRows = (historyResult.data ?? []) as HistoryRow[];
+
+  const chartHistoryRows = historyRows.map((row) => ({
+    snapshot_date: row.snapshot_date,
+    active_listing_count: row.pending_listing_count,
+    inventory_value: row.pending_value,
+    median_list_price: row.median_list_price,
+    median_price_per_sqft: row.median_price_per_sqft,
+    median_price_per_sqm: row.median_price_per_sqm,
+    median_dom: row.median_dom,
+  }));
 
   const zones = uniqueValues(optionRows, "zone_name");
 
@@ -354,7 +364,7 @@ export default async function ActiveListingsPage({
           "development_name"
         );
 
-  const activeListingCount =
+  const pendingListingCount =
     listingResult.count ?? summaryRows.length;
 
   const listPrices = numericValues(summaryRows, "current_price");
@@ -362,7 +372,7 @@ export default async function ActiveListingsPage({
   const pricesPerSqm = numericValues(summaryRows, "price_per_sqm");
   const daysOnMarket = numericValues(summaryRows, "dom", true);
 
-  const inventoryValue = listPrices.reduce(
+  const pendingValue = listPrices.reduce(
     (total, value) => total + value,
     0
   );
@@ -455,14 +465,15 @@ export default async function ActiveListingsPage({
               MARKET INTELLIGENCE
             </p>
 
-            <h1 className="mt-2 text-5xl font-extrabold tracking-tight text-emerald-400">
-              ACTIVE LISTINGS
+            <h1 className="mt-2 text-5xl font-extrabold tracking-tight text-amber-300">
+              PENDING SALES
             </h1>
 
             <p className="mt-5 max-w-3xl text-base leading-7 text-slate-300">
-              Explore current inventory, asking prices, price per square foot,
-              days on market, and historical listing trends throughout
-              Puerto Vallarta and Banderas Bay.
+              Explore current pending listings, contract inventory,
+              asking prices, price per square foot,
+              days on market, and historical pending trends
+              throughout Puerto Vallarta and Banderas Bay.
             </p>
           </div>
 
@@ -509,7 +520,7 @@ export default async function ActiveListingsPage({
               href={BASE_PATH}
               className="underline hover:text-sky-200"
             >
-              Active Listings
+              Pending Sales
             </Link>
           </div>
 
@@ -529,16 +540,17 @@ export default async function ActiveListingsPage({
 
       <section className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10">
         <ActiveListingMetricsSection
-          historyRows={historyRows}
-          activeListingCount={activeListingCount.toLocaleString("en-US")}
-          activeListingHref={activeListingsResultsHref("all")}
+          listingStatusLabel="Pending"
+          historyRows={chartHistoryRows}
+          activeListingCount={pendingListingCount.toLocaleString("en-US")}
+          activeListingHref={pendingListingsResultsHref("all")}
           countByBedroom={countByBedroom.map((item) => ({
             ...item,
-            href: activeListingsResultsHref(
+            href: pendingListingsResultsHref(
               bedroomSegmentFromLabel(item.label)
             ),
           }))}
-          inventoryValue={formatMoney(inventoryValue)}
+          inventoryValue={formatMoney(pendingValue)}
           volumeByBedroom={volumeByBedroom}
           listPriceLabel={`${
             selectedPriceMode === "avg"
@@ -589,16 +601,16 @@ export default async function ActiveListingsPage({
         <div className="mt-8 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1
-              id="active-listings"
+              id="pending-sales"
               className="scroll-mt-24 text-2xl font-bold"
             >
-              Active Listings
+              Pending Sales
             </h1>
 
             <p className="mt-1 text-sm text-slate-500">
               Showing up to {MAX_LISTING_ROWS.toLocaleString("en-US")}{" "}
               listings from{" "}
-              {activeListingCount.toLocaleString("en-US")} matching
+              {pendingListingCount.toLocaleString("en-US")} matching
               results.
             </p>
           </div>
@@ -692,7 +704,7 @@ export default async function ActiveListingsPage({
                     colSpan={12}
                     className="bg-white px-4 py-10 text-center text-slate-500"
                   >
-                    No active listings match the selected filters.
+                    No pending listings match the selected filters.
                   </td>
                 </tr>
               ) : (
@@ -778,7 +790,7 @@ export default async function ActiveListingsPage({
     );
   }
 
-  function activeListingsResultsHref(
+  function pendingListingsResultsHref(
     bedroomSegment: BedroomSegment
   ) {
     const queryParams = new URLSearchParams();
@@ -830,7 +842,7 @@ export default async function ActiveListingsPage({
 
     const queryString = queryParams.toString();
     const basePath =
-      "/market-intelligence/active-listings/search-results";
+      "/market-intelligence/pending-sales/search-results";
 
     return queryString
       ? `${basePath}?${queryString}`

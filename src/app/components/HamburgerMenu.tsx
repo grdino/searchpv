@@ -14,7 +14,7 @@ const marketIntelligenceLinks = [
   {
     label: "Pending Sales",
     href: "/market-intelligence/pending-sales",
-    exists: false,
+    exists: true,
   },
   {
     label: "Closed Sales",

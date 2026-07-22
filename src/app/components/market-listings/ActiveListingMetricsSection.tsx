@@ -27,6 +27,8 @@ type SummaryMode = "median" | "avg";
 type AreaUnit = "ft2" | "m2";
 
 type ActiveListingMetricsSectionProps = {
+  listingStatusLabel?: "Active" | "Pending";
+
   historyRows: HistoryRow[];
 
   activeListingCount: string;
@@ -57,6 +59,8 @@ type ActiveListingMetricsSectionProps = {
 };
 
 export default function ActiveListingMetricsSection({
+  listingStatusLabel = "Active",
+
   historyRows,
 
   activeListingCount,
@@ -92,14 +96,15 @@ export default function ActiveListingMetricsSection({
     <>
       <div className="mx-auto max-w-4xl">
         <MarketListingHistoryChart
-          rows={historyRows}
-          selectedMetric={selectedMetric}
-          onMetricChange={setSelectedMetric}
-        />
+        rows={historyRows}
+        listingStatusLabel={listingStatusLabel}
+        selectedMetric={selectedMetric}
+        onMetricChange={setSelectedMetric}
+      />
       </div>
 
       <div
-        id="active-listing-summary"
+        id={`${listingStatusLabel.toLowerCase()}-listing-summary`}
         className="scroll-mt-24 mt-6 grid grid-cols-1 gap-6 md:grid-cols-2"
       >
         <MetricCardButton
@@ -108,7 +113,7 @@ export default function ActiveListingMetricsSection({
           onMetricChange={setSelectedMetric}
         >
           <SummaryCard
-            label="Active Listings"
+            label={`${listingStatusLabel} Listings`}
             value={activeListingCount}
             valueHref={activeListingHref}
             byBedroom={countByBedroom}

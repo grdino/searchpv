@@ -444,13 +444,22 @@ export default async function ClosedSalesPage({
             </div>
           </div>
 
-          <MainSloganBranding />
+          <div className="mt-8">
+            <p className="text-xs font-bold uppercase tracking-[0.35em] text-slate-400">
+              MARKET INTELLIGENCE
+            </p>
 
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-            Closed sales reports with sold price, final list price, days on
-            market, sold-to-list ratio, price per ft², and SearchPV market
-            context.
-          </p>
+            <h1 className="mt-2 text-5xl font-extrabold tracking-tight text-sky-400">
+              CLOSED SALES
+            </h1>
+
+            <p className="mt-5 max-w-3xl text-base leading-7 text-slate-300">
+              Analyze historical sales, sold prices,
+              market trends, price performance,
+              and transaction history throughout
+              Puerto Vallarta and Banderas Bay.
+            </p>
+          </div>
 
           <ClosedListingFilters
             selectedMarket={selectedMarket}

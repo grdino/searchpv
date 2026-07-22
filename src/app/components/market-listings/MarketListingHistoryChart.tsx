@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 
 import type { ChartMetric } from "./market-listing-metrics";
 
+type ListingStatusLabel = "Active" | "Pending";
+
 type MarketListingHistoryRow = {
   snapshot_date: string | null;
   active_listing_count: number | string | null;
@@ -16,6 +18,7 @@ type MarketListingHistoryRow = {
 
 type MarketListingHistoryChartProps = {
   rows: MarketListingHistoryRow[];
+  listingStatusLabel?: ListingStatusLabel;
   selectedMetric: ChartMetric;
   onMetricChange: (metric: ChartMetric) => void;
   className?: string;
@@ -98,7 +101,8 @@ const METRICS: Record<ChartMetric, MetricDefinition> = {
   median_dom: {
     label: "Median DOM",
     title: "Median Days on Market History",
-    subtitle: "Median days on market for active listings by snapshot date",
+    subtitle:
+      "Median days on market for active listings by snapshot date",
     axisLabel: "Median Days on Market",
     valueLabel: "median days on market",
     getValue: (row) => row.median_dom,
@@ -117,6 +121,7 @@ const METRIC_OPTIONS: ChartMetric[] = [
 
 export default function MarketListingHistoryChart({
   rows,
+  listingStatusLabel = "Active",
   selectedMetric,
   onMetricChange,
   className = "",
@@ -124,7 +129,11 @@ export default function MarketListingHistoryChart({
   const [hoveredPointIndex, setHoveredPointIndex] =
     useState<number | null>(null);
 
-  const metric = METRICS[selectedMetric];
+  const metric = getMetricDefinition(
+    selectedMetric,
+    listingStatusLabel
+  );
+
   const points = normalizeRows(rows, metric);
 
   useEffect(() => {
@@ -137,6 +146,7 @@ export default function MarketListingHistoryChart({
         className={`rounded-xl bg-white p-6 shadow ${className}`.trim()}
       >
         <ChartHeader
+          listingStatusLabel={listingStatusLabel}
           metric={metric}
           selectedMetric={selectedMetric}
           onMetricChange={onMetricChange}
@@ -229,6 +239,7 @@ export default function MarketListingHistoryChart({
       className={`rounded-xl bg-white p-6 shadow ${className}`.trim()}
     >
       <ChartHeader
+        listingStatusLabel={listingStatusLabel}
         metric={metric}
         selectedMetric={selectedMetric}
         onMetricChange={onMetricChange}
@@ -415,6 +426,57 @@ export default function MarketListingHistoryChart({
   );
 }
 
+function getMetricDefinition(
+  metricKey: ChartMetric,
+  listingStatusLabel: ListingStatusLabel
+): MetricDefinition {
+  const metric = METRICS[metricKey];
+
+  if (listingStatusLabel === "Active") {
+    return metric;
+  }
+
+  switch (metricKey) {
+    case "active_listing_count":
+      return {
+        ...metric,
+        label: "Pending Listings",
+        title: "Pending Listing History",
+        subtitle: "Pending listings by snapshot date",
+        axisLabel: "Pending Listings",
+        valueLabel: "pending listings",
+      };
+
+    case "inventory_value":
+      return {
+        ...metric,
+        subtitle: "Total pending listing value by snapshot date",
+      };
+
+    case "median_list_price":
+      return {
+        ...metric,
+        subtitle: "Median pending listing price by snapshot date",
+      };
+
+    case "median_price_per_sqm":
+      return {
+        ...metric,
+        subtitle: "Median pending listing price per square meter",
+      };
+
+    case "median_dom":
+      return {
+        ...metric,
+        subtitle:
+          "Median days on market for pending listings by snapshot date",
+      };
+
+    default:
+      return metric;
+  }
+}
+
 function ChartTooltip({
   point,
   pointX,
@@ -485,7 +547,7 @@ function ChartTooltip({
         {showInventory && (
           <div className="mt-2 border-t border-slate-200 pt-2">
             <p className="text-xs text-slate-500">
-              Inventory
+              Listing Count
             </p>
 
             <p className="text-sm font-bold text-slate-950">
@@ -499,6 +561,7 @@ function ChartTooltip({
 }
 
 function ChartHeader({
+  listingStatusLabel,
   metric,
   selectedMetric,
   onMetricChange,
@@ -507,6 +570,7 @@ function ChartHeader({
   change,
   changePercent,
 }: {
+  listingStatusLabel: ListingStatusLabel;
   metric: MetricDefinition;
   selectedMetric: ChartMetric;
   onMetricChange: (metric: ChartMetric) => void;
@@ -556,7 +620,11 @@ function ChartHeader({
 
       <div className="mt-5 flex flex-wrap gap-2">
         {METRIC_OPTIONS.map((metricKey) => {
-          const option = METRICS[metricKey];
+          const option = getMetricDefinition(
+            metricKey,
+            listingStatusLabel
+          );
+
           const selected = selectedMetric === metricKey;
 
           return (
@@ -632,7 +700,7 @@ function buildPointAriaLabel(
     point.activeListingCount !== null
   ) {
     parts.push(
-      `Inventory: ${formatInteger(
+      `Listing count: ${formatInteger(
         point.activeListingCount
       )} listings`
     );
