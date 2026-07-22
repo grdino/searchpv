@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { ChartMetric } from "./market-listing-metrics";
 
@@ -45,6 +45,9 @@ type MetricDefinition = {
 
 const CHART_WIDTH = 900;
 const CHART_HEIGHT = 300;
+const STICKY_AXIS_WIDTH = 82;
+const SCROLLABLE_CHART_WIDTH =
+  CHART_WIDTH - STICKY_AXIS_WIDTH;
 
 const PADDING = {
   top: 24,
@@ -129,6 +132,10 @@ export default function MarketListingHistoryChart({
   const [hoveredPointIndex, setHoveredPointIndex] =
     useState<number | null>(null);
 
+  const plotSvgRef = useRef<SVGSVGElement | null>(null);
+  const [renderedPlotHeight, setRenderedPlotHeight] =
+    useState(CHART_HEIGHT);
+
   const metric = getMetricDefinition(
     selectedMetric,
     listingStatusLabel
@@ -139,6 +146,32 @@ export default function MarketListingHistoryChart({
   useEffect(() => {
     setHoveredPointIndex(null);
   }, [selectedMetric, rows]);
+
+  useEffect(() => {
+    const plotSvg = plotSvgRef.current;
+
+    if (!plotSvg) return;
+
+    const updateHeight = () => {
+      const nextHeight =
+        plotSvg.getBoundingClientRect().height;
+
+      if (nextHeight > 0) {
+        setRenderedPlotHeight(nextHeight);
+      }
+    };
+
+    updateHeight();
+
+    const resizeObserver =
+      new ResizeObserver(updateHeight);
+
+    resizeObserver.observe(plotSvg);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [selectedMetric, points.length]);
 
   if (points.length === 0) {
     return (
@@ -249,41 +282,26 @@ export default function MarketListingHistoryChart({
         changePercent={changePercent}
       />
 
-      <div className="mt-6 overflow-x-auto">
-        <svg
-          key={selectedMetric}
-          viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-          role="img"
-          aria-labelledby={`${chartTitleId} ${chartDescriptionId}`}
-          className="metric-chart-enter h-auto min-w-[680px] w-full"
-          onMouseLeave={() => setHoveredPointIndex(null)}
+      <div className="mt-6 flex w-full overflow-hidden">
+        <div
+          className="z-20 shrink-0 bg-white"
+          style={{
+            width: `${STICKY_AXIS_WIDTH}px`,
+            height: `${renderedPlotHeight}px`,
+          }}
         >
-          <title id={chartTitleId}>{metric.title}</title>
+          <svg
+            viewBox={`0 0 ${STICKY_AXIS_WIDTH} ${CHART_HEIGHT}`}
+            className="block h-full w-full"
+            aria-hidden="true"
+          >
+            {yAxis.ticks.map((tick) => {
+              const y = yForValue(tick);
 
-          <desc id={chartDescriptionId}>
-            {`${metric.title} from ${formatDateLong(
-              firstPoint.snapshotDate
-            )} through ${formatDateLong(
-              latestPoint.snapshotDate
-            )}.`}
-          </desc>
-
-          {yAxis.ticks.map((tick) => {
-            const y = yForValue(tick);
-
-            return (
-              <g key={tick}>
-                <line
-                  x1={PADDING.left}
-                  y1={y}
-                  x2={CHART_WIDTH - PADDING.right}
-                  y2={y}
-                  className="stroke-slate-200"
-                  strokeWidth="1"
-                />
-
+              return (
                 <text
-                  x={PADDING.left - 12}
+                  key={tick}
+                  x={STICKY_AXIS_WIDTH - 12}
                   y={y}
                   textAnchor="end"
                   dominantBaseline="middle"
@@ -291,131 +309,169 @@ export default function MarketListingHistoryChart({
                 >
                   {metric.formatAxis(tick)}
                 </text>
-              </g>
-            );
-          })}
+              );
+            })}
 
-          <line
-            x1={PADDING.left}
-            y1={PADDING.top}
-            x2={PADDING.left}
-            y2={CHART_HEIGHT - PADDING.bottom}
-            className="stroke-slate-300"
-            strokeWidth="1"
-          />
+            <line
+              x1={STICKY_AXIS_WIDTH - 1}
+              y1={PADDING.top}
+              x2={STICKY_AXIS_WIDTH - 1}
+              y2={CHART_HEIGHT - PADDING.bottom}
+              className="stroke-slate-300"
+              strokeWidth="1"
+            />
 
-          <line
-            x1={PADDING.left}
-            y1={CHART_HEIGHT - PADDING.bottom}
-            x2={CHART_WIDTH - PADDING.right}
-            y2={CHART_HEIGHT - PADDING.bottom}
-            className="stroke-slate-300"
-            strokeWidth="1"
-          />
+            <text
+              x="18"
+              y={PADDING.top + plotHeight / 2}
+              textAnchor="middle"
+              transform={`rotate(-90 18 ${
+                PADDING.top + plotHeight / 2
+              })`}
+              className="fill-slate-500 text-[12px] font-semibold"
+            >
+              {metric.axisLabel}
+            </text>
+          </svg>
+        </div>
 
-          <path
-            d={linePath}
-            fill="none"
-            pathLength="1"
-            className="metric-chart-line stroke-blue-700"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+        <div className="min-w-0 flex-1 overflow-x-auto">
+          <svg
+            ref={plotSvgRef}
+            key={selectedMetric}
+            viewBox={`${PADDING.left} 0 ${SCROLLABLE_CHART_WIDTH} ${CHART_HEIGHT}`}
+            role="img"
+            aria-labelledby={`${chartTitleId} ${chartDescriptionId}`}
+            className="metric-chart-enter block h-auto min-w-[680px] w-full"
+            onMouseLeave={() => setHoveredPointIndex(null)}
+          >
+            <title id={chartTitleId}>{metric.title}</title>
 
-          {points.map((point, index) => {
-            const x = xForIndex(index);
-            const y = yForValue(point.value);
-            const hovered = hoveredPointIndex === index;
+            <desc id={chartDescriptionId}>
+              {`${metric.title} from ${formatDateLong(
+                firstPoint.snapshotDate
+              )} through ${formatDateLong(
+                latestPoint.snapshotDate
+              )}.`}
+            </desc>
 
-            return (
-              <g key={`${point.snapshotDate}-${index}`}>
-                <circle
-                  cx={x}
-                  cy={y}
-                  r="13"
-                  fill="transparent"
-                  className="cursor-pointer"
-                  tabIndex={0}
-                  role="button"
-                  aria-label={buildPointAriaLabel(
-                    point,
-                    metric,
-                    selectedMetric
-                  )}
-                  onMouseEnter={() =>
-                    setHoveredPointIndex(index)
-                  }
-                  onFocus={() =>
-                    setHoveredPointIndex(index)
-                  }
-                  onBlur={() =>
-                    setHoveredPointIndex(null)
-                  }
+            {yAxis.ticks.map((tick) => {
+              const y = yForValue(tick);
+
+              return (
+                <line
+                  key={tick}
+                  x1={PADDING.left}
+                  y1={y}
+                  x2={CHART_WIDTH - PADDING.right}
+                  y2={y}
+                  className="stroke-slate-200"
+                  strokeWidth="1"
                 />
+              );
+            })}
 
-                {hovered && (
+            <line
+              x1={PADDING.left}
+              y1={CHART_HEIGHT - PADDING.bottom}
+              x2={CHART_WIDTH - PADDING.right}
+              y2={CHART_HEIGHT - PADDING.bottom}
+              className="stroke-slate-300"
+              strokeWidth="1"
+            />
+
+            <path
+              d={linePath}
+              fill="none"
+              pathLength="1"
+              className="metric-chart-line stroke-blue-700"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+
+            {points.map((point, index) => {
+              const x = xForIndex(index);
+              const y = yForValue(point.value);
+              const hovered = hoveredPointIndex === index;
+
+              return (
+                <g key={`${point.snapshotDate}-${index}`}>
                   <circle
                     cx={x}
                     cy={y}
-                    r="8"
-                    className="fill-blue-100 stroke-blue-700"
-                    strokeWidth="2"
+                    r="13"
+                    fill="transparent"
+                    className="cursor-pointer"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={buildPointAriaLabel(
+                      point,
+                      metric,
+                      selectedMetric
+                    )}
+                    onMouseEnter={() =>
+                      setHoveredPointIndex(index)
+                    }
+                    onFocus={() =>
+                      setHoveredPointIndex(index)
+                    }
+                    onBlur={() =>
+                      setHoveredPointIndex(null)
+                    }
+                  />
+
+                  {hovered && (
+                    <circle
+                      cx={x}
+                      cy={y}
+                      r="8"
+                      className="fill-blue-100 stroke-blue-700"
+                      strokeWidth="2"
+                      pointerEvents="none"
+                    />
+                  )}
+
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r="4"
+                    className="metric-chart-point fill-white stroke-blue-700"
+                    style={{
+                      animationDelay: `${150 + index * 15}ms`,
+                    }}
+                    strokeWidth="2.5"
                     pointerEvents="none"
                   />
-                )}
+                </g>
+              );
+            })}
 
-                <circle
-                  cx={x}
-                  cy={y}
-                  r="4"
-                  className="metric-chart-point fill-white stroke-blue-700"
-                  style={{
-                    animationDelay: `${150 + index * 15}ms`,
-                  }}
-                  strokeWidth="2.5"
-                  pointerEvents="none"
+            {xAxisLabels.map(({ index, label }) => (
+              <text
+                key={`${index}-${label}`}
+                x={xForIndex(index)}
+                y={CHART_HEIGHT - 18}
+                textAnchor="middle"
+                className="fill-slate-500 text-[12px]"
+              >
+                {label}
+              </text>
+            ))}
+
+            {hoveredPoint &&
+              hoveredPointX !== null &&
+              hoveredPointY !== null && (
+                <ChartTooltip
+                  point={hoveredPoint}
+                  pointX={hoveredPointX}
+                  pointY={hoveredPointY}
+                  metric={metric}
+                  selectedMetric={selectedMetric}
                 />
-              </g>
-            );
-          })}
-
-          {xAxisLabels.map(({ index, label }) => (
-            <text
-              key={`${index}-${label}`}
-              x={xForIndex(index)}
-              y={CHART_HEIGHT - 18}
-              textAnchor="middle"
-              className="fill-slate-500 text-[12px]"
-            >
-              {label}
-            </text>
-          ))}
-
-          <text
-            x="18"
-            y={PADDING.top + plotHeight / 2}
-            textAnchor="middle"
-            transform={`rotate(-90 18 ${
-              PADDING.top + plotHeight / 2
-            })`}
-            className="fill-slate-500 text-[12px] font-semibold"
-          >
-            {metric.axisLabel}
-          </text>
-
-          {hoveredPoint &&
-            hoveredPointX !== null &&
-            hoveredPointY !== null && (
-              <ChartTooltip
-                point={hoveredPoint}
-                pointX={hoveredPointX}
-                pointY={hoveredPointY}
-                metric={metric}
-                selectedMetric={selectedMetric}
-              />
-            )}
-        </svg>
+              )}
+          </svg>
+        </div>
       </div>
 
       <p className="mt-3 text-xs leading-5 text-slate-500">
