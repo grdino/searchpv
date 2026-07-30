@@ -5,11 +5,13 @@ type ChartVariant = "card" | "compact";
 type ClosedSaleChartRow = {
   mls: string | number | null;
   sold_date: string | null;
+  data_current_as_of?: string | null;
 };
 
 type ClosedSalesMonthlyChartProps = {
   title?: string;
   rows: ClosedSaleChartRow[];
+  asOfDate: string;
   variant?: ChartVariant;
 };
 
@@ -23,6 +25,7 @@ type ComparisonBucket = {
   label: string;
   currentYear: number;
   previousYear: number;
+  month: number;
   isCurrentMonth: boolean;
   current: BarData;
   previous: BarData;
@@ -31,10 +34,11 @@ type ComparisonBucket = {
 export default function ClosedSalesMonthlyChart({
   title = "12-Month Year-over-Year Closed Sales",
   rows,
+  asOfDate,
   variant = "card",
 }: ClosedSalesMonthlyChartProps) {
-  const today = new Date();
-  const buckets = buildMonthlyBuckets(rows, today);
+  const effectiveDate = parseISODate(asOfDate) ?? new Date();
+  const buckets = buildMonthlyBuckets(rows, effectiveDate);
 
   if (!buckets.length) return null;
 
@@ -69,7 +73,7 @@ export default function ClosedSalesMonthlyChart({
           Each month compares the prior year with the most recent 12 months.
           Current-month results are compared through{" "}
           <span className="font-semibold">
-            {formatMonthDay(today)}
+            {formatMonthDay(effectiveDate)}
           </span>
           .
         </p>
@@ -186,8 +190,8 @@ function ChartBar({
 
   const href =
     bar.mlsList.length > 0
-      ? `/market-intelligence/closed-sales/search-results?mls=${bar.mlsList.join(
-          ","
+      ? `/market-intelligence/closed-sales/search-results?mls=${encodeURIComponent(
+          bar.mlsList.join(",")
         )}`
       : "#";
 
@@ -232,43 +236,43 @@ function ChartBar({
 
 function buildMonthlyBuckets(
   rows: ClosedSaleChartRow[],
-  today: Date
+  asOfDate: Date
 ): ComparisonBucket[] {
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth();
-  const currentDay = today.getDate();
+  const currentYear = asOfDate.getFullYear();
+  const currentMonth = asOfDate.getMonth();
+  const currentDay = asOfDate.getDate();
 
   const buckets = Array.from({ length: 12 }, (_, index) => {
-      const currentDate = new Date(
-        currentYear,
-        currentMonth - (11 - index),
-        1
-      );
+    const currentDate = new Date(
+      currentYear,
+      currentMonth - (11 - index),
+      1
+    );
 
-      const bucketYear = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      const previousYear = bucketYear - 1;
+    const bucketYear = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const previousYear = bucketYear - 1;
 
-      return {
-        key: `${bucketYear}-${String(month + 1).padStart(2, "0")}`,
-        label: currentDate.toLocaleDateString("en-US", {
-          month: "short",
-        }),
-        currentYear: bucketYear,
-        previousYear,
-        month,
-        isCurrentMonth:
-          bucketYear === currentYear && month === currentMonth,
-        current: {
-          count: 0,
-          mlsList: [] as string[],
-        },
-        previous: {
-          count: 0,
-          mlsList: [] as string[],
-        },
-      };
-    });
+    return {
+      key: `${bucketYear}-${String(month + 1).padStart(2, "0")}`,
+      label: currentDate.toLocaleDateString("en-US", {
+        month: "short",
+      }),
+      currentYear: bucketYear,
+      previousYear,
+      month,
+      isCurrentMonth:
+        bucketYear === currentYear && month === currentMonth,
+      current: {
+        count: 0,
+        mlsList: [] as string[],
+      },
+      previous: {
+        count: 0,
+        mlsList: [] as string[],
+      },
+    };
+  });
 
   const bucketMap = new Map(
     buckets.map((bucket) => [
@@ -277,8 +281,18 @@ function buildMonthlyBuckets(
     ])
   );
 
+  const currentMlsSets = new Map<string, Set<string>>();
+  const previousMlsSets = new Map<string, Set<string>>();
+
+  buckets.forEach((bucket) => {
+    currentMlsSets.set(bucket.key, new Set<string>());
+    previousMlsSets.set(bucket.key, new Set<string>());
+  });
+
   rows.forEach((row) => {
-    if (!row.sold_date || !row.mls) return;
+    if (!row.sold_date || row.mls === null || row.mls === undefined) {
+      return;
+    }
 
     const soldDate = parseISODate(row.sold_date);
 
@@ -287,54 +301,82 @@ function buildMonthlyBuckets(
     const soldYear = soldDate.getFullYear();
     const soldMonth = soldDate.getMonth();
     const soldDay = soldDate.getDate();
+    const mls = String(row.mls);
 
-    const currentKey = `${soldYear}-${String(soldMonth + 1).padStart(2, "0")}`;
-    const currentBucket = bucketMap.get(currentKey);
-
-    if (currentBucket) {
-      /*
-       * The current period is already restricted by the query's
-       * snapshotDate ending boundary.
-       */
-      currentBucket.current.count += 1;
-      currentBucket.current.mlsList.push(String(row.mls));
-      return;
-    }
-
-    const comparisonKey = `${soldYear + 1}-${String(soldMonth + 1).padStart(
+    const currentKey = `${soldYear}-${String(soldMonth + 1).padStart(
       2,
       "0"
     )}`;
+
+    const currentBucket = bucketMap.get(currentKey);
+
+    if (currentBucket) {
+      if (currentBucket.isCurrentMonth && soldDay > currentDay) {
+        return;
+      }
+
+      currentMlsSets.get(currentBucket.key)?.add(mls);
+      return;
+    }
+
+    const comparisonKey = `${soldYear + 1}-${String(
+      soldMonth + 1
+    ).padStart(2, "0")}`;
 
     const comparisonBucket = bucketMap.get(comparisonKey);
 
     if (!comparisonBucket) return;
 
-    /*
-     * For the currently incomplete month, compare only through the same
-     * day in the previous year.
-     *
-     * Example:
-     * snapshotDate = 2026-07-10
-     * July 2025 includes July 1 through July 10 only.
-     */
     if (comparisonBucket.isCurrentMonth && soldDay > currentDay) {
       return;
     }
 
-    comparisonBucket.previous.count += 1;
-    comparisonBucket.previous.mlsList.push(String(row.mls));
+    previousMlsSets.get(comparisonBucket.key)?.add(mls);
+  });
+
+  buckets.forEach((bucket) => {
+    const currentMls = Array.from(
+      currentMlsSets.get(bucket.key) ?? []
+    );
+
+    const previousMls = Array.from(
+      previousMlsSets.get(bucket.key) ?? []
+    );
+
+    bucket.current.count = currentMls.length;
+    bucket.current.mlsList = currentMls;
+
+    bucket.previous.count = previousMls.length;
+    bucket.previous.mlsList = previousMls;
   });
 
   return buckets;
 }
 
-function parseISODate(value: string) {
-  const [year, month, day] = value.split("-").map(Number);
+function parseISODate(value: string | null | undefined) {
+  if (!value) return null;
 
-  if (!year || !month || !day) return null;
+  const datePart = value.trim().slice(0, 10);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(datePart);
 
-  return new Date(year, month - 1, day);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  const date = new Date(year, month - 1, day);
+
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
 }
 
 function formatMonthDay(date: Date) {

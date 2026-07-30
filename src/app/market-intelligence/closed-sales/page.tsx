@@ -109,9 +109,7 @@ export default async function ClosedSalesPage({
   const { startDate: selectedStartDate, endDate: selectedEndDate } =
     resolveDateRange(selectedRange, params.startDate, params.endDate);
 
-  const chartToday = new Date();
-  const chartStartDate = getChartStartDate(chartToday);
-  const chartEndDate = formatLocalISODate(chartToday);
+  const systemToday = new Date();
 
   let optionQuery = supabase
     .from("closed_listing_list")
@@ -207,9 +205,39 @@ export default async function ClosedSalesPage({
     if (!batch || batch.length < pageSize) break;
   }
 
+  let chartDateQuery = supabase
+    .from("closed_listing_list")
+    .select("data_current_as_of")
+    .not("data_current_as_of", "is", null)
+    .order("data_current_as_of", { ascending: false })
+    .limit(1);
+
+  chartDateQuery = applyFilters(chartDateQuery, {
+    selectedMarket,
+    selectedPropertyType,
+    selectedZone,
+    selectedArea,
+    selectedCommunity,
+    selectedDevelopment,
+    selectedStartDate: "",
+    selectedEndDate: "",
+  });
+
+  const { data: chartDateRows, error: chartDateError } = await chartDateQuery;
+
+  const rawChartAsOfDate = chartDateRows?.[0]?.data_current_as_of;
+
+  const chartAsOfDateValue =
+    parseISODate(rawChartAsOfDate) ?? systemToday;
+
+  const chartAsOfDate = formatLocalISODate(chartAsOfDateValue);
+  const chartStartDate = getChartStartDate(chartAsOfDateValue);
+  const chartEndDate = chartAsOfDate;
+
   let chartQueryBase = supabase
     .from("closed_listing_list")
-    .select("mls, sold_date");
+    .select("mls, sold_date, data_current_as_of")
+    .order("sold_date", { ascending: true });
 
   chartQueryBase = applyFilters(chartQueryBase, {
     selectedMarket,
@@ -222,9 +250,33 @@ export default async function ClosedSalesPage({
     selectedEndDate: chartEndDate,
   });
 
-  const { data: chartData, error: chartError } = await chartQueryBase.limit(10000);
+  const chartPageSize = 1000;
+  let chartRows: any[] = [];
+  let chartError: any = null;
 
-  if (error || optionError || summaryError || chartError) {
+  for (let from = 0; from < 50000; from += chartPageSize) {
+    const { data: batch, error } = await chartQueryBase.range(
+      from,
+      from + chartPageSize - 1
+    );
+
+    if (error) {
+      chartError = error;
+      break;
+    }
+
+    chartRows = chartRows.concat(batch ?? []);
+
+    if (!batch || batch.length < chartPageSize) break;
+  }
+
+  if (
+    error ||
+    optionError ||
+    summaryError ||
+    chartDateError ||
+    chartError
+  ) {
     return (
       <main className="min-h-screen p-8">
         <h1 className="text-3xl font-bold">SearchPV</h1>
@@ -233,6 +285,7 @@ export default async function ClosedSalesPage({
           {error?.message ??
             optionError?.message ??
             summaryError?.message ??
+            chartDateError?.message ??
             chartError?.message}
         </pre>
       </main>
@@ -241,8 +294,6 @@ export default async function ClosedSalesPage({
 
   const listings = data ?? [];
   const summary = summaryRows ?? [];
-
-  const chartRows = chartData ?? [];
 
   function closedSalesSearchHref(rows: typeof summary) {
     return `/market-intelligence/closed-sales/search-results?mls=${rows
@@ -526,6 +577,7 @@ export default async function ClosedSalesPage({
         <div className="mx-auto max-w-3xl">
           <ClosedSalesMonthlyChart
             rows={chartRows}
+            asOfDate={chartAsOfDate}
             variant="compact"
           />
         </div>
@@ -1095,12 +1147,37 @@ function formatDateShort(value: string | null) {
   });
 }
 
-function parseISODate(value: string) {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
+function parseISODate(value: string | null | undefined) {
+  if (!value) return null;
+
+  const datePart = value.trim().slice(0, 10);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(datePart);
+
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  const date = new Date(year, month - 1, day);
+
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
 }
 
 function formatLocalISODate(date: Date) {
+  if (Number.isNaN(date.getTime())) {
+    throw new Error("Attempted to format an invalid date.");
+  }
+
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
