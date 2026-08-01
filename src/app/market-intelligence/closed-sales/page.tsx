@@ -106,10 +106,57 @@ export default async function ClosedSalesPage({
   const selectedAreaMode = getSummaryMode(params.areaMode);
   const selectedAreaUnit = getAreaUnit(params.areaUnit);
 
-  const { startDate: selectedStartDate, endDate: selectedEndDate } =
-    resolveDateRange(selectedRange, params.startDate, params.endDate);
+  /*
+  * Get the newest available data snapshot before resolving
+  * the default closed-sale date range.
+  */
+  let snapshotDateQuery = supabase
+    .from("closed_listing_list")
+    .select("data_current_as_of")
+    .not("data_current_as_of", "is", null)
+    .order("data_current_as_of", { ascending: false })
+    .limit(1);
 
-  const systemToday = new Date();
+  snapshotDateQuery = applyFilters(snapshotDateQuery, {
+    selectedMarket,
+    selectedPropertyType,
+    selectedZone,
+    selectedArea,
+    selectedCommunity,
+    selectedDevelopment,
+    selectedStartDate: "",
+    selectedEndDate: "",
+  });
+
+  const {
+    data: snapshotDateRows,
+    error: snapshotDateError,
+  } = await snapshotDateQuery;
+
+  const rawSnapshotDate =
+    snapshotDateRows?.[0]?.data_current_as_of;
+
+  const snapshotDateValue = parseISODate(rawSnapshotDate);
+
+  if (!snapshotDateValue) {
+    throw new Error(
+      `Unable to determine the latest snapshot date from data_current_as_of: ${
+        rawSnapshotDate ?? "null"
+      }`
+    );
+  }
+
+  const snapshotDate = formatLocalISODate(snapshotDateValue);
+
+  const {
+    startDate: selectedStartDate,
+    endDate: selectedEndDate,
+  } = resolveDateRange(
+    selectedRange,
+    params.startDate,
+    params.endDate,
+    snapshotDate
+  );
 
   let optionQuery = supabase
     .from("closed_listing_list")
@@ -205,32 +252,8 @@ export default async function ClosedSalesPage({
     if (!batch || batch.length < pageSize) break;
   }
 
-  let chartDateQuery = supabase
-    .from("closed_listing_list")
-    .select("data_current_as_of")
-    .not("data_current_as_of", "is", null)
-    .order("data_current_as_of", { ascending: false })
-    .limit(1);
-
-  chartDateQuery = applyFilters(chartDateQuery, {
-    selectedMarket,
-    selectedPropertyType,
-    selectedZone,
-    selectedArea,
-    selectedCommunity,
-    selectedDevelopment,
-    selectedStartDate: "",
-    selectedEndDate: "",
-  });
-
-  const { data: chartDateRows, error: chartDateError } = await chartDateQuery;
-
-  const rawChartAsOfDate = chartDateRows?.[0]?.data_current_as_of;
-
-  const chartAsOfDateValue =
-    parseISODate(rawChartAsOfDate) ?? systemToday;
-
-  const chartAsOfDate = formatLocalISODate(chartAsOfDateValue);
+  const chartAsOfDateValue = snapshotDateValue;
+  const chartAsOfDate = snapshotDate;
   const chartStartDate = getChartStartDate(chartAsOfDateValue);
   const chartEndDate = chartAsOfDate;
 
@@ -274,7 +297,7 @@ export default async function ClosedSalesPage({
     error ||
     optionError ||
     summaryError ||
-    chartDateError ||
+    snapshotDateError ||
     chartError
   ) {
     return (
@@ -285,7 +308,7 @@ export default async function ClosedSalesPage({
           {error?.message ??
             optionError?.message ??
             summaryError?.message ??
-            chartDateError?.message ??
+            snapshotDateError?.message ??
             chartError?.message}
         </pre>
       </main>
@@ -898,26 +921,44 @@ function median(values: number[]) {
   return Math.round(values[middle]);
 }
 
-function resolveDateRange(range: RangeKey, startDate?: string, endDate?: string) {
-  const today = new Date();
-  const end = formatISODate(today);
+function resolveDateRange(
+  range: RangeKey,
+  startDate: string | undefined,
+  endDate: string | undefined,
+  snapshotDate: string
+) {
+  const snapshot = parseISODate(snapshotDate);
+
+  if (!snapshot) {
+    throw new Error(`Invalid snapshot date: ${snapshotDate}`);
+  }
 
   if (range === "custom") {
-    return { startDate: startDate ?? "", endDate: endDate ?? "" };
+    return {
+      startDate: startDate ?? "",
+      endDate: endDate ?? snapshotDate,
+    };
   }
 
   if (range === "all") {
-    return { startDate: "", endDate: "" };
+    return {
+      startDate: "",
+      endDate: "",
+    };
   }
 
   const monthCount =
     range === "90d" ? 3 : range === "6mo" ? 6 : 12;
 
-  const start = new Date(today.getFullYear(), today.getMonth() - (monthCount - 1), 1);
+  const start = new Date(
+    snapshot.getFullYear(),
+    snapshot.getMonth() - (monthCount - 1),
+    1
+  );
 
   return {
-    startDate: formatISODate(start),
-    endDate: end,
+    startDate: formatLocalISODate(start),
+    endDate: snapshotDate,
   };
 }
 
@@ -937,10 +978,6 @@ function getChartStartDate(today: Date) {
   );
 
   return formatLocalISODate(start);
-}
-
-function formatISODate(date: Date) {
-  return date.toISOString().slice(0, 10);
 }
 
 function getRangeKey(value?: string): RangeKey {
@@ -1150,8 +1187,17 @@ function formatDateShort(value: string | null) {
 function parseISODate(value: string | null | undefined) {
   if (!value) return null;
 
-  const datePart = value.trim().slice(0, 10);
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(datePart);
+  const trimmed = value.trim();
+
+  // Supports:
+  // 2026-07-31
+  // 2026-07-31T12:23:24
+  // 20260731
+  // 20260731T122324
+  const dashedMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
+  const compactMatch = /^(\d{4})(\d{2})(\d{2})/.exec(trimmed);
+
+  const match = dashedMatch ?? compactMatch;
 
   if (!match) return null;
 
