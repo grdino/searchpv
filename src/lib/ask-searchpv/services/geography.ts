@@ -96,24 +96,82 @@ export async function resolveGeography(
 
   const supabase = await createClient();
 
-  const { data, error } = await supabase.rpc(
+  const unrestrictedResult = await supabase.rpc(
     "resolve_geography",
     {
       p_search: normalizedInput,
-      p_expected_entity_type_cd: options.expectedType
-        ? DOMAIN_TO_DATABASE_ENTITY_TYPE[options.expectedType]
-        : null,
+      p_expected_entity_type_cd: null,
       p_limit: limit,
     },
   );
 
-  if (error) {
+  if (unrestrictedResult.error) {
     throw new Error(
-      `Unable to resolve geography: ${error.message}`,
+      `Unable to resolve geography: ${unrestrictedResult.error.message}`,
     );
   }
 
-  const rows = (data ?? []) as GeographyResolverRow[];
+  const unrestrictedRows =
+    (unrestrictedResult.data ?? []) as GeographyResolverRow[];
+
+  const exactMatchMethods = new Set([
+    "canonical_exact",
+    "variant_exact",
+    "normalized_exact",
+  ]);
+
+  const hasUnrestrictedExactMatch =
+    unrestrictedRows.some((row) =>
+      exactMatchMethods.has(row.match_method),
+    );
+
+  let rows = unrestrictedRows;
+
+  /*
+  * An exact canonical name or alternate-name match takes precedence
+  * over an inferred entity type.
+  *
+  * For example, "Romantic Zone" is an exact alternate name for the
+  * Emiliano Zapata community. The word "zone" must not force the
+  * resolver to search only ZN entities.
+  */
+  if (
+    options.expectedType &&
+    !hasUnrestrictedExactMatch
+  ) {
+    const expectedDatabaseType =
+      DOMAIN_TO_DATABASE_ENTITY_TYPE[
+        options.expectedType
+      ];
+
+    const typedResult = await supabase.rpc(
+      "resolve_geography",
+      {
+        p_search: normalizedInput,
+        p_expected_entity_type_cd:
+          expectedDatabaseType,
+        p_limit: limit,
+      },
+    );
+
+    if (typedResult.error) {
+      throw new Error(
+        `Unable to resolve geography: ${typedResult.error.message}`,
+      );
+    }
+
+    const typedRows =
+      (typedResult.data ?? []) as GeographyResolverRow[];
+
+    /*
+    * Prefer typed results when available, but preserve the
+    * unrestricted candidates if the type restriction returned
+    * nothing.
+    */
+    if (typedRows.length > 0) {
+      rows = typedRows;
+    }
+  }
 
   const candidates = rows
     .map((row) => mapResolverRow(row, normalizedInput))
