@@ -1,4 +1,4 @@
-"use client";
+"use client"; 
 
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
@@ -17,9 +17,9 @@ type SortKey =
 type SortDir = "asc" | "desc";
 
 const DEFAULT_ZONE_NAME = "Puerto Vallarta";
-const BASE_PATH = "/market-intelligence/active-listings";
 
 export default function MarketListingFilters({
+  basePath,
   selectedMarket,
   selectedPropertyType,
   selectedBedrooms,
@@ -34,6 +34,7 @@ export default function MarketListingFilters({
   communities,
   developments,
 }: {
+  basePath: string;
   selectedMarket: MarketSegment;
   selectedPropertyType: PropertyTypeSegment;
   selectedBedrooms: BedroomSegment;
@@ -359,8 +360,8 @@ export default function MarketListingFilters({
     const queryString = params.toString();
 
     return queryString
-      ? `${BASE_PATH}?${queryString}`
-      : BASE_PATH;
+      ? `${basePath}?${queryString}`
+      : basePath;
   }
 
   function go(

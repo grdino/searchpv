@@ -373,7 +373,8 @@ function normalizeGeography(
 
   const entityTypeCd = normalizeEntityType(
     candidate.entityTypeCd ??
-      candidate.entity_type_cd,
+    candidate.entity_type_cd ??
+    candidate.entityType,
   );
 
   const canonicalName = firstNonEmptyString([
@@ -414,14 +415,24 @@ function normalizeEntityType(
 ): SupportedEntityType {
   const normalized = String(value ?? "")
     .trim()
-    .toUpperCase();
+    .toLowerCase();
 
-  if (
-    SUPPORTED_ENTITY_TYPES.includes(
-      normalized as SupportedEntityType,
-    )
-  ) {
-    return normalized as SupportedEntityType;
+  switch (normalized) {
+    case "zn":
+    case "zone":
+      return "ZN";
+
+    case "ar":
+    case "area":
+      return "AR";
+
+    case "cm":
+    case "community":
+      return "CM";
+
+    case "dv":
+    case "development":
+      return "DV";
   }
 
   throw new Error(

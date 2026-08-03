@@ -128,7 +128,9 @@ function homeHref(
 
   const queryString = params.toString();
 
-  return queryString ? `/?${queryString}#market-explorer` : "/#market-explorer";
+  return queryString
+    ? `/search-properties?${queryString}#market-explorer`
+    : "/search-properties#market-explorer";
 }
 
 const selectStyle: React.CSSProperties = {

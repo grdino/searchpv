@@ -50,6 +50,56 @@ const COMPARISON_METRICS: MetricId[] = [
   "months_inventory",
 ];
 
+/**
+ * Preferred geography types when multiple entities match the
+ * same search text.
+ *
+ * Example:
+ * "Versalles"
+ *   Community (preferred)
+ *   Development
+ *
+ * The resolver returns all candidates.
+ * The router chooses the preferred one based on the user's intent.
+ */
+const INTENT_ENTITY_PRIORITY: Partial<
+  Record<AskSearchPVIntent, GeographyEntityType[]>
+> = {
+  market_statistics: [
+    "community",
+    "area",
+    "zone",
+    "neighborhood",
+    "development",
+    "building",
+    "place",
+  ],
+
+  property_search: [
+    "community",
+    "area",
+    "zone",
+    "neighborhood",
+    "development",
+    "building",
+  ],
+
+  development_information: [
+    "development",
+    "building",
+    "community",
+    "area",
+    "zone",
+  ],
+
+  geography_comparison: [
+    "community",
+    "area",
+    "zone",
+    "neighborhood",
+  ],
+};
+
 const MARKET_KEYWORDS = [
   "market",
   "median",
@@ -244,10 +294,20 @@ export async function routeAskSearchPVRequest(
     intent,
   );
 
-  const geographyResolutions = await resolveGeographies(
-    geographyTexts,
-    inferExpectedGeographyType(question, intent),
-  );
+  const rawGeographyResolutions =
+    await resolveGeographies(
+      geographyTexts,
+      inferExpectedGeographyType(
+        question,
+        intent,
+      ),
+    );
+
+  const geographyResolutions =
+    applyIntentEntityPreference(
+      rawGeographyResolutions,
+      intent,
+    );
 
   for (const resolution of geographyResolutions) {
     warnings.push(...resolution.warnings);
@@ -537,6 +597,10 @@ function buildPropertySearchParameters(
   geographies: ResolvedGeography[],
   request: AskSearchPVRequest,
 ): PropertySearchParameters {
+    console.log(
+    "Resolved geographies:",
+    JSON.stringify(geographies, null, 2),
+  );
   const priceRange =
     extractPriceRange(normalizedQuestion);
 
@@ -589,6 +653,69 @@ function buildPropertySearchParameters(
       request.preferences?.resultLimit,
     ),
   };
+}
+
+/**
+ * Extract a possible geography name from the words remaining after
+ * recognizable property-search filters are removed.
+ *
+ * Example:
+ * "condos under 500000 zona romantica"
+ *
+ * Becomes:
+ * "zona romantica"
+ */
+function extractTrailingGeographyCandidate(
+  question: string,
+): string | null {
+  let candidate = question;
+
+  // Remove common property-type words.
+  candidate = candidate.replace(
+    /\b(condos?|condominiums?|houses?|homes?|apartments?|villas?|lots?|land)\b/gi,
+    " ",
+  );
+
+  // Remove maximum-price phrases.
+  candidate = candidate.replace(
+    /\b(?:under|below|less than|up to|max(?:imum)?)\s*\$?\s*[\d,]+(?:\.\d+)?\b/gi,
+    " ",
+  );
+
+  // Remove minimum-price phrases.
+  candidate = candidate.replace(
+    /\b(?:over|above|more than|at least|min(?:imum)?)\s*\$?\s*[\d,]+(?:\.\d+)?\b/gi,
+    " ",
+  );
+
+  // Remove bedroom filters.
+  candidate = candidate.replace(
+    /\b\d+(?:\+)?\s*(?:bed|beds|bedroom|bedrooms|br)\b/gi,
+    " ",
+  );
+
+  // Remove bathroom filters.
+  candidate = candidate.replace(
+    /\b\d+(?:\.\d+)?(?:\+)?\s*(?:bath|baths|bathroom|bathrooms|ba)\b/gi,
+    " ",
+  );
+
+  // Remove common search and status words.
+  candidate = candidate.replace(
+    /\b(?:show me|find me|find|search for|search|listings?|properties|property|for sale|active|available)\b/gi,
+    " ",
+  );
+
+  // Remove geography connector words if one remains.
+  candidate = candidate.replace(
+    /\b(?:in|at|within|around|near)\b/gi,
+    " ",
+  );
+
+  // Normalize whitespace.
+  candidate = candidate.replace(/\s+/g, " ").trim();
+
+  return candidate.length >= 2 ? candidate : null;
 }
 
 function buildMarketStatisticsParameters(
@@ -678,6 +805,133 @@ async function resolveGeographies(
   return results;
 }
 
+/**
+ * Applies intent-specific entity-type preference when the
+ * geography resolver returns multiple competitive matches.
+ *
+ * Example:
+ * "How many active listings are in Versalles?"
+ *
+ * For market statistics:
+ * - Versalles community is preferred
+ * - VERSALLES development remains an alternative
+ */
+function applyIntentEntityPreference(
+  resolutions: GeographyResolutionResult[],
+  intent: AskSearchPVIntent,
+): GeographyResolutionResult[] {
+  const priority =
+    INTENT_ENTITY_PRIORITY[intent];
+
+  if (!priority) {
+    return resolutions;
+  }
+
+  return resolutions.map((resolution) => {
+    if (
+      !resolution.requiresClarification ||
+      resolution.candidates.length === 0
+    ) {
+      return resolution;
+    }
+
+    const highestConfidence = Math.max(
+      ...resolution.candidates.map(
+        (candidate) =>
+          candidate.confidence,
+      ),
+    );
+
+    const competitiveCandidates =
+      resolution.candidates.filter(
+        (candidate) =>
+          highestConfidence -
+            candidate.confidence <=
+          0.08,
+      );
+
+    const rankedCandidates =
+      competitiveCandidates
+        .map((candidate) => ({
+          candidate,
+          priorityIndex:
+            candidate.entityType
+              ? priority.indexOf(
+                  candidate.entityType,
+                )
+              : -1,
+        }))
+        .filter(
+          ({ priorityIndex }) =>
+            priorityIndex >= 0,
+        )
+        .sort(
+          (left, right) =>
+            left.priorityIndex -
+              right.priorityIndex ||
+            right.candidate.confidence -
+              left.candidate.confidence,
+        );
+
+    const preferred =
+      rankedCandidates[0];
+
+    if (!preferred) {
+      return resolution;
+    }
+
+    const equallyPreferred =
+      rankedCandidates.filter(
+        ({ candidate, priorityIndex }) =>
+          priorityIndex ===
+            preferred.priorityIndex &&
+          Math.abs(
+            candidate.confidence -
+              preferred.candidate.confidence,
+          ) <= 0.08,
+      );
+
+    if (equallyPreferred.length > 1) {
+      return resolution;
+    }
+
+    const selected =
+      preferred.candidate;
+
+    return {
+      ...resolution,
+      resolved: true,
+      requiresClarification: false,
+      primary: {
+        ...selected,
+        resolved: true,
+        alternatives:
+          resolution.candidates
+            .filter(
+              (candidate) =>
+                candidate.entityKey !==
+                  selected.entityKey &&
+                candidate.entityType !== undefined &&
+                candidate.canonicalName !== undefined,
+            )
+            .map((candidate) => ({
+              entityKey:
+                candidate.entityKey,
+              identifier:
+                candidate.identifier,
+              entityType:
+                candidate.entityType!,
+              canonicalName:
+                candidate.canonicalName!,
+              confidence:
+                candidate.confidence,
+            })),
+      },
+      clarificationQuestion: undefined,
+    };
+  });
+}
+
 function findRequiredGeographyClarification(
   resolutions: GeographyResolutionResult[],
   intent: AskSearchPVIntent,
@@ -748,6 +1002,26 @@ function extractGeographyTexts(
         tellMeMatch[1],
       ),
     ].filter(Boolean);
+  }
+
+  /*
+  * Property searches often omit the word "in".
+  *
+  * Example:
+  *
+  * condos under 500000 zona romantica
+  *
+  * Remove the property-search words and see if
+  * anything meaningful remains. If it does,
+  * let the geography resolver try it.
+  */
+  if (intent === "property_search") {
+    const candidate =
+      extractTrailingGeographyCandidate(question);
+
+    if (candidate) {
+      return [candidate];
+    }
   }
 
   return [];
@@ -1011,7 +1285,7 @@ function inferPropertyType(
   normalizedQuestion: string,
 ): string | undefined {
   if (/\bcondos?\b/.test(normalizedQuestion)) {
-    return "Condo";
+    return "Condos";
   }
 
   if (
@@ -1019,7 +1293,7 @@ function inferPropertyType(
       normalizedQuestion,
     )
   ) {
-    return "House";
+    return "Houses";
   }
 
   if (/\bland\b|\blots?\b/.test(normalizedQuestion)) {
@@ -1033,7 +1307,7 @@ function inferPropertyTypeCode(
   normalizedQuestion: string,
 ): string | undefined {
   if (/\bcondos?\b/.test(normalizedQuestion)) {
-    return "Condo";
+    return "Condos";
   }
 
   if (
@@ -1041,7 +1315,7 @@ function inferPropertyTypeCode(
       normalizedQuestion,
     )
   ) {
-    return "House";
+    return "Houses";
   }
 
   if (/\bland\b|\blots?\b/.test(normalizedQuestion)) {

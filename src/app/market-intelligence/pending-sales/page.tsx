@@ -478,6 +478,7 @@ export default async function ActiveListingsPage({
           </div>
 
           <MarketListingFilters
+            basePath={BASE_PATH}
             selectedMarket={selectedMarket}
             selectedPropertyType={selectedPropertyType}
             selectedBedrooms={selectedBedrooms}

@@ -23,7 +23,7 @@ const reports = [
     description: "Listings currently under contract across selected markets.",
     href: "/market-intelligence/pending-sales",
     Icon: Clock3,
-    inDevelopment: true,
+    inDevelopment: false,
   },
   {
     title: "Closed Sales",

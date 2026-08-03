@@ -53,6 +53,33 @@ export default async function OfficePage() {
             </p>
           </Link>
 
+          <Link
+            href="/office/closed-sales/agents"
+            className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <h2 className="text-lg font-bold text-slate-950">
+              Closed Sales by Agent
+            </h2>
+
+            <p className="mt-2 text-sm text-slate-600">
+              Internal sales participation and agent reporting.
+            </p>
+          </Link>
+
+          <Link
+            href="/office/geography"
+            className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <h2 className="text-lg font-bold text-slate-950">
+              Geography Maintenance
+            </h2>
+
+            <p className="mt-2 text-sm text-slate-600">
+              Maintain geographic entities, aliases, coordinates, and hierarchy.
+            </p>
+          </Link>
+
+
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6">
             <h2 className="text-lg font-bold text-slate-950">
               Property Inventory

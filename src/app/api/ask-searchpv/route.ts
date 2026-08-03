@@ -3,6 +3,10 @@
 import { NextResponse } from "next/server";
 
 import {
+  formatMarketStatisticsPresentation,
+} from "@/lib/ask-searchpv/response-formatter";
+
+import {
   dispatchAskSearchPVOperation,
   isImplementedAskSearchPVOperation,
   type AskSearchPVExecutionResult,
@@ -583,6 +587,11 @@ function composeMarketStatisticsResponse(
 ): AskSearchPVResponse {
   const { result } = execution;
 
+  const presentation =
+    formatMarketStatisticsPresentation(
+      result,
+    );
+
   const metricBlock: MetricCardBlock = {
     type: "metric_cards",
     title: `${result.geography.canonicalName} Market Snapshot`,
@@ -607,7 +616,7 @@ function composeMarketStatisticsResponse(
       {
         id: "market-statistics",
         label:
-          `${result.geography.canonicalName} Market Snapshot`,
+          presentation.sourceLabel,
         sourceType: "view",
         sourceName:
           `public.${result.sourceView}`,
@@ -618,7 +627,7 @@ function composeMarketStatisticsResponse(
         periodEnd:
           result.salesPeriodEnd,
         notes:
-          `Market segment: ${result.marketSegment}; property type segment: ${result.propertyTypeSegment}.`,
+          presentation.sourceNotes,
       },
     ];
 
@@ -627,21 +636,8 @@ function composeMarketStatisticsResponse(
     question,
     interpretation:
       routing.interpretation,
-    answer: {
-      headline:
-        `${result.geography.canonicalName} market statistics`,
-      summary:
-        `Here are the requested verified metrics from the latest available ${result.sourceView.replaceAll(
-          "_",
-          " ",
-        )}.`,
-      expertContext:
-        result.snapshotDate
-          ? `Inventory metrics are current as of ${formatDate(
-              result.snapshotDate,
-            )}. Closed-sale metrics use the reporting period shown in the source details.`
-          : undefined,
-    },
+    answer:
+      presentation.answer,
     blocks: [metricBlock],
     sources,
     suggestedQuestions: [
@@ -784,29 +780,6 @@ function formatMetricValue(
         },
       ).format(value);
   }
-}
-
-function formatDate(
-  value: string,
-): string {
-  const date = new Date(
-    `${value.slice(0, 10)}T00:00:00`,
-  );
-
-  if (
-    Number.isNaN(date.getTime())
-  ) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat(
-    "en-US",
-    {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    },
-  ).format(date);
 }
 
 function debugOutputIsAllowed(): boolean {

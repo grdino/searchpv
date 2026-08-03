@@ -61,14 +61,9 @@ const reportLinks = [
   },
 ];
 
-type MenuSection =
-  | "market-intelligence"
-  | "reports"
-  | null;
+type MenuSection = "market-intelligence" | "reports" | null;
 
-function getSectionFromPathname(
-  pathname: string
-): MenuSection {
+function getSectionFromPathname(pathname: string): MenuSection {
   if (pathname.startsWith("/market-intelligence")) {
     return "market-intelligence";
   }
@@ -119,8 +114,17 @@ export default function HamburgerMenu() {
   const marketIntelligenceOpen =
     expandedSection === "market-intelligence";
 
-  const reportsOpen =
-    expandedSection === "reports";
+  const reportsOpen = expandedSection === "reports";
+
+  const isHomeActive = pathname === "/";
+  const isSearchPropertiesActive =
+    pathname === "/search-properties" ||
+    pathname.startsWith("/search-properties/");
+  const isAskSearchPVActive =
+    pathname === "/ask-searchpv" ||
+    pathname.startsWith("/ask-searchpv/");
+  const isMarketOverviewActive =
+    pathname === "/market-intelligence";
 
   return (
     <div style={{ position: "relative" }}>
@@ -139,17 +143,59 @@ export default function HamburgerMenu() {
           <Link
             href="/"
             onClick={closeMenu}
-            style={menuLinkStyle}
+            aria-current={isHomeActive ? "page" : undefined}
+            style={{
+              ...menuLinkStyle,
+              ...(isHomeActive ? activeTopLevelLinkStyle : {}),
+            }}
           >
             Home
           </Link>
 
           <Link
-            href="/#market-explorer"
+            href="/search-properties"
             onClick={closeMenu}
-            style={menuLinkStyle}
+            aria-current={
+              isSearchPropertiesActive ? "page" : undefined
+            }
+            style={{
+              ...menuLinkStyle,
+              ...(isSearchPropertiesActive
+                ? activeTopLevelLinkStyle
+                : {}),
+            }}
           >
-            Explore Market
+            Search Properties
+          </Link>
+
+          <Link
+            href="/ask-searchpv"
+            onClick={closeMenu}
+            aria-current={isAskSearchPVActive ? "page" : undefined}
+            style={{
+              ...menuLinkStyle,
+              ...(isAskSearchPVActive
+                ? activeTopLevelLinkStyle
+                : {}),
+            }}
+          >
+            Ask SearchPV
+          </Link>
+
+          <Link
+            href="/market-intelligence"
+            onClick={closeMenu}
+            aria-current={
+              isMarketOverviewActive ? "page" : undefined
+            }
+            style={{
+              ...menuLinkStyle,
+              ...(isMarketOverviewActive
+                ? activeTopLevelLinkStyle
+                : {}),
+            }}
+          >
+            Explore the Market
           </Link>
 
           <div style={sectionStyle}>
@@ -161,13 +207,12 @@ export default function HamburgerMenu() {
               aria-expanded={marketIntelligenceOpen}
               style={{
                 ...sectionButtonStyle,
-                ...(activeSection ===
-                "market-intelligence"
+                ...(activeSection === "market-intelligence"
                   ? activeSectionButtonStyle
                   : {}),
               }}
             >
-              <span>Market Intelligence</span>
+              <span>Market Intelligence Tools</span>
 
               <span style={arrowStyle}>
                 {marketIntelligenceOpen ? "−" : "+"}
@@ -181,8 +226,7 @@ export default function HamburgerMenu() {
                   onClick={closeMenu}
                   style={{
                     ...sectionOverviewLinkStyle,
-                    ...(pathname ===
-                    "/market-intelligence"
+                    ...(pathname === "/market-intelligence"
                       ? activeLinkStyle
                       : {}),
                   }}
@@ -193,9 +237,7 @@ export default function HamburgerMenu() {
                 {marketIntelligenceLinks.map((item) => {
                   const isActive =
                     pathname === item.href ||
-                    pathname.startsWith(
-                      `${item.href}/`
-                    );
+                    pathname.startsWith(`${item.href}/`);
 
                   return (
                     <Link
@@ -210,9 +252,7 @@ export default function HamburgerMenu() {
                         color: item.exists
                           ? "#15803d"
                           : "#ca8a04",
-                        ...(isActive
-                          ? activeLinkStyle
-                          : {}),
+                        ...(isActive ? activeLinkStyle : {}),
                       }}
                     >
                       {item.label}
@@ -226,9 +266,7 @@ export default function HamburgerMenu() {
           <div style={sectionStyle}>
             <button
               type="button"
-              onClick={() =>
-                toggleSection("reports")
-              }
+              onClick={() => toggleSection("reports")}
               aria-expanded={reportsOpen}
               style={{
                 ...sectionButtonStyle,
@@ -262,9 +300,7 @@ export default function HamburgerMenu() {
                 {reportLinks.map((item) => {
                   const isActive =
                     pathname === item.href ||
-                    pathname.startsWith(
-                      `${item.href}/`
-                    );
+                    pathname.startsWith(`${item.href}/`);
 
                   return (
                     <Link
@@ -279,9 +315,7 @@ export default function HamburgerMenu() {
                         color: item.exists
                           ? "#15803d"
                           : "#ca8a04",
-                        ...(isActive
-                          ? activeLinkStyle
-                          : {}),
+                        ...(isActive ? activeLinkStyle : {}),
                       }}
                     >
                       {item.label}
@@ -295,7 +329,19 @@ export default function HamburgerMenu() {
           <Link
             href="/about"
             onClick={closeMenu}
-            style={menuLinkStyle}
+            aria-current={
+              pathname === "/about" ||
+              pathname.startsWith("/about/")
+                ? "page"
+                : undefined
+            }
+            style={{
+              ...menuLinkStyle,
+              ...(pathname === "/about" ||
+              pathname.startsWith("/about/")
+                ? activeTopLevelLinkStyle
+                : {}),
+            }}
           >
             About SearchPV
           </Link>
@@ -303,7 +349,19 @@ export default function HamburgerMenu() {
           <Link
             href="/contact"
             onClick={closeMenu}
-            style={menuLinkStyle}
+            aria-current={
+              pathname === "/contact" ||
+              pathname.startsWith("/contact/")
+                ? "page"
+                : undefined
+            }
+            style={{
+              ...menuLinkStyle,
+              ...(pathname === "/contact" ||
+              pathname.startsWith("/contact/")
+                ? activeTopLevelLinkStyle
+                : {}),
+            }}
           >
             Contact
           </Link>
@@ -311,7 +369,19 @@ export default function HamburgerMenu() {
           <Link
             href="/office"
             onClick={closeMenu}
-            style={menuLinkStyle}
+            aria-current={
+              pathname === "/office" ||
+              pathname.startsWith("/office/")
+                ? "page"
+                : undefined
+            }
+            style={{
+              ...menuLinkStyle,
+              ...(pathname === "/office" ||
+              pathname.startsWith("/office/")
+                ? activeTopLevelLinkStyle
+                : {}),
+            }}
           >
             🔒 Office
           </Link>
@@ -362,6 +432,12 @@ const menuLinkStyle: CSSProperties = {
   textDecoration: "none",
   fontWeight: 900,
   fontSize: "1.12rem",
+};
+
+const activeTopLevelLinkStyle: CSSProperties = {
+  color: "#1d4ed8",
+  textDecoration: "underline",
+  textUnderlineOffset: "4px",
 };
 
 const sectionButtonStyle: CSSProperties = {
