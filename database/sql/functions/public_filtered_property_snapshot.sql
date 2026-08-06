@@ -1,3 +1,28 @@
+drop function if exists public.filtered_property_snapshot(
+    text,
+    text,
+    text,
+    text,
+    text,
+    text,
+    text,
+    numeric,
+    numeric,
+    numeric,
+    numeric,
+    numeric,
+    numeric,
+    boolean,
+    boolean,
+    boolean,
+    boolean,
+    boolean,
+    boolean,
+    numeric,
+    numeric
+);
+
+
 create or replace function public.filtered_property_snapshot(
     p_group_level text,
 
@@ -10,7 +35,10 @@ create or replace function public.filtered_property_snapshot(
     p_development_name text,
 
     p_min_beds numeric,
+    p_max_beds numeric,
+
     p_min_baths numeric,
+    p_max_baths numeric,
 
     p_min_price numeric,
     p_max_price numeric,
@@ -45,9 +73,15 @@ returns table (
     pending_count bigint,
     total_count bigint,
 
+    average_list_price double precision,
     median_list_price double precision,
+
+    average_list_price_per_sqft double precision,
     median_list_price_per_sqft double precision,
+
+    average_list_price_per_sqm double precision,
     median_list_price_per_sqm double precision,
+
     median_active_dom double precision,
 
     active_listing_ids text,
@@ -87,7 +121,10 @@ begin
             p_development_name => p_development_name,
 
             p_min_beds => p_min_beds,
+            p_max_beds => p_max_beds,
+
             p_min_baths => p_min_baths,
+            p_max_baths => p_max_baths,
 
             p_min_price => p_min_price,
             p_max_price => p_max_price,
@@ -220,14 +257,28 @@ begin
                 where p.lstng_ky is not null
             )::bigint as total_count,
 
+            avg(p.current_price)
+                filter (
+                    where p.listing_status = 'active'
+                      and p.current_price > 0
+                )::double precision
+                as average_list_price,
+
             percentile_cont(0.5)
                 within group (
                     order by p.current_price
                 )
                 filter (
                     where p.listing_status = 'active'
-                      and p.current_price is not null
+                      and p.current_price > 0
                 ) as median_list_price,
+
+            avg(p.price_per_sqft)
+                filter (
+                    where p.listing_status = 'active'
+                      and p.price_per_sqft > 0
+                )::double precision
+                as average_list_price_per_sqft,
 
             percentile_cont(0.5)
                 within group (
@@ -237,6 +288,13 @@ begin
                     where p.listing_status = 'active'
                       and p.price_per_sqft > 0
                 ) as median_list_price_per_sqft,
+
+            avg(p.price_per_sqm)
+                filter (
+                    where p.listing_status = 'active'
+                      and p.price_per_sqm > 0
+                )::double precision
+                as average_list_price_per_sqm,
 
             percentile_cont(0.5)
                 within group (
@@ -386,9 +444,15 @@ begin
         g.pending_count,
         g.total_count,
 
+        g.average_list_price,
         g.median_list_price,
+
+        g.average_list_price_per_sqft,
         g.median_list_price_per_sqft,
+
+        g.average_list_price_per_sqm,
         g.median_list_price_per_sqm,
+
         g.median_active_dom,
 
         g.active_listing_ids,
@@ -433,6 +497,8 @@ grant execute on function public.filtered_property_snapshot(
     text,
     text,
     text,
+    numeric,
+    numeric,
     numeric,
     numeric,
     numeric,

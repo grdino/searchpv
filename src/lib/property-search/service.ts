@@ -28,9 +28,15 @@ export type FilteredSnapshotRow = {
   pending_count: number;
   total_count: number;
 
+  average_list_price: number | null;
   median_list_price: number | null;
+
+  average_list_price_per_sqft: number | null;
   median_list_price_per_sqft: number | null;
+
+  average_list_price_per_sqm: number | null;
   median_list_price_per_sqm: number | null;
+
   median_active_dom: number | null;
 
   active_listing_ids: string | null;
@@ -45,10 +51,16 @@ export type PropertySearchSummary = {
   pendingCount: number;
   totalCount: number;
 
+  averageListPrice: number | null;
   medianListPrice: number | null;
+
+  averageListPricePerSqft: number | null;
   medianListPricePerSqft: number | null;
+
+  averageListPricePerSqm: number | null;
   medianListPricePerSqm: number | null;
-  medianActiveDom: number | null;
+
+medianActiveDom: number | null;
 
   activeListingIds: string | null;
   pendingListingIds: string | null;
@@ -125,14 +137,33 @@ export async function getPropertySearchPageData(
     pendingCount: Number(summaryRow?.pending_count ?? 0),
     totalCount: Number(summaryRow?.total_count ?? 0),
 
-    medianListPrice: nullableNumber(summaryRow?.median_list_price),
+    averageListPrice: nullableNumber(
+      summaryRow?.average_list_price
+    ),
+
+    medianListPrice: nullableNumber(
+      summaryRow?.median_list_price
+    ),
+
+    averageListPricePerSqft: nullableNumber(
+      summaryRow?.average_list_price_per_sqft
+    ),
+
     medianListPricePerSqft: nullableNumber(
       summaryRow?.median_list_price_per_sqft
     ),
+
+    averageListPricePerSqm: nullableNumber(
+      summaryRow?.average_list_price_per_sqm
+    ),
+
     medianListPricePerSqm: nullableNumber(
       summaryRow?.median_list_price_per_sqm
     ),
-    medianActiveDom: nullableNumber(summaryRow?.median_active_dom),
+
+    medianActiveDom: nullableNumber(
+      summaryRow?.median_active_dom
+    ),
 
     activeListingIds: summaryRow?.active_listing_ids ?? null,
     pendingListingIds: summaryRow?.pending_listing_ids ?? null,
@@ -330,14 +361,33 @@ function normalizeSnapshotRow(
     pending_count: Number(row.pending_count ?? 0),
     total_count: Number(row.total_count ?? 0),
 
-    median_list_price: nullableNumber(row.median_list_price),
+    average_list_price: nullableNumber(
+      row.average_list_price
+    ),
+
+    median_list_price: nullableNumber(
+      row.median_list_price
+    ),
+
+    average_list_price_per_sqft: nullableNumber(
+      row.average_list_price_per_sqft
+    ),
+
     median_list_price_per_sqft: nullableNumber(
       row.median_list_price_per_sqft
     ),
+
+    average_list_price_per_sqm: nullableNumber(
+      row.average_list_price_per_sqm
+    ),
+
     median_list_price_per_sqm: nullableNumber(
       row.median_list_price_per_sqm
     ),
-    median_active_dom: nullableNumber(row.median_active_dom),
+
+    median_active_dom: nullableNumber(
+      row.median_active_dom
+    ),
   };
 }
 

@@ -81,7 +81,13 @@ const AREA_GUIDE: AreaGuide[] = [
   },
 ];
 
-export default function AreaGuideModal() {
+type AreaGuideModalProps = {
+  variant?: "pill" | "search-help";
+};
+
+export default function AreaGuideModal({
+  variant = "pill",
+}: AreaGuideModalProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -102,14 +108,24 @@ export default function AreaGuideModal() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 rounded-full border border-slate-600 px-3 py-1 text-xs text-slate-300 hover:border-sky-400 hover:text-sky-300"
-        aria-label="Open area guide"
-      >
-        🗺️ Guide
-      </button>
+      {variant === "search-help" ? (
+  <button
+    type="button"
+    onClick={() => setOpen(true)}
+    className="mx-auto block text-xs font-semibold text-sky-400 hover:text-sky-300 hover:underline"
+  >
+    Not sure which area to choose? View the Area Guide
+  </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-1 rounded-full border border-slate-600 px-3 py-1 text-xs text-slate-300 hover:border-sky-400 hover:text-sky-300"
+          aria-label="Open area guide"
+        >
+          🗺️ Guide
+        </button>
+      )}
 
       {open && (
         <div

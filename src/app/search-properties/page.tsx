@@ -20,6 +20,10 @@ import {
   type PropertySearchDisplayMode,
 } from "@/lib/property-search/service";
 
+import PropertySearchMarketStatistics from "@/app/components/PropertySearchMarketStatistics";
+
+import AreaGuideModal from "@/app/components/AreaGuideModal";
+
 type SortKey =
   | "name"
   | "active_count"
@@ -255,7 +259,34 @@ export default async function SearchPropertiesPage({
           rowCount={displayedRows.length}
         />
 
-        <MatchingPropertiesSummary summary={summary} />
+        <PropertySearchMarketStatistics
+          activeCount={summary.activeCount}
+          pendingCount={summary.pendingCount}
+          activeListingHref={
+            summary.activeListingIds
+              ? buildIdxUrl(summary.activeListingIds)
+              : null
+          }
+          pendingListingHref={
+            summary.pendingListingIds
+              ? buildIdxUrl(summary.pendingListingIds)
+              : null
+          }
+          averageListPrice={summary.averageListPrice}
+          medianListPrice={summary.medianListPrice}
+          averageListPricePerSqft={
+            summary.averageListPricePerSqft
+          }
+          medianListPricePerSqft={
+            summary.medianListPricePerSqft
+          }
+          averageListPricePerSqm={
+            summary.averageListPricePerSqm
+          }
+          medianListPricePerSqm={
+            summary.medianListPricePerSqm
+          }
+        />
 
         <BedroomQuickFilters
           filters={filters}
@@ -636,6 +667,17 @@ function PropertySearchSelectors({
         />
       </div>
 
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "360px",
+          marginTop: "8px",
+          textAlign: "center",
+        }}
+      >
+  <AreaGuideModal variant="search-help" />
+</div>
+
       <PropertySearchMoreFilters
         filters={filters}
         selectedSort={selectedSort}
@@ -820,63 +862,6 @@ function BedroomQuickFilters({
             </Link>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-function MatchingPropertiesSummary({
-  summary,
-}: {
-  summary: {
-    activeCount: number;
-    pendingCount: number;
-    totalCount: number;
-    medianListPrice: number | null;
-    medianListPricePerSqft: number | null;
-    medianActiveDom: number | null;
-    activeListingIds: string | null;
-    pendingListingIds: string | null;
-  };
-}) {
-  return (
-    <div className="mt-3 rounded-lg border border-slate-200 bg-white px-4 py-4 shadow-sm">
-      <div className="text-sm font-bold uppercase tracking-[0.12em] text-slate-900">
-        Matching Properties
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-4 text-center text-sm text-slate-700 sm:grid-cols-4">
-        <div>
-          <div className="text-lg font-bold leading-none text-slate-950">
-            <IdxListingLink listingIds={summary.activeListingIds}>
-              {summary.activeCount.toLocaleString()}
-            </IdxListingLink>
-          </div>
-          <div className="mt-1">Active</div>
-        </div>
-
-        <div>
-          <div className="text-lg font-bold leading-none text-slate-950">
-            <IdxListingLink listingIds={summary.pendingListingIds}>
-              {summary.pendingCount.toLocaleString()}
-            </IdxListingLink>
-          </div>
-          <div className="mt-1">Pending</div>
-        </div>
-
-        <div>
-          <div className="text-lg font-bold leading-none text-slate-950">
-            {formatMoney(summary.medianListPrice)}
-          </div>
-          <div className="mt-1">Median List</div>
-        </div>
-
-        <div>
-          <div className="text-lg font-bold leading-none text-slate-950">
-            {formatPricePerMeasure(summary.medianListPricePerSqft)}
-          </div>
-          <div className="mt-1">Median $/ft²</div>
-        </div>
       </div>
     </div>
   );
