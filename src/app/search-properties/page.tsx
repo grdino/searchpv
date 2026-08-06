@@ -311,15 +311,7 @@ export default async function SearchPropertiesPage({
         </p>
 
         <div className="mt-2 flex items-center justify-between gap-3 text-sm font-medium text-slate-600">
-          <p>
-            <span className="md:hidden">
-              Tap any column heading to sort.
-            </span>
-
-            <span className="hidden md:inline">
-              Click any column heading to sort.
-            </span>
-          </p>
+          <p>Tap or click any column heading to sort.</p>
 
           <p className="shrink-0 md:hidden">
             ← Swipe for more →
