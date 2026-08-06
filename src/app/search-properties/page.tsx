@@ -310,10 +310,21 @@ export default async function SearchPropertiesPage({
           {snapshotDate ? formatDateOnly(snapshotDate) : "Unknown"}
         </p>
 
-        <p className="mt-2 text-xs text-slate-500 md:hidden">
-          ← Swipe to see additional columns →
-        </p>
+        <div className="mt-2 flex items-center justify-between gap-3 text-sm font-medium text-slate-600">
+          <p>
+            <span className="md:hidden">
+              Tap any column heading to sort.
+            </span>
 
+            <span className="hidden md:inline">
+              Click any column heading to sort.
+            </span>
+          </p>
+
+          <p className="shrink-0 md:hidden">
+            ← Swipe for more →
+          </p>
+        </div>
         {displayedRows.length === 0 ? (
           <div className="mt-4 rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
             <h3 className="text-lg font-bold">
@@ -959,7 +970,8 @@ function SortableTh({
         href={buildSearchHref(
           filters,
           sortKey,
-          nextDir
+          nextDir,
+          "filtered-snapshot"
         )}
         className="hover:underline"
       >
@@ -1036,12 +1048,13 @@ function buildRowHref(
 function buildSearchHref(
   filters: PropertySearchFilters,
   sort: SortKey,
-  dir: SortDir
+  dir: SortDir,
+  anchor: "market-explorer" | "filtered-snapshot" = "market-explorer"
 ): string {
   const baseUrl = buildPropertySearchUrl(
     filters,
     "/search-properties",
-    "market-explorer"
+    anchor
   );
 
   const [beforeHash, hashPart] = baseUrl.split("#");
