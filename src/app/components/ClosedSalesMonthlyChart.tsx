@@ -10,6 +10,7 @@ type ClosedSaleChartRow = {
 
 type ClosedSalesMonthlyChartProps = {
   title?: string;
+  breadcrumb?: string;
   rows: ClosedSaleChartRow[];
   asOfDate: string;
   variant?: ChartVariant;
@@ -33,6 +34,7 @@ type ComparisonBucket = {
 
 export default function ClosedSalesMonthlyChart({
   title = "12-Month Year-over-Year Closed Sales",
+  breadcrumb,
   rows,
   asOfDate,
   variant = "card",
@@ -62,14 +64,20 @@ export default function ClosedSalesMonthlyChart({
     >
       <div className="mb-3">
         <h2 className="text-sm font-bold text-slate-800">{title}</h2>
+        
+        {breadcrumb && (
+            <p className="mt-1 text-xs font-semibold leading-snug text-slate-700">
+              {breadcrumb}
+            </p>
+          )}
 
-        <p
-          className={
-            isCompact
-              ? "mt-0.5 text-[11px] text-slate-500"
-              : "mt-1 text-xs text-slate-500"
-          }
-        >
+          <p
+            className={
+              isCompact
+                ? "mt-1 text-[11px] text-slate-500"
+                : "mt-2 text-xs text-slate-500"
+            }
+          >
           Each month compares the prior year with the most recent 12 months.
           Current-month results are compared through{" "}
           <span className="font-semibold">
@@ -165,7 +173,7 @@ export default function ClosedSalesMonthlyChart({
             </div>
           ))}
         </div>
-      </div>
+      </div> 
     </div>
   );
 }

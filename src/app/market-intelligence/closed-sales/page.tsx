@@ -507,6 +507,17 @@ export default async function ClosedSalesPage({
       : "/market-intelligence/closed-sales#closed-sales-summary";
       }
 
+    const selectedFiltersLabel = formatSelectedFilters(
+      selectedMarket,
+      selectedPropertyType,
+      selectedZone,
+      selectedArea,
+      selectedCommunity,
+      selectedDevelopment,
+      selectedStartDate,
+      selectedEndDate
+    );
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <section className="bg-slate-950 px-4 py-10 text-white md:px-8 md:py-14">
@@ -582,16 +593,7 @@ export default async function ClosedSalesPage({
           </div>
 
           <div className="mt-1 text-xs font-semibold leading-snug text-slate-200">
-            {formatSelectedFilters(
-              selectedMarket,
-              selectedPropertyType,
-              selectedZone,
-              selectedArea,
-              selectedCommunity,
-              selectedDevelopment,
-              selectedStartDate,
-              selectedEndDate
-            )}
+            {selectedFiltersLabel}
           </div>
         </div>
       </div>
@@ -601,6 +603,7 @@ export default async function ClosedSalesPage({
           <ClosedSalesMonthlyChart
             rows={chartRows}
             asOfDate={chartAsOfDate}
+            breadcrumb={selectedFiltersLabel}
             variant="compact"
           />
         </div>
@@ -1143,7 +1146,7 @@ function formatSelectedFilters(
 
   parts.push(
     market === "all"
-      ? "All Markets"
+      ? "Pre-Con & Resale"
       : market === "pre_construction"
         ? "Pre-Construction"
         : "Resale"
@@ -1151,13 +1154,15 @@ function formatSelectedFilters(
 
   parts.push(
     propertyType === "all"
-      ? "All Property Types"
+      ? "Condos & Houses"
       : propertyType === "condos"
         ? "Condos"
         : "Houses"
   );
 
-  if (zone) parts.push(zone);
+  if (zone) {
+    parts.push(zone === "all" ? "All Zones" : zone);
+  }
   if (area !== "all") parts.push(area);
   if (community !== "all") parts.push(community);
   if (development !== "all") parts.push(development);
