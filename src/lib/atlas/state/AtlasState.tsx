@@ -15,7 +15,14 @@ export type AtlasEntity = {
   longitude: number;
   latitude: number;
   parentName?: string;
-  boundary?: GeoJSON.Feature | null;
+  boundary?: {
+  type: "Feature";
+  geometry: {
+    type: string;
+    coordinates: unknown;
+  };
+  properties?: Record<string, unknown>;
+} | null;
 };
 
 export type AtlasSheetState = "collapsed" | "half" | "focused";
