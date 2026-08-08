@@ -1,4 +1,7 @@
-import AtlasMap from "./AtlasMap";
+import AtlasViewport from "./AtlasViewport";
+import AtlasOverlay from "./AtlasOverlay";
+import AtlasSearch from "./AtlasSearch";
+import AtlasBottomSheet from "./AtlasBottomSheet";
 
 export default function AtlasShell() {
   return (
@@ -10,7 +13,12 @@ export default function AtlasShell() {
         overflow: "hidden",
       }}
     >
-      <AtlasMap />
+      <AtlasViewport />
+
+      <AtlasOverlay>
+        <AtlasSearch />
+        <AtlasBottomSheet />
+      </AtlasOverlay>
     </main>
   );
 }
