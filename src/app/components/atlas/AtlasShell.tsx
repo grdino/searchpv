@@ -2,6 +2,7 @@ import AtlasViewport from "./AtlasViewport";
 import AtlasOverlay from "./AtlasOverlay";
 import AtlasSearch from "./AtlasSearch";
 import AtlasBottomSheet from "./AtlasBottomSheet";
+import { AtlasStateProvider } from "@/lib/atlas/state/AtlasState";
 
 export default function AtlasShell() {
   return (
@@ -13,12 +14,14 @@ export default function AtlasShell() {
         overflow: "hidden",
       }}
     >
-      <AtlasViewport />
+      <AtlasStateProvider>
+        <AtlasViewport />
 
-      <AtlasOverlay>
-        <AtlasSearch />
-        <AtlasBottomSheet />
-      </AtlasOverlay>
+        <AtlasOverlay>
+          <AtlasSearch />
+          <AtlasBottomSheet />
+        </AtlasOverlay>
+      </AtlasStateProvider>
     </main>
   );
 }

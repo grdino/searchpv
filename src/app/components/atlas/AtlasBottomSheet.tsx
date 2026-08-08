@@ -1,4 +1,10 @@
+"use client";
+
+import { useAtlasState } from "@/lib/atlas/state/AtlasState";
+
 export default function AtlasBottomSheet() {
+  const { selectedEntity } = useAtlasState();
+
   return (
     <section
       style={{
@@ -50,8 +56,23 @@ export default function AtlasBottomSheet() {
             color: "#0f172a",
           }}
         >
-          Banderas Bay
+          {selectedEntity?.displayName ?? "Banderas Bay"}
         </div>
+
+        {selectedEntity && (
+          <div
+            style={{
+              marginTop: 4,
+              fontSize: 13,
+              color: "#64748b",
+            }}
+          >
+            {selectedEntity.canonicalName}
+            {selectedEntity.parentName
+              ? ` · ${selectedEntity.parentName}`
+              : ""}
+          </div>
+        )}
       </div>
     </section>
   );

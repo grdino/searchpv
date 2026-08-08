@@ -3,11 +3,15 @@
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { useAtlasState } from "@/lib/atlas/state/AtlasState";
 
 export default function AtlasMap() {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
 
+  const { selectedEntity } = useAtlasState();
+
+// Create map
   useEffect(() => {
     const container = mapContainerRef.current;
 
@@ -57,6 +61,45 @@ export default function AtlasMap() {
     // Resize again once the map style has loaded.
     map.on("load", () => {
       map.resize();
+
+      map.addSource("atlas-selection", {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: [],
+        },
+      });
+
+      map.addLayer({
+        id: "atlas-selection-fill",
+        type: "fill",
+        source: "atlas-selection",
+        slot: "top",
+        paint: {
+          "fill-color": "#d4a64a",
+          "fill-opacity": 0,
+          "fill-opacity-transition": {
+            duration: 1000,
+            delay: 0,
+          },
+        },
+      });
+
+      map.addLayer({
+        id: "atlas-selection-line",
+        type: "line",
+        source: "atlas-selection",
+        slot: "top",
+        paint: {
+          "line-color": "#9a6a1f",
+          "line-width": 3,
+          "line-opacity": 0,
+          "line-opacity-transition": {
+            duration: 1000,
+            delay: 0,
+          },
+        },
+      });
     });
 
     // Keep Mapbox synchronized with the container size.
@@ -73,10 +116,97 @@ export default function AtlasMap() {
     };
   }, []);
 
-  return (
-    <div
-      ref={mapContainerRef}
-      className="absolute inset-0 h-full w-full"
-    />
-  );
+// React when Atlas State changes
+useEffect(() => {
+  const map = mapRef.current;
+
+  if (!map) return;
+  if (!selectedEntity) return;
+
+  // Fly to the selected entity.
+  map.flyTo({
+    center: [
+      selectedEntity.longitude,
+      selectedEntity.latitude,
+    ],
+    zoom: 15,
+    pitch: 45,
+    duration: 1800,
+    essential: true,
+  });
+
+  const showBoundary = () => {
+    const source = map.getSource(
+      "atlas-selection"
+    ) as mapboxgl.GeoJSONSource | undefined;
+
+    if (!source) return;
+
+    if (!selectedEntity.boundary) {
+      source.setData({
+        type: "FeatureCollection",
+        features: [],
+      });
+
+      map.setPaintProperty(
+        "atlas-selection-fill",
+        "fill-opacity",
+        0
+      );
+
+      map.setPaintProperty(
+        "atlas-selection-line",
+        "line-opacity",
+        0
+      );
+
+      return;
+    }
+
+    map.setPaintProperty(
+      "atlas-selection-fill",
+      "fill-opacity",
+      0
+    );
+
+    map.setPaintProperty(
+      "atlas-selection-line",
+      "line-opacity",
+      0
+    );
+
+    source.setData({
+      type: "FeatureCollection",
+      features: [selectedEntity.boundary],
+    });
+
+    window.setTimeout(() => {
+      if (!mapRef.current) return;
+
+      map.setPaintProperty(
+        "atlas-selection-fill",
+        "fill-opacity",
+        0.16
+      );
+
+      map.setPaintProperty(
+        "atlas-selection-line",
+        "line-opacity",
+        1
+      );
+    }, 1200);
+  };
+
+  if (map.getSource("atlas-selection")) {
+    showBoundary();
+  } else {
+    map.once("load", showBoundary);
+  }
+}, [selectedEntity]);
+return (
+  <div
+    ref={mapContainerRef}
+    className="absolute inset-0 h-full w-full"
+  />
+);
 }
