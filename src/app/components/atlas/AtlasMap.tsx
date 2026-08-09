@@ -116,6 +116,42 @@ export default function AtlasMap() {
     };
   }, []);
 
+function getFeatureBounds(
+  feature: {
+    geometry: {
+      type: string;
+      coordinates: unknown;
+    };
+  }
+) {
+  const bounds = new mapboxgl.LngLatBounds();
+
+  function walkCoordinates(coords: unknown) {
+    if (!Array.isArray(coords)) return;
+
+    if (
+      coords.length >= 2 &&
+      typeof coords[0] === "number" &&
+      typeof coords[1] === "number"
+    ) {
+      bounds.extend([
+        coords[0] as number,
+        coords[1] as number,
+      ]);
+
+      return;
+    }
+
+    for (const item of coords) {
+      walkCoordinates(item);
+    }
+  }
+
+  walkCoordinates(feature.geometry.coordinates);
+
+  return bounds;
+}
+
 // React when Atlas State changes
 useEffect(() => {
   const map = mapRef.current;
@@ -124,16 +160,36 @@ useEffect(() => {
   if (!selectedEntity) return;
 
   // Fly to the selected entity.
-  map.flyTo({
-    center: [
-      selectedEntity.longitude,
-      selectedEntity.latitude,
-    ],
-    zoom: 15,
-    pitch: 45,
-    duration: 1800,
-    essential: true,
-  });
+  if (selectedEntity.boundary) {
+    const bounds = getFeatureBounds(
+      selectedEntity.boundary
+    );
+
+    if (!bounds.isEmpty()) {
+      map.fitBounds(bounds, {
+        padding: {
+          top: 110,
+          right: 40,
+          bottom: 220,
+          left: 40,
+        },
+        pitch: 45,
+        duration: 1800,
+        essential: true,
+      });
+    }
+  } else {
+    map.flyTo({
+      center: [
+        selectedEntity.longitude,
+        selectedEntity.latitude,
+      ],
+      zoom: 15,
+      pitch: 45,
+      duration: 1800,
+      essential: true,
+    });
+  }
 
   const showBoundary = () => {
     const source = map.getSource(
