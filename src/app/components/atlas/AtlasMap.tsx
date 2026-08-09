@@ -62,6 +62,44 @@ export default function AtlasMap() {
     map.on("load", () => {
       map.resize();
 
+    // All government boundaries
+    fetch("/api/atlas/boundaries")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Unable to load government boundaries.");
+        }
+
+        return response.json();
+      })
+      .then((boundaryData) => {
+        console.log(
+          "Government boundary features:",
+          boundaryData.features.length
+        );
+
+        if (map.getSource("atlas-boundaries")) return;
+
+        map.addSource("atlas-boundaries", {
+          type: "geojson",
+          data: boundaryData,
+        });
+
+        map.addLayer({
+          id: "atlas-boundaries-line",
+          type: "line",
+          source: "atlas-boundaries",
+          paint: {
+            "line-color": "#191904",
+            "line-width": 3,
+            "line-opacity": 0.65,
+          },
+        });
+      })
+      .catch((error) => {
+      });
+
+
+       // Existing selected-boundary source
       map.addSource("atlas-selection", {
         type: "geojson",
         data: {
@@ -70,6 +108,7 @@ export default function AtlasMap() {
         },
       });
 
+      // Gold fill + line layers...
       map.addLayer({
         id: "atlas-selection-fill",
         type: "fill",
