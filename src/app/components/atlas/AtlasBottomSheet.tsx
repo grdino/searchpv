@@ -3,7 +3,10 @@
 import { useAtlasState } from "@/lib/atlas/state/AtlasState";
 
 export default function AtlasBottomSheet() {
-  const { selectedEntity } = useAtlasState();
+  const {
+    selectedEntity,
+    selectedBoundary,
+  } = useAtlasState();
 
   return (
     <section
@@ -56,7 +59,9 @@ export default function AtlasBottomSheet() {
             color: "#0f172a",
           }}
         >
-          {selectedEntity?.displayName ?? "Banderas Bay"}
+          {selectedEntity?.displayName ??
+            selectedBoundary?.boundaryName ??
+            "Banderas Bay"}
         </div>
 
         {selectedEntity && (
@@ -71,6 +76,23 @@ export default function AtlasBottomSheet() {
             {selectedEntity.parentName
               ? ` · ${selectedEntity.parentName}`
               : ""}
+          </div>
+        )}
+        {!selectedEntity && selectedBoundary && (
+          <div
+            style={{
+              marginTop: 4,
+              fontSize: 13,
+              color: "#64748b",
+            }}
+          >
+            {[
+              selectedBoundary.boundaryType,
+              selectedBoundary.districtName,
+              selectedBoundary.municipalityName,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </div>
         )}
       </div>

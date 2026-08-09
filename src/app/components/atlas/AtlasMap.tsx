@@ -9,7 +9,10 @@ export default function AtlasMap() {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
 
-  const { selectedEntity } = useAtlasState();
+  const {
+    selectedEntity,
+    selectBoundary,
+  } = useAtlasState();
 
 // Create map
   useEffect(() => {
@@ -85,6 +88,16 @@ export default function AtlasMap() {
         });
 
         map.addLayer({
+          id: "atlas-boundaries-hit",
+          type: "fill",
+          source: "atlas-boundaries",
+          paint: {
+            "fill-color": "#000000",
+            "fill-opacity": 0.001,
+          },
+        });
+
+        map.addLayer({
           id: "atlas-boundaries-line",
           type: "line",
           source: "atlas-boundaries",
@@ -98,6 +111,62 @@ export default function AtlasMap() {
       .catch((error) => {
       });
 
+      map.on("click", "atlas-boundaries-hit", (event) => {
+        const feature = event.features?.[0] as any;
+
+        if (!feature) return;
+
+        const boundaryKy = feature.properties?.boundary_ky;
+        const boundaryName = feature.properties?.boundary_nm;
+
+        selectBoundary({
+          boundaryKy,
+          boundaryName,
+          boundaryType:
+            feature.properties?.boundary_type_cd ?? undefined,
+          municipalityName:
+            feature.properties?.municipality_nm ?? undefined,
+          districtName:
+            feature.properties?.district_nm ?? undefined,
+        });
+
+        console.log("Boundary clicked:", {
+          boundaryKy,
+          boundaryName,
+          properties: feature.properties,
+        });
+
+        const selectionSource = map.getSource(
+          "atlas-selection"
+        ) as mapboxgl.GeoJSONSource | undefined;
+
+        if (!selectionSource) return;
+
+        selectionSource.setData({
+          type: "FeatureCollection",
+          features: [feature as any],
+        });
+
+        map.setPaintProperty(
+          "atlas-selection-fill",
+          "fill-opacity",
+          0.16
+        );
+
+        map.setPaintProperty(
+          "atlas-selection-line",
+          "line-opacity",
+          1
+        );
+      });
+
+      map.on("mouseenter", "atlas-boundaries-hit", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+
+      map.on("mouseleave", "atlas-boundaries-hit", () => {
+        map.getCanvas().style.cursor = "";
+      });
 
        // Existing selected-boundary source
       map.addSource("atlas-selection", {
