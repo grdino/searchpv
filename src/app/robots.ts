@@ -7,6 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: [
         "/market-intelligence/closed-sales/search-results",
+        "/search-properties?",
       ],
     },
     sitemap: "https://searchpv.com/sitemap.xml",
