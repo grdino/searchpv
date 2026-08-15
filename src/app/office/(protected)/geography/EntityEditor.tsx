@@ -3,11 +3,13 @@ import Link from "next/link";
 import {
   deleteEntity,
   deleteVariant,
+  saveBoundaryFootprint,
   saveEntity,
   saveVariant,
 } from "./actions";
 import { buildGeographyHref } from "./geography-utils";
 import type {
+  GeographyEntityBoundaryReviewRow,
   GeographyEntityDetail,
   GeographyLookupData,
   GeographyParentOption,
@@ -16,6 +18,36 @@ import type {
   GeographySortKey,
   SortDir,
 } from "./geography-utils";
+
+type GeographyBoundaryMapData = {
+  entity: {
+    entityKy: number;
+    zoneName: string;
+    areaName: string;
+    communityName: string;
+  } | null;
+
+  boundaries: Array<{
+    boundaryKy: number;
+    boundaryName: string;
+    boundaryType: string;
+    rank: number;
+    listingCount: number;
+    totalListingCount: number;
+    listingPercent: number;
+    cumulativeListingPercent: number;
+    selected: boolean;
+    geometry: GeoJSON.Geometry;
+  }>;
+
+  propertyPoints: Array<{
+    listingKy: number;
+    propertyKy: number;
+    source: string;
+    longitude: number;
+    latitude: number;
+  }>;
+};
 
 function parentLabel(entityTypeCd: string) {
   switch (entityTypeCd) {

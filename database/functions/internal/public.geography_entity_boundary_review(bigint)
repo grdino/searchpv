@@ -1,0 +1,74 @@
+DROP FUNCTION IF EXISTS public.geography_entity_boundary_review(bigint);
+
+CREATE FUNCTION public.geography_entity_boundary_review
+(
+    p_entity_ky bigint
+)
+RETURNS TABLE
+(
+    entity_ky bigint,
+    zone_nm text,
+    area_nm text,
+    community_nm text,
+
+    boundary_rank_nb bigint,
+    boundary_ky bigint,
+    boundary_nm text,
+    boundary_type_cd text,
+
+    listing_ct bigint,
+    total_listing_ct bigint,
+
+    listing_pc numeric,
+    cumulative_listing_pc numeric,
+
+    selected_fl boolean,
+
+    name_score_nb numeric,
+    spatial_evidence_fl boolean,
+    name_evidence_fl boolean,
+    evidence_cd text
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, geo
+AS $$
+    SELECT
+        r.entity_ky,
+        r.zone_nm,
+        r.area_nm,
+        r.community_nm,
+
+        r.boundary_rank_nb,
+        r.boundary_ky,
+        r.boundary_nm,
+        r.boundary_type_cd,
+
+        r.listing_ct,
+        r.total_listing_ct,
+
+        r.listing_pc,
+        r.cumulative_listing_pc,
+
+        r.selected_fl,
+
+        r.name_score_nb,
+        r.spatial_evidence_fl,
+        r.name_evidence_fl,
+        r.evidence_cd
+
+    FROM geo.v_entity_boundary_review r
+
+    WHERE r.entity_ky = p_entity_ky
+
+    ORDER BY r.boundary_rank_nb;
+$$;
+
+REVOKE ALL
+ON FUNCTION public.geography_entity_boundary_review(bigint)
+FROM PUBLIC;
+
+GRANT EXECUTE
+ON FUNCTION public.geography_entity_boundary_review(bigint)
+TO authenticated;

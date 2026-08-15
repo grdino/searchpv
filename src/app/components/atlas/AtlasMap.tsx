@@ -260,112 +260,191 @@ function getFeatureBounds(
   return bounds;
 }
 
-// React when Atlas State changes
+// React when the selected SearchPV entity changes.
 useEffect(() => {
   const map = mapRef.current;
 
   if (!map) return;
   if (!selectedEntity) return;
 
-  // Fly to the selected entity.
-  if (selectedEntity.boundary) {
-    const bounds = getFeatureBounds(
-      selectedEntity.boundary
+  const entity = selectedEntity;
+
+  let cancelled = false;
+
+  async function showSelectedEntity() {
+    const currentMap = mapRef.current;
+
+    if (!currentMap) return;
+
+    const source = currentMap.getSource(
+      "atlas-selection",
+    ) as mapboxgl.GeoJSONSource | undefined;
+
+    if (!source) {
+      currentMap.once("load", showSelectedEntity);
+      return;
+    }
+
+    /*
+     * Clear the previous highlighted geography first.
+     */
+    source.setData({
+      type: "FeatureCollection",
+      features: [],
+    });
+
+    currentMap.setPaintProperty(
+      "atlas-selection-fill",
+      "fill-opacity",
+      0,
     );
 
-    if (!bounds.isEmpty()) {
-      map.fitBounds(bounds, {
-        padding: {
-          top: 110,
-          right: 40,
-          bottom: 220,
-          left: 40,
-        },
+    currentMap.setPaintProperty(
+      "atlas-selection-line",
+      "line-opacity",
+      0,
+    );
+
+    /*
+     * SearchPV geographic entities such as:
+     *
+     * ZN = Zone
+     * AR = Area
+     * CM = Community
+     *
+     * can now get their geometry from
+     * public.geography_entity_geometry().
+     */
+    if (entity.entityKy) {
+      try {
+        const response = await fetch(
+          `/api/atlas/entity-geometry?entityKy=${entity.entityKy}`,
+          {
+            cache: "no-store",
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            "Unable to load entity geometry.",
+          );
+        }
+
+        const entityGeometry = await response.json();
+
+        if (cancelled) return;
+
+        /*
+         * If this entity has a reviewed/derived polygon
+         * footprint, use it.
+         */
+        if (
+          entityGeometry?.geometry &&
+          Array.isArray(entityGeometry?.bbox) &&
+          entityGeometry.bbox.length === 4
+        ) {
+          const feature = {
+            type: "Feature",
+            properties: {
+              entityKy: entityGeometry.entityKy,
+              entityName:
+                entityGeometry.entityName,
+              entityType:
+                entityGeometry.entityType,
+            },
+            geometry: entityGeometry.geometry,
+          };
+
+          source.setData({
+            type: "FeatureCollection",
+            features: [feature as any],
+          });
+
+          const [
+            west,
+            south,
+            east,
+            north,
+          ] = entityGeometry.bbox.map(Number);
+
+          currentMap.fitBounds(
+            [
+              [west, south],
+              [east, north],
+            ],
+            {
+              padding: {
+                top: 110,
+                right: 40,
+                bottom: 220,
+                left: 40,
+              },
+              pitch: 45,
+              duration: 1800,
+              essential: true,
+            },
+          );
+
+          /*
+           * Fade in the selected SearchPV footprint
+           * after the map begins moving.
+           */
+          window.setTimeout(() => {
+            if (cancelled) return;
+            if (!mapRef.current) return;
+
+            mapRef.current.setPaintProperty(
+              "atlas-selection-fill",
+              "fill-opacity",
+              0.16,
+            );
+
+            mapRef.current.setPaintProperty(
+              "atlas-selection-line",
+              "line-opacity",
+              1,
+            );
+          }, 1200);
+
+          return;
+        }
+      } catch (error) {
+        console.error(
+          "Atlas entity geometry error:",
+          error,
+        );
+      }
+    }
+
+    /*
+     * No polygon geometry exists.
+     *
+     * Fall back to the entity's longitude / latitude.
+     * This preserves the current behavior for developments,
+     * buildings, Nayarit entities without polygons, etc.
+     */
+    if (
+      Number.isFinite(entity.longitude) &&
+      Number.isFinite(entity.latitude)
+    ) {
+      currentMap.flyTo({
+        center: [
+          entity.longitude,
+          entity.latitude,
+        ],
+        zoom: 15,
         pitch: 45,
         duration: 1800,
         essential: true,
       });
     }
-  } else {
-    map.flyTo({
-      center: [
-        selectedEntity.longitude,
-        selectedEntity.latitude,
-      ],
-      zoom: 15,
-      pitch: 45,
-      duration: 1800,
-      essential: true,
-    });
   }
 
-  const showBoundary = () => {
-    const source = map.getSource(
-      "atlas-selection"
-    ) as mapboxgl.GeoJSONSource | undefined;
+  void showSelectedEntity();
 
-    if (!source) return;
-
-    if (!selectedEntity.boundary) {
-      source.setData({
-        type: "FeatureCollection",
-        features: [],
-      });
-
-      map.setPaintProperty(
-        "atlas-selection-fill",
-        "fill-opacity",
-        0
-      );
-
-      map.setPaintProperty(
-        "atlas-selection-line",
-        "line-opacity",
-        0
-      );
-
-      return;
-    }
-
-    map.setPaintProperty(
-      "atlas-selection-fill",
-      "fill-opacity",
-      0
-    );
-
-    map.setPaintProperty(
-      "atlas-selection-line",
-      "line-opacity",
-      0
-    );
-
-    source.setData({
-      type: "FeatureCollection",
-      features: [selectedEntity.boundary],
-    });
-
-    window.setTimeout(() => {
-      if (!mapRef.current) return;
-
-      map.setPaintProperty(
-        "atlas-selection-fill",
-        "fill-opacity",
-        0.16
-      );
-
-      map.setPaintProperty(
-        "atlas-selection-line",
-        "line-opacity",
-        1
-      );
-    }, 1200);
+  return () => {
+    cancelled = true;
   };
-
-  if (map.getSource("atlas-selection")) {
-    showBoundary();
-  } else {
-    map.once("load", showBoundary);
-  }
 }, [selectedEntity]);
 return (
   <div

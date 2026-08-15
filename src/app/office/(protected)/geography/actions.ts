@@ -55,7 +55,9 @@ function redirectToEntity(
 
   params.set("entity", String(entityKy));
 
-  redirect(`${GEOGRAPHY_PATH}?${params.toString()}`);
+  redirect(
+    `${GEOGRAPHY_PATH}?${params.toString()}#entity-${entityKy}`,
+  );
 }
 
 export async function saveEntity(formData: FormData) {
@@ -201,4 +203,42 @@ export async function deleteEntity(formData: FormData) {
 
   revalidatePath(GEOGRAPHY_PATH);
   redirect(GEOGRAPHY_PATH);
+}
+
+export async function saveBoundaryFootprint(
+  formData: FormData,
+) {
+  const entityKy = optionalNumber(
+    formData.get("entity_ky"),
+  );
+
+  if (entityKy === null) {
+    throw new Error("Entity key is required.");
+  }
+
+  const boundaryKys = formData
+    .getAll("boundary_ky")
+    .map((value) => Number(value))
+    .filter(
+      (value) =>
+        Number.isInteger(value) &&
+        value > 0,
+    );
+
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc(
+    "geography_entity_boundary_save",
+    {
+      p_entity_ky: entityKy,
+      p_boundary_kys: boundaryKys,
+    },
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(GEOGRAPHY_PATH);
+  redirectToEntity(entityKy, formData);
 }

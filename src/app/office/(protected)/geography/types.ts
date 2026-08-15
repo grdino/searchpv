@@ -77,3 +77,28 @@ export type GeographyParentOption = {
   entity_type_cd: string;
   canonical_nm: string;
 };
+
+export type GeographyEntityBoundaryReviewRow = {
+  entity_ky: number;
+  zone_nm: string;
+  area_nm: string;
+  community_nm: string;
+
+  boundary_rank_nb: number;
+  boundary_ky: number;
+  boundary_nm: string;
+  boundary_type_cd: string;
+
+  listing_ct: number;
+  total_listing_ct: number;
+
+  listing_pc: number;
+  cumulative_listing_pc: number;
+
+  selected_fl: boolean;
+
+  name_score_nb: number;
+  spatial_evidence_fl: boolean;
+  name_evidence_fl: boolean;
+  evidence_cd: string;
+};

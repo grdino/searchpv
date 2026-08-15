@@ -1,14 +1,14 @@
 import Link from "next/link";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import Header from "@/app/components/Header";
 import HamburgerMenu from "@/app/components/HamburgerMenu";
 import MainSloganBranding from "@/app/components/MainSloganBranding";
 import { createClient } from "@/lib/supabase/server";
 
+import BoundaryFootprintEditor from "./BoundaryFootprintEditor";
 import EntityEditor from "./EntityEditor";
 import GeographyFilters from "./GeographyFilters";
+
 import {
   buildGeographyHref,
   getSortDir,
@@ -18,7 +18,9 @@ import {
   type GeographySortKey,
   type SortDir,
 } from "./geography-utils";
+
 import type {
+  GeographyEntityBoundaryReviewRow,
   GeographyEntityDetail,
   GeographyEntityListRow,
   GeographyLookupData,
@@ -27,6 +29,36 @@ import type {
 } from "./types";
 
 export const dynamic = "force-dynamic";
+
+type GeographyBoundaryMapData = {
+  entity: {
+    entityKy: number;
+    zoneName: string;
+    areaName: string;
+    communityName: string;
+  } | null;
+
+  boundaries: Array<{
+    boundaryKy: number;
+    boundaryName: string;
+    boundaryType: string;
+    rank: number;
+    listingCount: number;
+    totalListingCount: number;
+    listingPercent: number;
+    cumulativeListingPercent: number;
+    selected: boolean;
+    geometry: GeoJSON.Geometry;
+  }>;
+
+  propertyPoints: Array<{
+    listingKy: number;
+    propertyKy: number;
+    source: string;
+    longitude: number;
+    latitude: number;
+  }>;
+};
 
 export default async function GeographyPage({
   searchParams,
@@ -54,7 +86,9 @@ export default async function GeographyPage({
     listResponse,
   ] = await Promise.all([
     supabase.rpc("geography_summary"),
+
     supabase.rpc("geography_lookup_data"),
+
     supabase.rpc("geography_entity_list", {
       p_search: selectedSearch || null,
       p_entity_type_cd: selectedType || null,
@@ -69,7 +103,11 @@ export default async function GeographyPage({
     listResponse.error;
 
   if (initialError) {
-    return <GeographyError error={initialError.message} />;
+    return (
+      <GeographyError
+        error={initialError.message}
+      />
+    );
   }
 
   const summaries =
@@ -84,6 +122,12 @@ export default async function GeographyPage({
     selectedDir,
   );
 
+  /*
+   * ----------------------------------------------------------
+   * Selected entity detail
+   * ----------------------------------------------------------
+   */
+
   let detail: GeographyEntityDetail | null = null;
 
   if (selectedEntityKy !== null) {
@@ -95,7 +139,11 @@ export default async function GeographyPage({
     );
 
     if (detailResponse.error) {
-      return <GeographyError error={detailResponse.error.message} />;
+      return (
+        <GeographyError
+          error={detailResponse.error.message}
+        />
+      );
     }
 
     detail =
@@ -105,6 +153,12 @@ export default async function GeographyPage({
       detail = null;
     }
   }
+
+  /*
+   * ----------------------------------------------------------
+   * Parent options for the normal entity editor
+   * ----------------------------------------------------------
+   */
 
   const editorType =
     detail?.entity?.entity_type_cd ||
@@ -123,15 +177,86 @@ export default async function GeographyPage({
 
   if (parentOptionsResponse.error) {
     return (
-      <GeographyError error={parentOptionsResponse.error.message} />
+      <GeographyError
+        error={parentOptionsResponse.error.message}
+      />
     );
   }
 
   const parentOptions =
     (parentOptionsResponse.data ?? []) as GeographyParentOption[];
 
+  /*
+   * ----------------------------------------------------------
+   * Community boundary review
+   *
+   * Only load this when the selected entity is a Community.
+   * ----------------------------------------------------------
+   */
+
+  let boundaryReviewRows:
+    GeographyEntityBoundaryReviewRow[] = [];
+
+  let boundaryMapData:
+    GeographyBoundaryMapData | null = null;
+
+  if (
+    detail?.entity?.entity_type_cd === "CM" &&
+    selectedEntityKy !== null
+  ) {
+    const [
+      boundaryReviewResponse,
+      boundaryMapResponse,
+    ] = await Promise.all([
+      supabase.rpc(
+        "geography_entity_boundary_review",
+        {
+          p_entity_ky: selectedEntityKy,
+        },
+      ),
+
+      supabase.rpc(
+        "geography_entity_boundary_map",
+        {
+          p_entity_ky: selectedEntityKy,
+        },
+      ),
+    ]);
+
+    if (boundaryReviewResponse.error) {
+      return (
+        <GeographyError
+          error={
+            boundaryReviewResponse.error.message
+          }
+        />
+      );
+    }
+
+    if (boundaryMapResponse.error) {
+      return (
+        <GeographyError
+          error={
+            boundaryMapResponse.error.message
+          }
+        />
+      );
+    }
+
+    boundaryReviewRows =
+      (boundaryReviewResponse.data ??
+        []) as GeographyEntityBoundaryReviewRow[];
+
+    boundaryMapData =
+      boundaryMapResponse.data as GeographyBoundaryMapData;
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
+      {/* =====================================================
+          PAGE HEADER
+          ===================================================== */}
+
       <section className="bg-slate-950 px-4 py-10 text-white md:px-8 md:py-14">
         <div className="mx-auto max-w-7xl">
           <div className="relative">
@@ -153,8 +278,9 @@ export default async function GeographyPage({
           </h1>
 
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
-            Maintain geographic entities, canonical names, aliases,
-            coordinates, sources, and immediate parent relationships.
+            Maintain geographic entities, canonical names,
+            aliases, coordinates, sources, and immediate
+            parent relationships.
           </p>
 
           <GeographyFilters
@@ -164,6 +290,10 @@ export default async function GeographyPage({
           />
         </div>
       </section>
+
+      {/* =====================================================
+          STICKY BREADCRUMB
+          ===================================================== */}
 
       <div className="sticky top-0 z-40 border-b border-slate-800 bg-slate-700 px-4 py-3">
         <div className="mx-auto max-w-7xl text-center text-sm font-bold text-white">
@@ -185,12 +315,15 @@ export default async function GeographyPage({
 
           {" > "}
 
-          <span>Geography Maintenance</span>
+          <span>
+            Geography Maintenance
+          </span>
 
           <div className="mt-1 text-xs font-semibold text-slate-200">
             {selectedType
               ? lookups.entity_types.find(
-                  (option) => option.code === selectedType,
+                  (option) =>
+                    option.code === selectedType,
                 )?.name ?? selectedType
               : "All Entity Types"}
 
@@ -201,10 +334,20 @@ export default async function GeographyPage({
         </div>
       </div>
 
+      {/* =====================================================
+          MAIN CONTENT
+          ===================================================== */}
+
       <section className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-10">
         <SummaryGrid rows={summaries} />
 
+        {/* ---------------------------------------------------
+            NORMAL ENTITY LIST + ENTITY EDITOR
+            --------------------------------------------------- */}
+
         <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(440px,0.8fr)]">
+          {/* LEFT — Entity list */}
+
           <section>
             <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
               <div>
@@ -213,8 +356,9 @@ export default async function GeographyPage({
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  {entities.length.toLocaleString()} records shown.
-                  Search results are limited to the first 250 matches.
+                  {entities.length.toLocaleString()} records
+                  shown. Search results are limited to the
+                  first 250 matches.
                 </p>
               </div>
 
@@ -295,10 +439,14 @@ export default async function GeographyPage({
                 <tbody>
                   {entities.map((entity) => {
                     const selected =
-                      selectedEntityKy === entity.entity_ky;
+                      selectedEntityKy ===
+                      entity.entity_ky;
 
                     return (
-                      <tr key={entity.entity_ky}>
+                      <tr
+                        key={entity.entity_ky}
+                        id={`entity-${entity.entity_ky}`}
+                      >
                         <td
                           className={`sticky left-0 z-10 whitespace-nowrap border-t border-slate-100 px-4 py-3 shadow-[2px_0_0_#e2e8f0] ${
                             selected
@@ -310,7 +458,8 @@ export default async function GeographyPage({
                             href={buildGeographyHref({
                               q: selectedSearch,
                               type: selectedType,
-                              entity: entity.entity_ky,
+                              entity:
+                                entity.entity_ky,
                               sort: selectedSort,
                               dir: selectedDir,
                             })}
@@ -320,7 +469,9 @@ export default async function GeographyPage({
                           </Link>
 
                           <div className="mt-1 max-w-[320px] truncate font-mono text-xs text-slate-500">
-                            {entity.entity_identifier_cd}
+                            {
+                              entity.entity_identifier_cd
+                            }
                           </div>
                         </td>
 
@@ -330,22 +481,29 @@ export default async function GeographyPage({
                         </td>
 
                         <td className="whitespace-nowrap border-t border-slate-100 bg-white px-4 py-3">
-                          {entity.parent_nm ?? "—"}
+                          {entity.parent_nm ??
+                            "—"}
                         </td>
 
                         <td className="whitespace-nowrap border-t border-slate-100 bg-white px-4 py-3">
-                          {entity.latitude_nb !== null &&
-                          entity.longitude_nb !== null
+                          {entity.latitude_nb !==
+                            null &&
+                          entity.longitude_nb !==
+                            null
                             ? `${entity.latitude_nb}, ${entity.longitude_nb}`
                             : "Missing"}
                         </td>
 
                         <td className="whitespace-nowrap border-t border-slate-100 bg-white px-4 py-3">
-                          {Number(entity.variant_ct).toLocaleString()}
+                          {Number(
+                            entity.variant_ct,
+                          ).toLocaleString()}
                         </td>
 
                         <td className="whitespace-nowrap border-t border-slate-100 bg-white px-4 py-3">
-                          {Number(entity.child_ct).toLocaleString()}
+                          {Number(
+                            entity.child_ct,
+                          ).toLocaleString()}
                         </td>
                       </tr>
                     );
@@ -357,7 +515,8 @@ export default async function GeographyPage({
                         colSpan={6}
                         className="px-4 py-10 text-center text-slate-500"
                       >
-                        No entities match the selected filters.
+                        No entities match the
+                        selected filters.
                       </td>
                     </tr>
                   ) : null}
@@ -366,8 +525,12 @@ export default async function GeographyPage({
             </div>
           </section>
 
+          {/* RIGHT — Normal entity maintenance */}
+
           <EntityEditor
-            key={selectedEntityKy ?? "new"}
+            key={
+              selectedEntityKy ?? "new"
+            }
             detail={detail}
             lookups={lookups}
             parentOptions={parentOptions}
@@ -377,10 +540,39 @@ export default async function GeographyPage({
             dir={selectedDir}
           />
         </div>
+
+        {/* ---------------------------------------------------
+            FULL-WIDTH COMMUNITY SPATIAL EDITOR
+            --------------------------------------------------- */}
+
+        {detail?.entity?.entity_type_cd ===
+          "CM" &&
+        selectedEntityKy !== null ? (
+          <div className="mt-8">
+            <BoundaryFootprintEditor
+              key={selectedEntityKy}
+              entityKy={selectedEntityKy}
+              boundaryReviewRows={
+                boundaryReviewRows
+              }
+              boundaryMapData={
+                boundaryMapData
+              }
+              returnQ={selectedSearch}
+              returnType={selectedType}
+              returnSort={selectedSort}
+              returnDir={selectedDir}
+            />
+          </div>
+        ) : null}
       </section>
     </main>
   );
 }
+
+/* ============================================================
+   SUMMARY
+   ============================================================ */
 
 function SummaryGrid({
   rows,
@@ -395,22 +587,29 @@ function SummaryGrid({
           className="rounded-xl bg-white p-4 shadow"
         >
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {row.entity_type_nm ?? row.entity_type_cd}
+            {row.entity_type_nm ??
+              row.entity_type_cd}
           </p>
 
           <p className="mt-2 text-2xl font-bold text-slate-950">
-            {Number(row.entity_ct).toLocaleString()}
+            {Number(
+              row.entity_ct,
+            ).toLocaleString()}
           </p>
 
           <p className="mt-1 text-xs text-slate-500">
-            {Number(row.missing_coordinate_ct).toLocaleString()} missing
-            coordinates
+            {Number(
+              row.missing_coordinate_ct,
+            ).toLocaleString()}{" "}
+            missing coordinates
           </p>
 
           {row.entity_type_cd !== "ZN" ? (
             <p className="mt-1 text-xs text-slate-500">
-              {Number(row.missing_parent_ct).toLocaleString()} missing
-              parent
+              {Number(
+                row.missing_parent_ct,
+              ).toLocaleString()}{" "}
+              missing parent
             </p>
           ) : null}
         </div>
@@ -418,6 +617,10 @@ function SummaryGrid({
     </div>
   );
 }
+
+/* ============================================================
+   SORTABLE TABLE HEADER
+   ============================================================ */
 
 function SortableHeading({
   label,
@@ -438,10 +641,13 @@ function SortableHeading({
   entity: number | null;
   stickyLeft?: boolean;
 }) {
-  const selected = currentSort === sortKey;
+  const selected =
+    currentSort === sortKey;
 
   const nextDir: SortDir =
-    selected && currentDir === "asc" ? "desc" : "asc";
+    selected && currentDir === "asc"
+      ? "desc"
+      : "asc";
 
   return (
     <th
@@ -472,6 +678,10 @@ function SortableHeading({
     </th>
   );
 }
+
+/* ============================================================
+   ERROR
+   ============================================================ */
 
 function GeographyError({
   error,
