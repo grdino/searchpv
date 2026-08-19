@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useAtlasState } from "@/lib/atlas/state/AtlasState";
 
 function entityTypeLabel(entityType: string) {
@@ -18,6 +19,41 @@ function entityTypeLabel(entityType: string) {
   }
 }
 
+type MarketSnapshot = {
+  snapshotDate: string | null;
+  activeCount: number;
+  pendingCount: number;
+  medianListPrice: number | null;
+  avgListPriceFt2: number | null;
+};
+
+function formatPrice(value: number | null) {
+  if (value === null) return "—";
+
+  if (value >= 1_000_000) {
+    const millions = value / 1_000_000;
+
+    return `$${millions.toLocaleString("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })}M`;
+  }
+
+  if (value >= 1_000) {
+    return `$${Math.round(value / 1_000).toLocaleString(
+      "en-US",
+    )}K`;
+  }
+
+  return `$${Math.round(value).toLocaleString("en-US")}`;
+}
+
+function formatWholeNumber(value: number | null) {
+  if (value === null) return "—";
+
+  return Math.round(value).toLocaleString("en-US");
+}
+
 export default function AtlasBottomSheet() {
   const {
     selectedEntity,
@@ -34,16 +70,105 @@ export default function AtlasBottomSheet() {
 
   const isFocused = sheetState === "focused";
 
+  const [marketSnapshot, setMarketSnapshot] =
+    useState<MarketSnapshot | null>(null);
+
+  const [marketSnapshotLoading, setMarketSnapshotLoading] =
+    useState(false);
+
   const relatedChoices = relatedEntities.filter(
     (entity) =>
       entity.entityKy !== selectedEntity?.entityKy,
   );
 
+  useEffect(() => {
+    /*
+     * Market snapshots currently exist for MLS Communities.
+     *
+     * Clear any previous statistics immediately when the
+     * geography or filters change so stale numbers are never
+     * shown for a new selection.
+     */
+    if (
+      !selectedEntity ||
+      selectedEntity.entityType !== "CM"
+    ) {
+      setMarketSnapshot(null);
+      setMarketSnapshotLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function loadMarketSnapshot() {
+      setMarketSnapshotLoading(true);
+      setMarketSnapshot(null);
+
+      try {
+        const params = new URLSearchParams({
+          entityKy: String(selectedEntity.entityKy),
+          propertyType: propertyTypeFilter,
+          marketType: marketTypeFilter,
+        });
+
+        const response = await fetch(
+          `/api/atlas/market-snapshot?${params.toString()}`,
+          {
+            cache: "no-store",
+            signal: controller.signal,
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            "Unable to load market snapshot.",
+          );
+        }
+
+        const data =
+          (await response.json()) as MarketSnapshot;
+
+        setMarketSnapshot(data);
+      } catch (error) {
+        if (
+          error instanceof DOMException &&
+          error.name === "AbortError"
+        ) {
+          return;
+        }
+
+        console.error(
+          "Atlas market snapshot error:",
+          error,
+        );
+
+        setMarketSnapshot(null);
+      } finally {
+        if (!controller.signal.aborted) {
+          setMarketSnapshotLoading(false);
+        }
+      }
+    }
+
+    loadMarketSnapshot();
+
+    return () => {
+      controller.abort();
+    };
+  }, [
+    selectedEntity,
+    propertyTypeFilter,
+    marketTypeFilter,
+  ]);
+
   /*
-   * TEMPORARY PROTOTYPE CONTENT
+   * TEMPORARY CURATED COMMUNITY CONTENT
    *
-   * This lets us design the consumer experience before
-   * wiring the real market-statistics API.
+   * The market statistics are now live.
+   *
+   * The tagline, story and character tags are still prototype
+   * content for Amapas only. We can move these into a curated
+   * content source later.
    */
   const isAmapas =
     selectedEntity?.canonicalName
@@ -74,8 +199,7 @@ export default function AtlasBottomSheet() {
         maxHeight: isFocused ? "82vh" : "44vh",
         overflowY: "auto",
 
-        transition:
-          "max-height 300ms ease",
+        transition: "max-height 300ms ease",
       }}
     >
       {/* Sheet expand / collapse handle */}
@@ -215,8 +339,14 @@ export default function AtlasBottomSheet() {
                 >
                   {[
                     { value: "all", label: "All" },
-                    { value: "condo", label: "Condos" },
-                    { value: "house", label: "Houses" },
+                    {
+                      value: "condo",
+                      label: "Condos",
+                    },
+                    {
+                      value: "house",
+                      label: "Houses",
+                    },
                   ].map((option) => {
                     const active =
                       propertyTypeFilter === option.value;
@@ -289,8 +419,14 @@ export default function AtlasBottomSheet() {
                 >
                   {[
                     { value: "all", label: "All" },
-                    { value: "resale", label: "Resale" },
-                    { value: "precon", label: "Pre-Con" },
+                    {
+                      value: "resale",
+                      label: "Resale",
+                    },
+                    {
+                      value: "precon",
+                      label: "Pre-Con",
+                    },
                   ].map((option) => {
                     const active =
                       marketTypeFilter === option.value;
@@ -333,10 +469,10 @@ export default function AtlasBottomSheet() {
             </div>
 
             {/* ================================================
-                PROTOTYPE MARKET SNAPSHOT
+                LIVE MARKET SNAPSHOT
                 ================================================ */}
 
-            {isAmapas ? (
+            {selectedEntity.entityType === "CM" ? (
               <div
                 style={{
                   display: "grid",
@@ -346,7 +482,7 @@ export default function AtlasBottomSheet() {
                   marginTop: 16,
                 }}
               >
-                {/* For Sale */}
+                {/* Active */}
                 <div
                   style={{
                     padding: "11px 12px",
@@ -363,7 +499,7 @@ export default function AtlasBottomSheet() {
                       color: "#94a3b8",
                     }}
                   >
-                    For Sale
+                    Active
                   </div>
 
                   <div
@@ -374,7 +510,10 @@ export default function AtlasBottomSheet() {
                       color: "#0f172a",
                     }}
                   >
-                    142
+                    {marketSnapshotLoading
+                      ? "…"
+                      : marketSnapshot?.activeCount ??
+                        "—"}
                   </div>
                 </div>
 
@@ -406,7 +545,10 @@ export default function AtlasBottomSheet() {
                       color: "#0f172a",
                     }}
                   >
-                    17
+                    {marketSnapshotLoading
+                      ? "…"
+                      : marketSnapshot?.pendingCount ??
+                        "—"}
                   </div>
                 </div>
 
@@ -438,11 +580,16 @@ export default function AtlasBottomSheet() {
                       color: "#0f172a",
                     }}
                   >
-                    $625K
+                    {marketSnapshotLoading
+                      ? "…"
+                      : formatPrice(
+                          marketSnapshot?.medianListPrice ??
+                            null,
+                        )}
                   </div>
                 </div>
 
-                {/* Median $/ft² */}
+                {/* Average asking price per square foot */}
                 <div
                   style={{
                     padding: "11px 12px",
@@ -459,7 +606,7 @@ export default function AtlasBottomSheet() {
                       color: "#94a3b8",
                     }}
                   >
-                    Median $/ft²
+                    Avg $/ft²
                   </div>
 
                   <div
@@ -470,7 +617,16 @@ export default function AtlasBottomSheet() {
                       color: "#0f172a",
                     }}
                   >
-                    $538
+                    {marketSnapshotLoading
+                      ? "…"
+                      : marketSnapshot?.avgListPriceFt2 !==
+                            null &&
+                          marketSnapshot?.avgListPriceFt2 !==
+                            undefined
+                        ? `$${formatWholeNumber(
+                            marketSnapshot.avgListPriceFt2,
+                          )}`
+                        : "—"}
                   </div>
                 </div>
               </div>
@@ -489,10 +645,10 @@ export default function AtlasBottomSheet() {
                   color: "#475569",
                 }}
               >
-                Amapas climbs the hills just south of
-                Zona Romántica, with a mix of established
-                condos, newer developments and elevated
-                homes known for views across Banderas Bay.
+                Amapas climbs the hills just south of Zona
+                Romántica, with a mix of established condos,
+                newer developments and elevated homes known
+                for views across Banderas Bay.
               </div>
             ) : null}
 
@@ -770,8 +926,8 @@ export default function AtlasBottomSheet() {
                   color: "#64748b",
                 }}
               >
-                This local area overlaps more than one
-                real estate community.
+                This local area overlaps more than one real
+                estate community.
               </div>
             ) : null}
 
@@ -794,8 +950,7 @@ export default function AtlasBottomSheet() {
                     )
                   }
                   style={{
-                    border:
-                      "1px solid #cbd5e1",
+                    border: "1px solid #cbd5e1",
                     borderRadius: 999,
                     padding: "7px 12px",
                     background: "#ffffff",
