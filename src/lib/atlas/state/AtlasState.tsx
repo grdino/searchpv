@@ -200,11 +200,9 @@ export function AtlasStateProvider({
 
     setSelectedEntity((current) => {
       /*
-       * There is already an MLS geography selected.
-       *
-       * Keep it only if this government polygon belongs
-       * to that same MLS geography.
-       */
+      * If the currently selected MLS geography uses this
+      * government polygon, preserve it.
+      */
       if (current) {
         const stillRelated = entities.some(
           (entity) =>
@@ -212,27 +210,27 @@ export function AtlasStateProvider({
             Number(current.entityKy),
         );
 
-        return stillRelated
-          ? current
-          : null;
+        if (stillRelated) {
+          return current;
+        }
       }
 
       /*
-       * There is no current MLS geography.
-       *
-       * If this government polygon belongs to exactly one
-       * MLS geography, we can safely restore/select it.
-       */
+      * The previous MLS geography does not apply here,
+      * or there was no previous MLS geography.
+      *
+      * If this government polygon belongs to exactly one
+      * MLS geography, select it automatically.
+      */
       if (entities.length === 1) {
         return entities[0];
       }
 
       /*
-       * Zero or multiple MLS matches.
-       *
-       * Do not guess. The bottom sheet can show the available
-       * MLS footprints when there are multiple choices.
-       */
+      * Zero or multiple MLS matches.
+      *
+      * Do not guess.
+      */
       return null;
     });
 
