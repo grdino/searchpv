@@ -6,24 +6,34 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useAtlasState } from "@/lib/atlas/state/AtlasState";
 
 export default function AtlasMap() {
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const mapContainerRef =
+    useRef<HTMLDivElement | null>(null);
+
+  const mapRef =
+    useRef<mapboxgl.Map | null>(null);
 
   const {
     selectedEntity,
+    selectedBoundary,
     selectBoundary,
   } = useAtlasState();
 
-// Create map
+  // ============================================================
+  // Create map
+  // ============================================================
+
   useEffect(() => {
     const container = mapContainerRef.current;
 
     if (!container || mapRef.current) return;
 
-    const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+    const token =
+      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
     if (!token) {
-      console.error("Missing NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN");
+      console.error(
+        "Missing NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN",
+      );
       return;
     }
 
@@ -35,7 +45,7 @@ export default function AtlasMap() {
       center: [-105.3, 20.66],
       zoom: 9.7,
       bearing: 0,
-      pitch: 35,
+      pitch: 20,
       attributionControl: false,
     });
 
@@ -46,130 +56,33 @@ export default function AtlasMap() {
         showCompass: true,
         showZoom: true,
       }),
-      "top-right"
+      "top-right",
     );
 
     map.addControl(
       new mapboxgl.AttributionControl({
         compact: true,
       }),
-      "bottom-right"
+      "bottom-right",
     );
 
-    // Resize once the browser has completed layout.
-    requestAnimationFrame(() => {
-      map.resize();
+    const resizeFrame = requestAnimationFrame(() => {
+      if (mapRef.current === map) {
+        map.resize();
+      }
     });
 
-    // Resize again once the map style has loaded.
     map.on("load", () => {
       map.resize();
 
-    // All government boundaries
-    fetch("/api/atlas/boundaries")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Unable to load government boundaries.");
-        }
+      // ========================================================
+      // 1. SEARCHPV ENTITY SELECTION
+      //
+      // Complete MLS Zone / Area / Community footprint returned
+      // by geography_entity_geometry().
+      // ========================================================
 
-        return response.json();
-      })
-      .then((boundaryData) => {
-        console.log(
-          "Government boundary features:",
-          boundaryData.features.length
-        );
-
-        if (map.getSource("atlas-boundaries")) return;
-
-        map.addSource("atlas-boundaries", {
-          type: "geojson",
-          data: boundaryData,
-        });
-
-        map.addLayer({
-          id: "atlas-boundaries-hit",
-          type: "fill",
-          source: "atlas-boundaries",
-          paint: {
-            "fill-color": "#000000",
-            "fill-opacity": 0.001,
-          },
-        });
-
-        map.addLayer({
-          id: "atlas-boundaries-line",
-          type: "line",
-          source: "atlas-boundaries",
-          paint: {
-            "line-color": "#191904",
-            "line-width": 3,
-            "line-opacity": 0.65,
-          },
-        });
-      })
-      .catch((error) => {
-      });
-
-      map.on("click", "atlas-boundaries-hit", (event) => {
-        const feature = event.features?.[0] as any;
-
-        if (!feature) return;
-
-        const boundaryKy = feature.properties?.boundary_ky;
-        const boundaryName = feature.properties?.boundary_nm;
-
-        selectBoundary({
-          boundaryKy,
-          boundaryName,
-          boundaryType:
-            feature.properties?.boundary_type_cd ?? undefined,
-          municipalityName:
-            feature.properties?.municipality_nm ?? undefined,
-          districtName:
-            feature.properties?.district_nm ?? undefined,
-        });
-
-        console.log("Boundary clicked:", {
-          boundaryKy,
-          boundaryName,
-          properties: feature.properties,
-        });
-
-        const selectionSource = map.getSource(
-          "atlas-selection"
-        ) as mapboxgl.GeoJSONSource | undefined;
-
-        if (!selectionSource) return;
-
-        selectionSource.setData({
-          type: "FeatureCollection",
-          features: [feature as any],
-        });
-
-        map.setPaintProperty(
-          "atlas-selection-fill",
-          "fill-opacity",
-          0.16
-        );
-
-        map.setPaintProperty(
-          "atlas-selection-line",
-          "line-opacity",
-          1
-        );
-      });
-
-      map.on("mouseenter", "atlas-boundaries-hit", () => {
-        map.getCanvas().style.cursor = "pointer";
-      });
-
-      map.on("mouseleave", "atlas-boundaries-hit", () => {
-        map.getCanvas().style.cursor = "";
-      });
-
-       // Existing selected-boundary source
-      map.addSource("atlas-selection", {
+      map.addSource("atlas-entity-selection", {
         type: "geojson",
         data: {
           type: "FeatureCollection",
@@ -177,11 +90,10 @@ export default function AtlasMap() {
         },
       });
 
-      // Gold fill + line layers...
       map.addLayer({
-        id: "atlas-selection-fill",
+        id: "atlas-entity-selection-fill",
         type: "fill",
-        source: "atlas-selection",
+        source: "atlas-entity-selection",
         slot: "top",
         paint: {
           "fill-color": "#d4a64a",
@@ -194,13 +106,13 @@ export default function AtlasMap() {
       });
 
       map.addLayer({
-        id: "atlas-selection-line",
+        id: "atlas-entity-selection-line",
         type: "line",
-        source: "atlas-selection",
+        source: "atlas-entity-selection",
         slot: "top",
         paint: {
-          "line-color": "#9a6a1f",
-          "line-width": 3,
+          "line-color": "#a9792b",
+          "line-width": 2.25,
           "line-opacity": 0,
           "line-opacity-transition": {
             duration: 1000,
@@ -208,248 +120,602 @@ export default function AtlasMap() {
           },
         },
       });
-    });
 
-    // Keep Mapbox synchronized with the container size.
-    const resizeObserver = new ResizeObserver(() => {
-      map.resize();
-    });
+      // ========================================================
+      // 2. INDIVIDUAL GOVERNMENT BOUNDARY SELECTION
+      //
+      // This sits on top of the complete SearchPV entity
+      // footprint.
+      // ========================================================
 
-    resizeObserver.observe(container);
+      map.addSource("atlas-boundary-selection", {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: [],
+        },
+      });
 
-    return () => {
-      resizeObserver.disconnect();
-      map.remove();
-      mapRef.current = null;
-    };
-  }, []);
+      map.addLayer({
+        id: "atlas-boundary-selection-fill",
+        type: "fill",
+        source: "atlas-boundary-selection",
+        slot: "top",
+        paint: {
+          "fill-color": "#b7791f",
+          "fill-opacity": 0.18,
+        },
+      });
 
-function getFeatureBounds(
-  feature: {
-    geometry: {
-      type: string;
-      coordinates: unknown;
-    };
-  }
-) {
-  const bounds = new mapboxgl.LngLatBounds();
+      map.addLayer({
+        id: "atlas-boundary-selection-line",
+        type: "line",
+        source: "atlas-boundary-selection",
+        slot: "top",
+        paint: {
+          "line-color": "#8a5a18",
+          "line-width": 2.5,
+          "line-opacity": 0.9,
+        },
+      });
 
-  function walkCoordinates(coords: unknown) {
-    if (!Array.isArray(coords)) return;
+      // ========================================================
+      // 3. ALL GOVERNMENT BOUNDARIES
+      // ========================================================
 
-    if (
-      coords.length >= 2 &&
-      typeof coords[0] === "number" &&
-      typeof coords[1] === "number"
-    ) {
-      bounds.extend([
-        coords[0] as number,
-        coords[1] as number,
-      ]);
+      fetch("/api/atlas/boundaries")
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(
+              "Unable to load government boundaries.",
+            );
+          }
 
-      return;
-    }
-
-    for (const item of coords) {
-      walkCoordinates(item);
-    }
-  }
-
-  walkCoordinates(feature.geometry.coordinates);
-
-  return bounds;
-}
-
-// React when the selected SearchPV entity changes.
-useEffect(() => {
-  const map = mapRef.current;
-
-  if (!map) return;
-  if (!selectedEntity) return;
-
-  const entity = selectedEntity;
-
-  let cancelled = false;
-
-  async function showSelectedEntity() {
-    const currentMap = mapRef.current;
-
-    if (!currentMap) return;
-
-    const source = currentMap.getSource(
-      "atlas-selection",
-    ) as mapboxgl.GeoJSONSource | undefined;
-
-    if (!source) {
-      currentMap.once("load", showSelectedEntity);
-      return;
-    }
-
-    /*
-     * Clear the previous highlighted geography first.
-     */
-    source.setData({
-      type: "FeatureCollection",
-      features: [],
-    });
-
-    currentMap.setPaintProperty(
-      "atlas-selection-fill",
-      "fill-opacity",
-      0,
-    );
-
-    currentMap.setPaintProperty(
-      "atlas-selection-line",
-      "line-opacity",
-      0,
-    );
-
-    /*
-     * SearchPV geographic entities such as:
-     *
-     * ZN = Zone
-     * AR = Area
-     * CM = Community
-     *
-     * can now get their geometry from
-     * public.geography_entity_geometry().
-     */
-    if (entity.entityKy) {
-      try {
-        const response = await fetch(
-          `/api/atlas/entity-geometry?entityKy=${entity.entityKy}`,
-          {
-            cache: "no-store",
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            "Unable to load entity geometry.",
+          return response.json();
+        })
+        .then((boundaryData) => {
+          console.log(
+            "Government boundary features:",
+            boundaryData.features.length,
           );
-        }
 
-        const entityGeometry = await response.json();
+          if (map.getSource("atlas-boundaries")) {
+            return;
+          }
 
-        if (cancelled) return;
+          // ====================================================
+          // Keep the complete original feature for each boundary.
+          //
+          // IMPORTANT:
+          // Mapbox's feature returned from a click can represent
+          // only the rendered/tiled portion underneath the click.
+          // We therefore use boundary_ky to get the complete
+          // original GeoJSON feature when highlighting.
+          // ====================================================
 
-        /*
-         * If this entity has a reviewed/derived polygon
-         * footprint, use it.
-         */
-        if (
-          entityGeometry?.geometry &&
-          Array.isArray(entityGeometry?.bbox) &&
-          entityGeometry.bbox.length === 4
-        ) {
-          const feature = {
-            type: "Feature",
-            properties: {
-              entityKy: entityGeometry.entityKy,
-              entityName:
-                entityGeometry.entityName,
-              entityType:
-                entityGeometry.entityType,
-            },
-            geometry: entityGeometry.geometry,
-          };
+          const fullBoundaryFeatures =
+            new Map<number, any>();
 
-          source.setData({
-            type: "FeatureCollection",
-            features: [feature as any],
+          for (
+            const boundaryFeature of boundaryData.features
+          ) {
+            const boundaryKy = Number(
+              boundaryFeature.properties?.boundary_ky,
+            );
+
+            if (Number.isFinite(boundaryKy)) {
+              fullBoundaryFeatures.set(
+                boundaryKy,
+                boundaryFeature,
+              );
+            }
+          }
+
+          map.addSource("atlas-boundaries", {
+            type: "geojson",
+            data: boundaryData,
           });
 
-          const [
-            west,
-            south,
-            east,
-            north,
-          ] = entityGeometry.bbox.map(Number);
+          /*
+           * Invisible fill used as the government-boundary
+           * click target.
+           */
+          map.addLayer({
+            id: "atlas-boundaries-hit",
+            type: "fill",
+            source: "atlas-boundaries",
+            paint: {
+              "fill-color": "#000000",
+              "fill-opacity": 0.001,
+            },
+          });
 
-          currentMap.fitBounds(
-            [
-              [west, south],
-              [east, north],
-            ],
-            {
-              padding: {
-                top: 110,
-                right: 40,
-                bottom: 220,
-                left: 40,
-              },
-              pitch: 45,
-              duration: 1800,
-              essential: true,
+          /*
+           * Normal government-boundary outlines.
+           */
+          map.addLayer({
+            id: "atlas-boundaries-line",
+            type: "line",
+            source: "atlas-boundaries",
+            paint: {
+              "line-color": "#475569",
+              "line-width": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                9, 0.5,
+                12, 0.8,
+                15, 1.1,
+              ],
+              "line-opacity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                9, 0.12,
+                12, 0.20,
+                15, 0.28,
+              ],
+            },
+          });
+
+          // ====================================================
+          // GOVERNMENT BOUNDARY CLICK
+          //
+          // Registered only after atlas-boundaries-hit exists.
+          // ====================================================
+
+          map.on(
+            "click",
+            "atlas-boundaries-hit",
+            async (event) => {
+              const clickedFeature =
+                event.features?.[0] as any;
+
+              if (!clickedFeature) {
+                return;
+              }
+
+              const boundaryKy = Number(
+                clickedFeature.properties
+                  ?.boundary_ky,
+              );
+
+              if (!Number.isFinite(boundaryKy)) {
+                return;
+              }
+
+              const boundaryName =
+                clickedFeature.properties
+                  ?.boundary_nm;
+
+              /*
+               * Get the COMPLETE original feature.
+               *
+               * Do not use clickedFeature as the selection
+               * geometry because Mapbox may return only the
+               * rendered portion underneath the click.
+               */
+              const fullBoundaryFeature =
+                fullBoundaryFeatures.get(
+                  boundaryKy,
+                );
+
+              const boundary = {
+                boundaryKy,
+                boundaryName,
+                boundaryType:
+                  clickedFeature.properties
+                    ?.boundary_type_cd ??
+                  undefined,
+                municipalityName:
+                  clickedFeature.properties
+                    ?.municipality_nm ??
+                  undefined,
+                districtName:
+                  clickedFeature.properties
+                    ?.district_nm ??
+                  undefined,
+              };
+
+              /*
+               * Highlight the complete government polygon.
+               */
+              const boundarySelectionSource =
+                map.getSource(
+                  "atlas-boundary-selection",
+                ) as
+                  | mapboxgl.GeoJSONSource
+                  | undefined;
+
+              boundarySelectionSource?.setData({
+                type: "FeatureCollection",
+                features:
+                  fullBoundaryFeature
+                    ? [fullBoundaryFeature]
+                    : [],
+              });
+
+              /*
+               * Find every SearchPV MLS geography that uses
+               * this government polygon.
+               *
+               * AtlasState decides whether the existing MLS
+               * context should remain selected.
+               */
+              try {
+                const response = await fetch(
+                  `/api/atlas/boundary-entity?boundaryKy=${boundaryKy}`,
+                  {
+                    cache: "no-store",
+                  },
+                );
+
+                if (!response.ok) {
+                  throw new Error(
+                    "Unable to load related MLS geographies.",
+                  );
+                }
+
+                const entities =
+                  await response.json();
+
+                selectBoundary(
+                  boundary,
+                  Array.isArray(entities)
+                    ? entities
+                    : [],
+                );
+              } catch (error) {
+                console.error(
+                  "Atlas related geography lookup error:",
+                  error,
+                );
+
+                selectBoundary(boundary, []);
+              }
             },
           );
 
           /*
-           * Fade in the selected SearchPV footprint
-           * after the map begins moving.
+           * Desktop pointer feedback.
            */
-          window.setTimeout(() => {
-            if (cancelled) return;
-            if (!mapRef.current) return;
+          map.on(
+            "mouseenter",
+            "atlas-boundaries-hit",
+            () => {
+              map.getCanvas().style.cursor =
+                "pointer";
+            },
+          );
 
-            mapRef.current.setPaintProperty(
-              "atlas-selection-fill",
-              "fill-opacity",
-              0.16,
-            );
+          map.on(
+            "mouseleave",
+            "atlas-boundaries-hit",
+            () => {
+              map.getCanvas().style.cursor = "";
+            },
+          );
+        })
+        .catch((error) => {
+          console.error(
+            "Atlas government boundary error:",
+            error,
+          );
+        });
+    });
 
-            mapRef.current.setPaintProperty(
-              "atlas-selection-line",
-              "line-opacity",
-              1,
-            );
-          }, 1200);
-
-          return;
+    // Keep Mapbox synchronized with the container size.
+    const resizeObserver =
+      new ResizeObserver(() => {
+        if (mapRef.current === map) {
+          map.resize();
         }
-      } catch (error) {
-        console.error(
-          "Atlas entity geometry error:",
-          error,
+      });
+
+    resizeObserver.observe(container);
+
+    return () => {
+      cancelAnimationFrame(resizeFrame);
+      resizeObserver.disconnect();
+
+      if (mapRef.current === map) {
+        mapRef.current = null;
+      }
+
+      map.remove();
+    };
+  }, []);
+
+  // ============================================================
+  // Clear individual government selection when state says there
+  // is no selected boundary.
+  //
+  // This happens, for example, when a new SearchPV search result
+  // is selected through selectEntity().
+  // ============================================================
+
+  useEffect(() => {
+    if (selectedBoundary) return;
+
+    const map = mapRef.current;
+
+    if (!map) return;
+
+    const boundarySelectionSource =
+      map.getSource(
+        "atlas-boundary-selection",
+      ) as
+        | mapboxgl.GeoJSONSource
+        | undefined;
+
+    boundarySelectionSource?.setData({
+      type: "FeatureCollection",
+      features: [],
+    });
+  }, [selectedBoundary]);
+
+  // ============================================================
+  // React when the selected SearchPV entity changes.
+  // ============================================================
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map) return;
+
+    /*
+     * No SearchPV entity is selected.
+     *
+     * Clear the MLS footprint, but DO NOT clear the individual
+     * government selection.
+     */
+    if (!selectedEntity) {
+      const entitySource =
+        map.getSource(
+          "atlas-entity-selection",
+        ) as
+          | mapboxgl.GeoJSONSource
+          | undefined;
+
+      entitySource?.setData({
+        type: "FeatureCollection",
+        features: [],
+      });
+
+      if (
+        map.getLayer(
+          "atlas-entity-selection-fill",
+        )
+      ) {
+        map.setPaintProperty(
+          "atlas-entity-selection-fill",
+          "fill-opacity",
+          0,
         );
+      }
+
+      if (
+        map.getLayer(
+          "atlas-entity-selection-line",
+        )
+      ) {
+        map.setPaintProperty(
+          "atlas-entity-selection-line",
+          "line-opacity",
+          0,
+        );
+      }
+
+      return;
+    }
+
+    const entity = selectedEntity;
+
+    let cancelled = false;
+
+    async function showSelectedEntity() {
+      const currentMap = mapRef.current;
+
+      if (!currentMap) return;
+
+      const entitySource =
+        currentMap.getSource(
+          "atlas-entity-selection",
+        ) as
+          | mapboxgl.GeoJSONSource
+          | undefined;
+
+      if (!entitySource) {
+        currentMap.once(
+          "load",
+          showSelectedEntity,
+        );
+        return;
+      }
+
+      /*
+       * Clear the previous SearchPV entity geometry before
+       * loading the new footprint.
+       *
+       * IMPORTANT:
+       * Do NOT clear atlas-boundary-selection here.
+       *
+       * When a government polygon caused this entity change,
+       * that polygon needs to remain highlighted on top.
+       */
+      entitySource.setData({
+        type: "FeatureCollection",
+        features: [],
+      });
+
+      currentMap.setPaintProperty(
+        "atlas-entity-selection-fill",
+        "fill-opacity",
+        0,
+      );
+
+      currentMap.setPaintProperty(
+        "atlas-entity-selection-line",
+        "line-opacity",
+        0,
+      );
+
+      /*
+       * ZN = Zone
+       * AR = Area
+       * CM = Community
+       *
+       * Reviewed geometry comes from
+       * public.geography_entity_geometry().
+       */
+      if (entity.entityKy) {
+        try {
+          const response = await fetch(
+            `/api/atlas/entity-geometry?entityKy=${entity.entityKy}`,
+            {
+              cache: "no-store",
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error(
+              "Unable to load entity geometry.",
+            );
+          }
+
+          const entityGeometry =
+            await response.json();
+
+          if (cancelled) return;
+
+          /*
+           * Use the reviewed/derived polygon footprint when
+           * geometry exists.
+           */
+          if (
+            entityGeometry?.geometry &&
+            Array.isArray(
+              entityGeometry?.bbox,
+            ) &&
+            entityGeometry.bbox.length === 4
+          ) {
+            const feature = {
+              type: "Feature",
+              properties: {
+                entityKy:
+                  entityGeometry.entityKy,
+                entityName:
+                  entityGeometry.entityName,
+                entityType:
+                  entityGeometry.entityType,
+              },
+              geometry:
+                entityGeometry.geometry,
+            };
+
+            entitySource.setData({
+              type: "FeatureCollection",
+              features: [feature as any],
+            });
+
+            const [
+              west,
+              south,
+              east,
+              north,
+            ] =
+              entityGeometry.bbox.map(
+                Number,
+              );
+
+            currentMap.fitBounds(
+              [
+                [west, south],
+                [east, north],
+              ],
+              {
+                padding: {
+                  top: 110,
+                  right: 40,
+                  bottom: Math.round(
+                    window.innerHeight * 0.46,
+                  ),
+                  left: 40,
+                },
+                pitch: 45,
+                duration: 1800,
+                essential: true,
+              },
+            );
+
+            /*
+             * Fade in the complete SearchPV footprint.
+             */
+            window.setTimeout(() => {
+              if (cancelled) return;
+              if (!mapRef.current) return;
+
+              mapRef.current.setPaintProperty(
+                "atlas-entity-selection-fill",
+                "fill-opacity",
+                0.12,
+              );
+
+              mapRef.current.setPaintProperty(
+                "atlas-entity-selection-line",
+                "line-opacity",
+                1,
+              );
+            }, 1200);
+
+            return;
+          }
+        } catch (error) {
+          console.error(
+            "Atlas entity geometry error:",
+            error,
+          );
+        }
+      }
+
+      /*
+       * No polygon geometry exists.
+       *
+       * Fall back to longitude / latitude for developments,
+       * buildings, Nayarit entities without polygons, etc.
+       */
+      if (
+        Number.isFinite(
+          entity.longitude,
+        ) &&
+        Number.isFinite(
+          entity.latitude,
+        )
+      ) {
+        currentMap.flyTo({
+          center: [
+            entity.longitude as number,
+            entity.latitude as number,
+          ],
+          zoom: 15,
+          pitch: 45,
+          duration: 1800,
+          essential: true,
+        });
       }
     }
 
-    /*
-     * No polygon geometry exists.
-     *
-     * Fall back to the entity's longitude / latitude.
-     * This preserves the current behavior for developments,
-     * buildings, Nayarit entities without polygons, etc.
-     */
-    if (
-      Number.isFinite(entity.longitude) &&
-      Number.isFinite(entity.latitude)
-    ) {
-      currentMap.flyTo({
-        center: [
-          entity.longitude,
-          entity.latitude,
-        ],
-        zoom: 15,
-        pitch: 45,
-        duration: 1800,
-        essential: true,
-      });
-    }
-  }
+    void showSelectedEntity();
 
-  void showSelectedEntity();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedEntity]);
 
-  return () => {
-    cancelled = true;
-  };
-}, [selectedEntity]);
-return (
-  <div
-    ref={mapContainerRef}
-    className="absolute inset-0 h-full w-full"
-  />
-);
+  return (
+    <div
+      ref={mapContainerRef}
+      className="absolute inset-0 h-full w-full"
+    />
+  );
 }

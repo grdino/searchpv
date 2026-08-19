@@ -132,9 +132,21 @@ export default function AtlasSearch() {
 
             {!loading &&
               results.map((candidate) => {
+                const entityTypeLabel =
+                  candidate.entityType.charAt(0).toUpperCase() +
+                  candidate.entityType.slice(1);
+
                 const hierarchyText = [
-                  candidate.hierarchy?.zone?.name,
-                  candidate.hierarchy?.area?.name,
+                  entityTypeLabel,
+                  candidate.entityType !== "community"
+                    ? candidate.hierarchy?.community?.name
+                    : undefined,
+                  candidate.entityType !== "area"
+                    ? candidate.hierarchy?.area?.name
+                    : undefined,
+                  candidate.entityType !== "zone"
+                    ? candidate.hierarchy?.zone?.name
+                    : undefined,
                 ]
                   .filter(Boolean)
                   .join(" · ");
@@ -217,8 +229,7 @@ export default function AtlasSearch() {
                         color: "#64748b",
                       }}
                     >
-                      {candidate.canonicalName}
-                      {hierarchyText ? ` · ${hierarchyText}` : ""}
+                      {hierarchyText}
                     </div>
                   </button>
                 );
