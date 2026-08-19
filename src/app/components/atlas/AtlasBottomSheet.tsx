@@ -98,6 +98,8 @@ export default function AtlasBottomSheet() {
       return;
     }
 
+    const entityKy = selectedEntity.entityKy;
+
     const controller = new AbortController();
 
     async function loadMarketSnapshot() {
@@ -106,7 +108,7 @@ export default function AtlasBottomSheet() {
 
       try {
         const params = new URLSearchParams({
-          entityKy: String(selectedEntity.entityKy),
+          entityKy: String(entityKy),
           propertyType: propertyTypeFilter,
           marketType: marketTypeFilter,
         });
