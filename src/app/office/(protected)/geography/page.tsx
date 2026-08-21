@@ -6,6 +6,7 @@ import MainSloganBranding from "@/app/components/MainSloganBranding";
 import { createClient } from "@/lib/supabase/server";
 
 import BoundaryFootprintEditor from "./BoundaryFootprintEditor";
+import AreaFootprintViewer from "./AreaFootprintViewer";
 import EntityEditor from "./EntityEditor";
 import GeographyFilters from "./GeographyFilters";
 
@@ -47,6 +48,27 @@ type GeographyBoundaryMapData = {
     totalListingCount: number;
     listingPercent: number;
     cumulativeListingPercent: number;
+    selected: boolean;
+    geometry: GeoJSON.Geometry;
+  }>;
+
+  boundaries: Array<{
+    boundaryKy: number;
+    boundaryName: string;
+    boundaryType: string;
+    rank: number;
+    listingCount: number;
+    totalListingCount: number;
+    listingPercent: number;
+    cumulativeListingPercent: number;
+    selected: boolean;
+    geometry: GeoJSON.Geometry;
+  }>;
+
+  nearbyBoundaries: Array<{
+    boundaryKy: number;
+    boundaryName: string;
+    boundaryType: string;
     selected: boolean;
     geometry: GeoJSON.Geometry;
   }>;
@@ -249,6 +271,44 @@ export default async function GeographyPage({
 
     boundaryMapData =
       boundaryMapResponse.data as GeographyBoundaryMapData;
+  }
+
+  /*
+ * ----------------------------------------------------------
+ * Area effective footprint
+ *
+ * Areas do not directly own duplicate boundary assignments.
+ * Their effective footprint is derived from government
+ * boundaries mapped to child Communities.
+ * ----------------------------------------------------------
+ */
+  let areaBoundaryMapData:
+    GeographyBoundaryMapData | null = null;
+
+  if (
+    detail?.entity?.entity_type_cd === "AR" &&
+    selectedEntityKy !== null
+  ) {
+    const areaBoundaryMapResponse =
+      await supabase.rpc(
+        "geography_area_boundary_map",
+        {
+          p_entity_ky: selectedEntityKy,
+        },
+      );
+
+    if (areaBoundaryMapResponse.error) {
+      return (
+        <GeographyError
+          error={
+            areaBoundaryMapResponse.error.message
+          }
+        />
+      );
+    }
+
+    areaBoundaryMapData =
+      areaBoundaryMapResponse.data as GeographyBoundaryMapData;
   }
 
   return (
@@ -566,6 +626,21 @@ export default async function GeographyPage({
           </div>
         ) : null}
       </section>
+
+      {/* ---------------------------------------------------
+      FULL-WIDTH AREA EFFECTIVE FOOTPRINT
+      --------------------------------------------------- */}
+
+      {detail?.entity?.entity_type_cd === "AR" &&
+      selectedEntityKy !== null &&
+      areaBoundaryMapData ? (
+        <div className="mt-8">
+          <AreaFootprintViewer
+            key={selectedEntityKy}
+            data={areaBoundaryMapData}
+          />
+        </div>
+      ) : null}
     </main>
   );
 }

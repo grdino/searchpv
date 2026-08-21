@@ -19,12 +19,29 @@ function entityTypeLabel(entityType: string) {
   }
 }
 
+type SummaryMode =
+  | "median"
+  | "avg";
+
+type AreaUnit =
+  | "ft2"
+  | "m2";
+
 type MarketSnapshot = {
   snapshotDate: string | null;
+
   activeCount: number;
   pendingCount: number;
+  sales12Mo: number;
+
+  avgListPrice: number | null;
   medianListPrice: number | null;
+
   avgListPriceFt2: number | null;
+  medianListPriceFt2: number | null;
+
+  avgListPriceM2: number | null;
+  medianListPriceM2: number | null;
 };
 
 function formatPrice(value: number | null) {
@@ -76,6 +93,20 @@ export default function AtlasBottomSheet() {
   const [marketSnapshotLoading, setMarketSnapshotLoading] =
     useState(false);
 
+  /*
+   * Atlas display preferences.
+   *
+   * These currently live inside the bottom sheet.
+   *
+   * Later, if we want them to persist across Atlas pages or
+   * other components, we can move them into AtlasState.
+   */
+  const [summaryMode, setSummaryMode] =
+    useState<SummaryMode>("median");
+
+  const [areaUnit, setAreaUnit] =
+    useState<AreaUnit>("ft2");
+
   const relatedChoices = relatedEntities.filter(
     (entity) =>
       entity.entityKy !== selectedEntity?.entityKy,
@@ -83,7 +114,8 @@ export default function AtlasBottomSheet() {
 
   useEffect(() => {
     /*
-     * Market snapshots currently exist for MLS Communities.
+     * Market snapshots currently exist for MLS Areas
+     * and MLS Communities.
      *
      * Clear any previous statistics immediately when the
      * geography or filters change so stale numbers are never
@@ -91,7 +123,9 @@ export default function AtlasBottomSheet() {
      */
     if (
       !selectedEntity ||
-      selectedEntity.entityType !== "CM"
+      !["CM", "AR"].includes(
+        selectedEntity.entityType,
+      )
     ) {
       setMarketSnapshot(null);
       setMarketSnapshotLoading(false);
@@ -182,6 +216,36 @@ export default function AtlasBottomSheet() {
     : selectedEntity?.parentName
       ? `Explore ${selectedEntity.parentName}`
       : "Explore this part of Banderas Bay";
+
+  /*
+   * Current ACTIVE pricing display.
+   *
+   * Pricing intentionally represents Active listings only.
+   */
+
+  const displayedListPrice =
+    summaryMode === "avg"
+      ? marketSnapshot?.avgListPrice ?? null
+      : marketSnapshot?.medianListPrice ?? null;
+
+  const displayedAreaPrice =
+    areaUnit === "m2"
+      ? summaryMode === "avg"
+        ? marketSnapshot?.avgListPriceM2 ?? null
+        : marketSnapshot?.medianListPriceM2 ?? null
+      : summaryMode === "avg"
+        ? marketSnapshot?.avgListPriceFt2 ?? null
+        : marketSnapshot?.medianListPriceFt2 ?? null;
+
+  const listPriceLabel =
+    summaryMode === "avg"
+      ? "Avg List"
+      : "Median List";
+
+  const areaPriceLabel =
+    `${summaryMode === "avg" ? "Avg" : "Median"} $/${
+      areaUnit === "m2" ? "m²" : "ft²"
+    }`;
 
   return (
     <section
@@ -474,164 +538,392 @@ export default function AtlasBottomSheet() {
                 LIVE MARKET SNAPSHOT
                 ================================================ */}
 
-            {selectedEntity.entityType === "CM" ? (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(4, minmax(0, 1fr))",
-                  gap: 8,
-                  marginTop: 16,
-                }}
-              >
-                {/* Active */}
+            {["CM", "AR"].includes(
+              selectedEntity.entityType,
+            ) ? (
+              <>
+                {/* Activity row */}
                 <div
                   style={{
-                    padding: "11px 12px",
-                    borderRadius: 14,
-                    background: "#f8fafc",
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(3, minmax(0, 1fr))",
+                    gap: 8,
+                    marginTop: 16,
                   }}
                 >
-                  <div
+                  {/* Active */}
+                  <button
+                    type="button"
+                    aria-label="View active listings"
                     style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      color: "#94a3b8",
+                      border: "1px solid #e2e8f0",
+                      padding: "11px 12px",
+                      borderRadius: 14,
+                      background: "#f8fafc",
+                      textAlign: "left",
+                      cursor: "pointer",
                     }}
                   >
-                    Active
-                  </div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "#94a3b8",
+                      }}
+                    >
+                      Active
+                    </div>
 
-                  <div
+                    <div
+                      style={{
+                        marginTop: 3,
+                        fontSize: 20,
+                        fontWeight: 750,
+                        color: "#0f172a",
+                      }}
+                    >
+                      {marketSnapshotLoading
+                        ? "…"
+                        : marketSnapshot?.activeCount ??
+                          "—"}
+                    </div>
+                  </button>
+
+                  {/* Pending */}
+                  <button
+                    type="button"
+                    aria-label="View pending listings"
                     style={{
-                      marginTop: 3,
-                      fontSize: 19,
-                      fontWeight: 700,
-                      color: "#0f172a",
+                      border: "1px solid #e2e8f0",
+                      padding: "11px 12px",
+                      borderRadius: 14,
+                      background: "#f8fafc",
+                      textAlign: "left",
+                      cursor: "pointer",
                     }}
                   >
-                    {marketSnapshotLoading
-                      ? "…"
-                      : marketSnapshot?.activeCount ??
-                        "—"}
-                  </div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "#94a3b8",
+                      }}
+                    >
+                      Pending
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 3,
+                        fontSize: 20,
+                        fontWeight: 750,
+                        color: "#0f172a",
+                      }}
+                    >
+                      {marketSnapshotLoading
+                        ? "…"
+                        : marketSnapshot?.pendingCount ??
+                          "—"}
+                    </div>
+                  </button>
+
+                  {/* Sold 12 Mo */}
+                  <button
+                    type="button"
+                    aria-label="View sold listings from the last 12 months"
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      padding: "11px 12px",
+                      borderRadius: 14,
+                      background: "#f8fafc",
+                      textAlign: "left",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "#94a3b8",
+                      }}
+                    >
+                      Sold 12 Mo
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 3,
+                        fontSize: 20,
+                        fontWeight: 750,
+                        color: "#0f172a",
+                      }}
+                    >
+                      {marketSnapshotLoading
+                        ? "…"
+                        : marketSnapshot?.sales12Mo ??
+                          "—"}
+                    </div>
+                  </button>
                 </div>
 
-                {/* Pending */}
+                {/* ================================================
+                    PRICING ROW
+                    ================================================ */}
+
                 <div
                   style={{
-                    padding: "11px 12px",
-                    borderRadius: 14,
-                    background: "#f8fafc",
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(2, minmax(0, 1fr))",
+                    gap: 8,
+                    marginTop: 8,
                   }}
                 >
+                  {/* List price */}
                   <div
                     style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      color: "#94a3b8",
+                      padding: "10px 12px 11px",
+                      borderRadius: 14,
+                      background: "#f8fafc",
                     }}
                   >
-                    Pending
+                    {/* Median / Avg toggle */}
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        overflow: "hidden",
+                        borderRadius: 999,
+                        border: "1px solid #e2e8f0",
+                        marginBottom: 10,
+                      }}
+                    >
+                      {[
+                        {
+                          value: "median",
+                          label: "Median",
+                        },
+                        {
+                          value: "avg",
+                          label: "Avg",
+                        },
+                      ].map((option) => {
+                        const active =
+                          summaryMode === option.value;
+
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() =>
+                              setSummaryMode(
+                                option.value as SummaryMode,
+                              )
+                            }
+                            style={{
+                              border: 0,
+                              padding: "5px 9px",
+                              background: active
+                                ? "#0f172a"
+                                : "#ffffff",
+                              color: active
+                                ? "#ffffff"
+                                : "#64748b",
+                              fontSize: 10,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                            }}
+                          >
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "#94a3b8",
+                      }}
+                    >
+                      {listPriceLabel}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 3,
+                        fontSize: 20,
+                        fontWeight: 750,
+                        color: "#0f172a",
+                      }}
+                    >
+                      {marketSnapshotLoading
+                        ? "…"
+                        : formatPrice(
+                            displayedListPrice,
+                          )}
+                    </div>
                   </div>
 
+                  {/* Price per area */}
                   <div
                     style={{
-                      marginTop: 3,
-                      fontSize: 19,
-                      fontWeight: 700,
-                      color: "#0f172a",
+                      padding: "10px 12px 11px",
+                      borderRadius: 14,
+                      background: "#f8fafc",
                     }}
                   >
-                    {marketSnapshotLoading
-                      ? "…"
-                      : marketSnapshot?.pendingCount ??
-                        "—"}
+                    {/* Median / Avg + ft² / m² controls */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "flex-start",
+                        gap: 7,
+                        marginBottom: 10,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          overflow: "hidden",
+                          borderRadius: 999,
+                          border: "1px solid #e2e8f0",
+                        }}
+                      >
+                        {[
+                          {
+                            value: "median",
+                            label: "Median",
+                          },
+                          {
+                            value: "avg",
+                            label: "Avg",
+                          },
+                        ].map((option) => {
+                          const active =
+                            summaryMode === option.value;
+
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() =>
+                                setSummaryMode(
+                                  option.value as SummaryMode,
+                                )
+                              }
+                              style={{
+                                border: 0,
+                                padding: "5px 9px",
+                                background: active
+                                  ? "#0f172a"
+                                  : "#ffffff",
+                                color: active
+                                  ? "#ffffff"
+                                  : "#64748b",
+                                fontSize: 10,
+                                fontWeight: 700,
+                                cursor: "pointer",
+                              }}
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          overflow: "hidden",
+                          borderRadius: 999,
+                          border: "1px solid #e2e8f0",
+                        }}
+                      >
+                        {[
+                          {
+                            value: "ft2",
+                            label: "ft²",
+                          },
+                          {
+                            value: "m2",
+                            label: "m²",
+                          },
+                        ].map((option) => {
+                          const active =
+                            areaUnit === option.value;
+
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() =>
+                                setAreaUnit(
+                                  option.value as AreaUnit,
+                                )
+                              }
+                              style={{
+                                border: 0,
+                                padding: "5px 9px",
+                                background: active
+                                  ? "#0f172a"
+                                  : "#ffffff",
+                                color: active
+                                  ? "#ffffff"
+                                  : "#64748b",
+                                fontSize: 10,
+                                fontWeight: 700,
+                                cursor: "pointer",
+                              }}
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "#94a3b8",
+                      }}
+                    >
+                      {areaPriceLabel}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 3,
+                        fontSize: 20,
+                        fontWeight: 750,
+                        color: "#0f172a",
+                      }}
+                    >
+                      {marketSnapshotLoading
+                        ? "…"
+                        : displayedAreaPrice !== null
+                          ? `$${formatWholeNumber(
+                              displayedAreaPrice,
+                            )}`
+                          : "—"}
+                    </div>
                   </div>
                 </div>
-
-                {/* Median Ask */}
-                <div
-                  style={{
-                    padding: "11px 12px",
-                    borderRadius: 14,
-                    background: "#f8fafc",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      color: "#94a3b8",
-                    }}
-                  >
-                    Median Ask
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 3,
-                      fontSize: 19,
-                      fontWeight: 700,
-                      color: "#0f172a",
-                    }}
-                  >
-                    {marketSnapshotLoading
-                      ? "…"
-                      : formatPrice(
-                          marketSnapshot?.medianListPrice ??
-                            null,
-                        )}
-                  </div>
-                </div>
-
-                {/* Average asking price per square foot */}
-                <div
-                  style={{
-                    padding: "11px 12px",
-                    borderRadius: 14,
-                    background: "#f8fafc",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      color: "#94a3b8",
-                    }}
-                  >
-                    Avg $/ft²
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 3,
-                      fontSize: 19,
-                      fontWeight: 700,
-                      color: "#0f172a",
-                    }}
-                  >
-                    {marketSnapshotLoading
-                      ? "…"
-                      : marketSnapshot?.avgListPriceFt2 !==
-                            null &&
-                          marketSnapshot?.avgListPriceFt2 !==
-                            undefined
-                        ? `$${formatWholeNumber(
-                            marketSnapshot.avgListPriceFt2,
-                          )}`
-                        : "—"}
-                  </div>
-                </div>
-              </div>
+              </>
             ) : null}
 
             {/* ================================================
@@ -698,27 +990,11 @@ export default function AtlasBottomSheet() {
               style={{
                 display: "grid",
                 gridTemplateColumns:
-                  "repeat(3, minmax(0, 1fr))",
+                  "repeat(2, minmax(0, 1fr))",
                 gap: 8,
                 marginTop: 16,
               }}
             >
-              <button
-                type="button"
-                style={{
-                  border: 0,
-                  borderRadius: 14,
-                  padding: "11px 8px",
-                  background: "#0f172a",
-                  color: "#ffffff",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                Homes for Sale
-              </button>
-
               <button
                 type="button"
                 style={{

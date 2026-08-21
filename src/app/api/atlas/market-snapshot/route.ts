@@ -29,6 +29,26 @@ type GeographyEntityDetail = {
   };
 };
 
+type SnapshotRow = {
+  snapshot_date?: string | null;
+
+  zone_name?: string | null;
+  area_name?: string | null;
+  community_name?: string | null;
+
+  pending_count?: number | null;
+  sales_12mo?: number | null;
+
+  market_segment?: string | null;
+  property_type_segment?: string | null;
+};
+
+type ActiveSummaryRow = {
+  current_price?: number | null;
+  price_per_sqft?: number | null;
+  price_per_sqm?: number | null;
+};
+
 export async function GET(request: NextRequest) {
   const entityKy = Number(
     request.nextUrl.searchParams.get("entityKy"),
@@ -45,8 +65,11 @@ export async function GET(request: NextRequest) {
     ) ?? "all") as MarketTypeFilter;
 
   /*
-   * Validate request parameters.
+   * ----------------------------------------------------------
+   * Validate request parameters
+   * ----------------------------------------------------------
    */
+
   if (!Number.isFinite(entityKy)) {
     return NextResponse.json(
       { error: "Invalid entityKy." },
@@ -79,8 +102,11 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
 
   /*
-   * Resolve the canonical Atlas geography.
+   * ----------------------------------------------------------
+   * Resolve Atlas geography
+   * ----------------------------------------------------------
    */
+
   const {
     data: geographyData,
     error: geographyError,
@@ -117,63 +143,37 @@ export async function GET(request: NextRequest) {
     geography.entity?.entity_type_cd ?? "";
 
   /*
-   * Community snapshot currently supports CM entities.
+   * Atlas market snapshot currently supports:
    *
-   * We can add Area and Zone snapshot support later.
+   * AR = MLS Area
+   * CM = MLS Community
    */
-  if (entityType !== "CM") {
+
+  if (
+    entityType !== "CM" &&
+    entityType !== "AR"
+  ) {
     return NextResponse.json(
       {
         error:
-          "Market snapshot is currently available for MLS Communities only.",
+          "Market snapshot is currently available for MLS Areas and Communities only.",
       },
       { status: 400 },
     );
   }
 
-  /*
-   * Canonical entity identifiers are hierarchical:
-   *
-   * cm__puerto_vallarta__south_shore__amapas
-   *
-   * Those components correspond directly to the slug columns
-   * already exposed by public.community_snapshot.
-   */
   const identifier =
     geography.entity?.entity_identifier_cd ?? "";
 
   const identifierParts =
     identifier.split("__");
 
-  if (
-    identifierParts.length < 4 ||
-    identifierParts[0] !== "cm"
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          "Unable to derive Community hierarchy from entity identifier.",
-      },
-      { status: 500 },
-    );
-  }
-
-    const zoneSlug =
-    identifierParts[1].replaceAll("_", "-");
-
-    const areaSlug =
-    identifierParts[2].replaceAll("_", "-");
-
-    const communitySlug =
-    identifierParts
-        .slice(3)
-        .join("__")
-        .replaceAll("_", "-");
-
   /*
-   * Translate Atlas consumer filters into the segments used
-   * by public.community_snapshot.
+   * ----------------------------------------------------------
+   * Translate Atlas filters to SearchPV reporting values
+   * ----------------------------------------------------------
    */
+
   const marketSegment =
     marketType === "precon"
       ? "pre_construction"
@@ -187,64 +187,210 @@ export async function GET(request: NextRequest) {
         : "all";
 
   /*
-   * Load the newest matching snapshot row.
+   * Values used by public.active_listing.
    */
-  const {
-    data: snapshotRows,
-    error: snapshotError,
-  } = await supabase
-    .from("community_snapshot")
-    .select(
-      `
-        snapshot_date,
-        active_count,
-        pending_count,
-        median_list_price,
-        avg_list_price_ft2,
-        market_segment,
-        property_type_segment
-      `,
-    )
-    .eq("zone_slug", zoneSlug)
-    .eq("area_slug", areaSlug)
-    .eq("community_slug", communitySlug)
-    .eq("market_segment", marketSegment)
-    .eq(
-      "property_type_segment",
-      propertyTypeSegment,
-    )
-    .order("snapshot_date", {
-      ascending: false,
-    })
-    .limit(1);
 
-  if (snapshotError) {
-    console.error(
-      "Unable to load Atlas market snapshot:",
-      snapshotError,
-    );
+  const activePropertyType =
+    propertyType === "condo"
+      ? "Condos"
+      : propertyType === "house"
+        ? "Houses"
+        : null;
 
-    return NextResponse.json(
-      { error: snapshotError.message },
-      { status: 500 },
-    );
-  }
-
-  const row = snapshotRows?.[0] ?? null;
+  const activeMarketSegment =
+    marketType === "all"
+      ? null
+      : marketSegment;
 
   /*
-   * No row is a valid market result.
+   * ----------------------------------------------------------
+   * Load geography snapshot row
    *
-   * For example:
+   * We use this source for:
    *
-   * Amapas + Houses + Pre-Con
+   * - snapshot date
+   * - Pending count
+   * - Sold 12 Mo count
+   * - canonical MLS geography names
    *
-   * currently has no snapshot row.
+   * Current asking-price statistics are calculated separately
+   * from public.active_listing so they match the existing
+   * SearchPV Active Listings page.
+   * ----------------------------------------------------------
    */
-  if (!row) {
+
+  let snapshotRow: SnapshotRow | null = null;
+
+  if (entityType === "CM") {
+    if (
+      identifierParts.length < 4 ||
+      identifierParts[0] !== "cm"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Unable to derive Community hierarchy from entity identifier.",
+        },
+        { status: 500 },
+      );
+    }
+
+    const zoneSlug =
+      identifierParts[1].replaceAll(
+        "_",
+        "-",
+      );
+
+    const areaSlug =
+      identifierParts[2].replaceAll(
+        "_",
+        "-",
+      );
+
+    const communitySlug =
+      identifierParts
+        .slice(3)
+        .join("__")
+        .replaceAll("_", "-");
+
+    const {
+      data: snapshotRows,
+      error: snapshotError,
+    } = await supabase
+      .from("community_snapshot")
+      .select(
+        `
+          snapshot_date,
+          zone_name,
+          area_name,
+          community_name,
+          pending_count,
+          sales_12mo,
+          market_segment,
+          property_type_segment
+        `,
+      )
+      .eq("zone_slug", zoneSlug)
+      .eq("area_slug", areaSlug)
+      .eq(
+        "community_slug",
+        communitySlug,
+      )
+      .eq(
+        "market_segment",
+        marketSegment,
+      )
+      .eq(
+        "property_type_segment",
+        propertyTypeSegment,
+      )
+      .order("snapshot_date", {
+        ascending: false,
+      })
+      .limit(1);
+
+    if (snapshotError) {
+      console.error(
+        "Unable to load Atlas Community market snapshot:",
+        snapshotError,
+      );
+
+      return NextResponse.json(
+        { error: snapshotError.message },
+        { status: 500 },
+      );
+    }
+
+    snapshotRow =
+      (snapshotRows?.[0] as SnapshotRow | undefined) ??
+      null;
+  }
+
+  if (entityType === "AR") {
+    if (
+      identifierParts.length < 3 ||
+      identifierParts[0] !== "ar"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Unable to derive Area hierarchy from entity identifier.",
+        },
+        { status: 500 },
+      );
+    }
+
+    const zoneSlug =
+      identifierParts[1].replaceAll(
+        "_",
+        "-",
+      );
+
+    const areaSlug =
+      identifierParts
+        .slice(2)
+        .join("__")
+        .replaceAll("_", "-");
+
+    const {
+      data: snapshotRows,
+      error: snapshotError,
+    } = await supabase
+      .from("area_snapshot")
+      .select(
+        `
+          snapshot_date,
+          zone_name,
+          area_name,
+          pending_count,
+          sales_12mo,
+          market_segment,
+          property_type_segment
+        `,
+      )
+      .eq("zone_slug", zoneSlug)
+      .eq("area_slug", areaSlug)
+      .eq(
+        "market_segment",
+        marketSegment,
+      )
+      .eq(
+        "property_type_segment",
+        propertyTypeSegment,
+      )
+      .order("snapshot_date", {
+        ascending: false,
+      })
+      .limit(1);
+
+    if (snapshotError) {
+      console.error(
+        "Unable to load Atlas Area market snapshot:",
+        snapshotError,
+      );
+
+      return NextResponse.json(
+        { error: snapshotError.message },
+        { status: 500 },
+      );
+    }
+
+    snapshotRow =
+      (snapshotRows?.[0] as SnapshotRow | undefined) ??
+      null;
+  }
+
+  /*
+   * A missing snapshot row is valid.
+   *
+   * Example:
+   *
+   * Houses + Pre-Con may legitimately have no reporting row.
+   */
+
+  if (!snapshotRow) {
     return NextResponse.json({
       entityKy,
-
       propertyType,
       marketType,
 
@@ -252,11 +398,169 @@ export async function GET(request: NextRequest) {
 
       activeCount: 0,
       pendingCount: 0,
+      sales12Mo: 0,
 
+      avgListPrice: null,
       medianListPrice: null,
+
       avgListPriceFt2: null,
+      medianListPriceFt2: null,
+
+      avgListPriceM2: null,
+      medianListPriceM2: null,
     });
   }
+
+  /*
+   * ----------------------------------------------------------
+   * Load ACTIVE listings for current asking-price statistics
+   *
+   * This intentionally uses the same public.active_listing
+   * source used by the SearchPV Active Listings page.
+   *
+   * Therefore:
+   *
+   * - Active count
+   * - Avg / Median List Price
+   * - Avg / Median $/ft²
+   * - Avg / Median $/m²
+   *
+   * all use the same underlying listing population as the
+   * existing Market Intelligence page.
+   * ----------------------------------------------------------
+   */
+
+  let activeQuery = supabase
+    .from("active_listing")
+    .select(
+      `
+        current_price,
+        price_per_sqft,
+        price_per_sqm
+      `,
+    );
+
+  /*
+   * Market filter.
+   */
+
+  if (activeMarketSegment) {
+    activeQuery = activeQuery.eq(
+      "market_segment",
+      activeMarketSegment,
+    );
+  }
+
+  /*
+   * Property type filter.
+   */
+
+  if (activePropertyType) {
+    activeQuery = activeQuery.eq(
+      "prprty_type",
+      activePropertyType,
+    );
+  }
+
+  /*
+   * Geography filters.
+   */
+
+  if (snapshotRow.zone_name) {
+    activeQuery = activeQuery.eq(
+      "zone_name",
+      snapshotRow.zone_name,
+    );
+  }
+
+  if (snapshotRow.area_name) {
+    activeQuery = activeQuery.eq(
+      "area_name",
+      snapshotRow.area_name,
+    );
+  }
+
+  if (
+    entityType === "CM" &&
+    snapshotRow.community_name
+  ) {
+    activeQuery = activeQuery.eq(
+      "community_name",
+      snapshotRow.community_name,
+    );
+  }
+
+  const activeResult =
+    await loadAllRows(
+      activeQuery,
+      50000,
+    );
+
+  if (activeResult.error) {
+    console.error(
+      "Unable to load Atlas Active listing summary:",
+      activeResult.error,
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          activeResult.error.message,
+      },
+      { status: 500 },
+    );
+  }
+
+  const activeRows =
+    activeResult.rows as ActiveSummaryRow[];
+
+  /*
+   * ----------------------------------------------------------
+   * Calculate current Active pricing statistics
+   * ----------------------------------------------------------
+   */
+
+  const listPrices =
+    numericValues(
+      activeRows,
+      "current_price",
+    );
+
+  const pricesPerSqft =
+    numericValues(
+      activeRows,
+      "price_per_sqft",
+    );
+
+  const pricesPerSqm =
+    numericValues(
+      activeRows,
+      "price_per_sqm",
+    );
+
+  const avgListPrice =
+    average(listPrices);
+
+  const medianListPrice =
+    median(listPrices);
+
+  const avgListPriceFt2 =
+    average(pricesPerSqft);
+
+  const medianListPriceFt2 =
+    median(pricesPerSqft);
+
+  const avgListPriceM2 =
+    average(pricesPerSqm);
+
+  const medianListPriceM2 =
+    median(pricesPerSqm);
+
+  /*
+   * ----------------------------------------------------------
+   * Atlas response
+   * ----------------------------------------------------------
+   */
 
   return NextResponse.json({
     entityKy,
@@ -265,18 +569,146 @@ export async function GET(request: NextRequest) {
     marketType,
 
     snapshotDate:
-      row.snapshot_date,
+      snapshotRow.snapshot_date ?? null,
+
+    /*
+     * Current inventory / activity
+     */
 
     activeCount:
-      row.active_count ?? 0,
+      activeRows.length,
 
     pendingCount:
-      row.pending_count ?? 0,
+      snapshotRow.pending_count ?? 0,
 
-    medianListPrice:
-      row.median_list_price ?? null,
+    sales12Mo:
+      snapshotRow.sales_12mo ?? 0,
 
-    avgListPriceFt2:
-      row.avg_list_price_ft2 ?? null,
+    /*
+     * Current ACTIVE asking-price statistics
+     */
+
+    avgListPrice,
+    medianListPrice,
+
+    avgListPriceFt2,
+    medianListPriceFt2,
+
+    avgListPriceM2,
+    medianListPriceM2,
   });
+}
+
+/*
+ * ============================================================
+ * Helpers
+ * ============================================================
+ */
+
+async function loadAllRows(
+  query: any,
+  maximumRows: number,
+): Promise<{
+  rows: any[];
+  error: { message: string } | null;
+}> {
+  const pageSize = 1000;
+  const rows: any[] = [];
+
+  for (
+    let from = 0;
+    from < maximumRows;
+    from += pageSize
+  ) {
+    const {
+      data,
+      error,
+    } = await query.range(
+      from,
+      Math.min(
+        from + pageSize - 1,
+        maximumRows - 1,
+      ),
+    );
+
+    if (error) {
+      return {
+        rows,
+        error,
+      };
+    }
+
+    rows.push(...(data ?? []));
+
+    if (
+      !data ||
+      data.length < pageSize
+    ) {
+      break;
+    }
+  }
+
+  return {
+    rows,
+    error: null,
+  };
+}
+
+function numericValues(
+  rows: any[],
+  field: string,
+) {
+  return rows
+    .map(
+      (row) =>
+        Number(row[field]),
+    )
+    .filter(
+      (value) =>
+        Number.isFinite(value) &&
+        value > 0,
+    )
+    .sort(
+      (a, b) => a - b,
+    );
+}
+
+function average(
+  values: number[],
+) {
+  if (values.length === 0) {
+    return null;
+  }
+
+  return (
+    values.reduce(
+      (total, value) =>
+        total + value,
+      0,
+    ) / values.length
+  );
+}
+
+function median(
+  values: number[],
+) {
+  if (values.length === 0) {
+    return null;
+  }
+
+  const middle =
+    Math.floor(
+      values.length / 2,
+    );
+
+  if (
+    values.length % 2 === 0
+  ) {
+    return (
+      values[middle - 1] +
+      values[middle]
+    ) / 2;
+  }
+
+  return values[middle];
 }

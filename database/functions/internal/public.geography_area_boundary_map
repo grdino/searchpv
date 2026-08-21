@@ -1,0 +1,225 @@
+create or replace function public.geography_area_boundary_map(
+    p_entity_ky bigint
+)
+returns jsonb
+language sql
+stable
+security definer
+set search_path to 'public', 'geo', 'dw', 'internal'
+as $function$
+
+with area_entity as
+(
+    select
+        ar.entity_ky,
+        ar_name.entity_variant_nm as area_nm,
+
+        zn.entity_ky as zone_entity_ky,
+        zn_name.entity_variant_nm as zone_nm
+
+    from geo.entity ar
+
+    join geo.entity_variant ar_name
+      on ar_name.entity_ky = ar.entity_ky
+     and ar_name.variant_type_cd = 'CA'
+
+    join geo.entity_relationship ar_rel
+      on ar_rel.child_entity_ky = ar.entity_ky
+     and ar_rel.relationship_type_cd = 'CB'
+
+    join geo.entity zn
+      on zn.entity_ky = ar_rel.parent_entity_ky
+     and zn.entity_type_cd = 'ZN'
+
+    join geo.entity_variant zn_name
+      on zn_name.entity_ky = zn.entity_ky
+     and zn_name.variant_type_cd = 'CA'
+
+    where ar.entity_ky = p_entity_ky
+      and ar.entity_type_cd = 'AR'
+
+    limit 1
+),
+
+child_communities as
+(
+    select
+        cm.entity_ky,
+        cm_name.entity_variant_nm as community_nm
+
+    from geo.entity_relationship rel
+
+    join geo.entity cm
+      on cm.entity_ky = rel.child_entity_ky
+     and cm.entity_type_cd = 'CM'
+
+    join geo.entity_variant cm_name
+      on cm_name.entity_ky = cm.entity_ky
+     and cm_name.variant_type_cd = 'CA'
+
+    where rel.parent_entity_ky = p_entity_ky
+      and rel.relationship_type_cd = 'CB'
+),
+
+mapped_boundaries as
+(
+    select distinct
+        b.boundary_ky,
+        b.boundary_nm,
+        b.boundary_type_cd,
+        b.geometry
+
+    from child_communities cm
+
+    join geo.entity_boundary eb
+      on eb.entity_ky = cm.entity_ky
+
+    join geo.boundary b
+      on b.boundary_ky = eb.boundary_ky
+),
+
+observations as
+(
+    /*
+     * Current Active + Pending observations for the whole Area.
+     */
+    select
+        l.lstng_ky,
+        p.prprty_ky,
+        'CURRENT'::text as observation_source,
+        p.long_nb,
+        p.lat_nb
+
+    from area_entity ae
+
+    join dw.prprty p
+      on upper(trim(p.zone_ds))
+       = upper(trim(ae.zone_nm))
+
+     and upper(trim(p.area_ds))
+       = upper(trim(ae.area_nm))
+
+    join dw.lstng l
+      on l.prprty_ky = p.prprty_ky
+
+    where upper(trim(l.stts_cd)) in
+    (
+        'ACTIVE',
+        'A',
+        'PENDING',
+        'P'
+    )
+
+      and p.long_nb is not null
+      and p.lat_nb is not null
+
+
+    union all
+
+
+    /*
+     * Closed sales - last 3 years.
+     */
+    select
+        cs.lstng_ky,
+        cs.prprty_ky,
+        'CLOSED'::text as observation_source,
+        cs.long_nb,
+        cs.lat_nb
+
+    from area_entity ae
+
+    join internal.closed_sales_detail cs
+      on upper(trim(cs.zone_nm))
+       = upper(trim(ae.zone_nm))
+
+     and upper(trim(cs.area_nm))
+       = upper(trim(ae.area_nm))
+
+    where cs.sold_dt >= current_date - interval '3 years'
+      and cs.long_nb is not null
+      and cs.lat_nb is not null
+)
+
+select jsonb_build_object
+(
+    'entity',
+    (
+        select jsonb_build_object
+        (
+            'entityKy', ae.entity_ky,
+            'zoneName', ae.zone_nm,
+            'areaName', ae.area_nm,
+            'communityName', ae.area_nm
+        )
+        from area_entity ae
+    ),
+
+    /*
+     * These are the effective Area boundaries inherited
+     * from child Communities.
+     */
+    'boundaries',
+    coalesce
+    (
+        (
+            select jsonb_agg
+            (
+                jsonb_build_object
+                (
+                    'boundaryKy', mb.boundary_ky,
+                    'boundaryName', mb.boundary_nm,
+                    'boundaryType', mb.boundary_type_cd,
+
+                    'rank', 0,
+                    'listingCount', 0,
+                    'totalListingCount', 0,
+                    'listingPercent', 0,
+                    'cumulativeListingPercent', 0,
+
+                    'selected', true,
+
+                    'geometry',
+                    ST_AsGeoJSON(mb.geometry)::jsonb
+                )
+
+                order by
+                    mb.boundary_nm,
+                    mb.boundary_ky
+            )
+
+            from mapped_boundaries mb
+        ),
+
+        '[]'::jsonb
+    ),
+
+    /*
+     * No editable nearby polygons for the Area viewer.
+     */
+    'nearbyBoundaries',
+    '[]'::jsonb,
+
+    'propertyPoints',
+    coalesce
+    (
+        (
+            select jsonb_agg
+            (
+                jsonb_build_object
+                (
+                    'listingKy', o.lstng_ky,
+                    'propertyKy', o.prprty_ky,
+                    'source', o.observation_source,
+                    'longitude', o.long_nb,
+                    'latitude', o.lat_nb
+                )
+            )
+            from observations o
+        ),
+
+        '[]'::jsonb
+    )
+);
+
+$function$;

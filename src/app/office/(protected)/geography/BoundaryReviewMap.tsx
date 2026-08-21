@@ -26,6 +26,14 @@ type BoundaryMapData = {
     geometry: GeoJSON.Geometry;
   }>;
 
+  nearbyBoundaries: Array<{
+    boundaryKy: number;
+    boundaryName: string;
+    boundaryType: string;
+    selected: boolean;
+    geometry: GeoJSON.Geometry;
+  }>;
+
   propertyPoints: Array<{
     listingKy: number;
     propertyKy: number;
@@ -38,9 +46,15 @@ type BoundaryMapData = {
 export default function BoundaryReviewMap({
   data,
   selectedBoundaryKys,
+  onBoundaryToggle,
 }: {
   data: BoundaryMapData;
   selectedBoundaryKys: number[];
+
+  onBoundaryToggle: (
+    boundaryKy: number,
+    selected: boolean,
+  ) => void;
 }) {
   const containerRef =
     useRef<HTMLDivElement | null>(null);
@@ -51,12 +65,24 @@ export default function BoundaryReviewMap({
   const selectedBoundaryKysRef =
     useRef<number[]>(selectedBoundaryKys);
 
+  const onBoundaryToggleRef =
+    useRef(onBoundaryToggle);
+
   selectedBoundaryKysRef.current =
     selectedBoundaryKys;
 
+  onBoundaryToggleRef.current =
+    onBoundaryToggle;
+
   useEffect(() => {
     if (!containerRef.current) return;
-    if (!data.boundaries.length) return;
+
+    if (
+      !data.boundaries.length &&
+      !data.nearbyBoundaries.length
+    ) {
+      return;
+    }
 
     const token =
       process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
@@ -208,102 +234,24 @@ export default function BoundaryReviewMap({
           return;
         }
 
-        const properties =
-          feature.properties;
+        const boundaryKy =
+          Number(
+            feature.properties.boundaryKy,
+          );
 
-        const name =
-          properties.boundaryName ??
-          "Boundary";
+        if (!Number.isFinite(boundaryKy)) {
+          return;
+        }
 
-        const type =
-          properties.boundaryType ?? "";
+        const currentlySelected =
+          selectedBoundaryKysRef.current.includes(
+            boundaryKy,
+          );
 
-        const count = Number(
-          properties.listingCount ?? 0,
+        onBoundaryToggleRef.current(
+          boundaryKy,
+          !currentlySelected,
         );
-
-        const percent = Number(
-          properties.listingPercent ?? 0,
-        );
-
-        const selected =
-          properties.selected === true ||
-          properties.selected === "true";
-
-        new mapboxgl.Popup({
-          closeButton: true,
-          closeOnClick: true,
-          offset: 8,
-        })
-          .setLngLat(event.lngLat)
-          .setHTML(`
-            <div style="
-              min-width:180px;
-              font-family:ui-sans-serif,system-ui,sans-serif;
-            ">
-              <div style="
-                font-size:14px;
-                font-weight:700;
-                color:#0f172a;
-                margin-bottom:2px;
-              ">
-                ${escapeHtml(String(name))}
-              </div>
-
-              ${
-                type
-                  ? `
-                    <div style="
-                      font-size:11px;
-                      color:#64748b;
-                      margin-bottom:8px;
-                    ">
-                      ${escapeHtml(String(type))}
-                    </div>
-                  `
-                  : ""
-              }
-
-              <div style="
-                font-size:12px;
-                color:#334155;
-              ">
-                <strong>
-                  ${count.toLocaleString()}
-                </strong>
-                MLS observations
-              </div>
-
-              <div style="
-                margin-top:3px;
-                font-size:12px;
-                color:#334155;
-              ">
-                <strong>
-                  ${percent.toFixed(2)}%
-                </strong>
-                of this MLS community
-              </div>
-
-              <div style="
-                margin-top:8px;
-                font-size:11px;
-                font-weight:700;
-                color:${
-                  selected
-                    ? "#0369a1"
-                    : "#64748b"
-                };
-              ">
-                ${
-                  selected
-                    ? "Selected in MLS footprint"
-                    : "Candidate boundary"
-                }
-              </div>
-            </div>
-          `)
-          .addTo(map);
       },
     );
 
@@ -377,14 +325,31 @@ function buildBoundaryCollection(
   data: BoundaryMapData,
   selectedSet: Set<number>,
 ): GeoJSON.FeatureCollection {
-  return {
-    type: "FeatureCollection",
+  /*
+   * Candidate boundaries already have MLS evidence.
+   *
+   * nearbyBoundaries contains all additional government
+   * polygons returned around the observation extent.
+   *
+   * Do not add a nearby polygon twice if it is already
+   * present in the candidate list.
+   */
 
-    features: data.boundaries.map(
+  const candidateBoundaryKys =
+    new Set(
+      data.boundaries.map(
+        (boundary) =>
+          boundary.boundaryKy,
+      ),
+    );
+
+  const candidateFeatures =
+    data.boundaries.map(
       (boundary) => ({
-        type: "Feature",
+        type: "Feature" as const,
 
-        geometry: boundary.geometry,
+        geometry:
+          boundary.geometry,
 
         properties: {
           boundaryKy:
@@ -396,9 +361,12 @@ function buildBoundaryCollection(
           boundaryType:
             boundary.boundaryType,
 
-          selected: selectedSet.has(
-            boundary.boundaryKy,
-          ),
+          selected:
+            selectedSet.has(
+              boundary.boundaryKy,
+            ),
+
+          candidate: true,
 
           listingCount:
             boundary.listingCount,
@@ -412,10 +380,64 @@ function buildBoundaryCollection(
           cumulativeListingPercent:
             boundary.cumulativeListingPercent,
 
-          rank: boundary.rank,
+          rank:
+            boundary.rank,
         },
       }),
-    ),
+    );
+
+  const nearbyFeatures =
+    data.nearbyBoundaries
+      .filter(
+        (boundary) =>
+          !candidateBoundaryKys.has(
+            boundary.boundaryKy,
+          ),
+      )
+      .map(
+        (boundary) => ({
+          type: "Feature" as const,
+
+          geometry:
+            boundary.geometry,
+
+          properties: {
+            boundaryKy:
+              boundary.boundaryKy,
+
+            boundaryName:
+              boundary.boundaryName,
+
+            boundaryType:
+              boundary.boundaryType,
+
+            selected:
+              selectedSet.has(
+                boundary.boundaryKy,
+              ),
+
+            candidate: false,
+
+            listingCount: 0,
+
+            totalListingCount: 0,
+
+            listingPercent: 0,
+
+            cumulativeListingPercent: 0,
+
+            rank: null,
+          },
+        }),
+      );
+
+  return {
+    type: "FeatureCollection",
+
+    features: [
+      ...candidateFeatures,
+      ...nearbyFeatures,
+    ],
   };
 }
 
@@ -451,13 +473,4 @@ function buildPointCollection(
       }),
     ),
   };
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }
