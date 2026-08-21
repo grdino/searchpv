@@ -52,19 +52,6 @@ type GeographyBoundaryMapData = {
     geometry: GeoJSON.Geometry;
   }>;
 
-  boundaries: Array<{
-    boundaryKy: number;
-    boundaryName: string;
-    boundaryType: string;
-    rank: number;
-    listingCount: number;
-    totalListingCount: number;
-    listingPercent: number;
-    cumulativeListingPercent: number;
-    selected: boolean;
-    geometry: GeoJSON.Geometry;
-  }>;
-
   nearbyBoundaries: Array<{
     boundaryKy: number;
     boundaryName: string;
