@@ -41,13 +41,17 @@ type MarketSnapshot = {
 
   boundaryCount?: number;
   boundaryKys?: number[];
+
+  geometryType?: string;
+  areaM2?: number | null;
 };
 
 function formatPrice(value: number | null) {
   if (value === null) return "—";
 
   if (value >= 1_000_000) {
-    const millions = value / 1_000_000;
+    const millions =
+      value / 1_000_000;
 
     return `$${millions.toLocaleString("en-US", {
       minimumFractionDigits: 0,
@@ -56,18 +60,26 @@ function formatPrice(value: number | null) {
   }
 
   if (value >= 1_000) {
-    return `$${Math.round(value / 1_000).toLocaleString(
-      "en-US",
-    )}K`;
+    return `$${Math.round(
+      value / 1_000,
+    ).toLocaleString("en-US")}K`;
   }
 
-  return `$${Math.round(value).toLocaleString("en-US")}`;
+  return `$${Math.round(value).toLocaleString(
+    "en-US",
+  )}`;
 }
 
-function formatWholeNumber(value: number | null) {
-  if (value === null) return "—";
+function formatWholeNumber(
+  value: number | null,
+) {
+  if (value === null) {
+    return "—";
+  }
 
-  return Math.round(value).toLocaleString("en-US");
+  return Math.round(value).toLocaleString(
+    "en-US",
+  );
 }
 
 export default function AtlasBottomSheet() {
@@ -80,12 +92,18 @@ export default function AtlasBottomSheet() {
     relatedEntities,
 
     mode,
+
     customMarketMethod,
     setCustomMarketMethod,
 
     customBoundaries,
     toggleCustomBoundary,
     clearCustomBoundaries,
+
+    customDrawVertices,
+    customDrawnGeometry,
+    customDrawActive,
+
     exitCustomMarket,
 
     propertyTypeFilter,
@@ -115,12 +133,22 @@ export default function AtlasBottomSheet() {
     isCustomMarket &&
     customMarketMethod === "draw";
 
+  /*
+   * A Draw Area becomes a market only after the polygon
+   * has been finished.
+   */
+  const hasFinishedDrawing =
+    isDrawArea &&
+    !customDrawActive &&
+    Boolean(customDrawnGeometry);
+
   const [
     marketSnapshot,
     setMarketSnapshot,
-  ] = useState<MarketSnapshot | null>(
-    null,
-  );
+  ] =
+    useState<MarketSnapshot | null>(
+      null,
+    );
 
   const [
     marketSnapshotLoading,
@@ -130,21 +158,28 @@ export default function AtlasBottomSheet() {
   /*
    * Atlas display preferences.
    *
-   * These apply to:
+   * These apply consistently to:
    *
    * - MLS Areas / Communities
    * - Government Local Areas
-   * - Custom Markets
+   * - Custom Market Select Areas
+   * - Custom Market Draw Area
    */
   const [
     summaryMode,
     setSummaryMode,
-  ] = useState<SummaryMode>("median");
+  ] =
+    useState<SummaryMode>(
+      "median",
+    );
 
   const [
     areaUnit,
     setAreaUnit,
-  ] = useState<AreaUnit>("ft2");
+  ] =
+    useState<AreaUnit>(
+      "ft2",
+    );
 
   /*
    * Related MLS geographies for the currently
@@ -162,14 +197,12 @@ export default function AtlasBottomSheet() {
    * MARKET SNAPSHOT SOURCE
    * ==========================================================
    *
-   * Atlas currently supports:
+   * Atlas supports four sources:
    *
-   * 1. MLS Community / Area statistics
-   * 2. Government Local Area statistics
-   * 3. Custom Market Select Areas statistics
-   *
-   * Draw Area statistics will be added after actual drawing
-   * geometry is wired into AtlasMap.
+   * 1. MLS Community / Area
+   * 2. Government Local Area
+   * 3. Custom Market — Select Areas
+   * 4. Custom Market — Draw Area
    */
 
   const hasMlsMarketContext =
@@ -188,33 +221,53 @@ export default function AtlasBottomSheet() {
         selectedBoundary,
     );
 
-  const hasCustomMarketContext =
+  const hasSelectedAreaMarketContext =
     Boolean(
       isSelectAreas &&
         customBoundaries.length > 0,
     );
 
+  const hasDrawnMarketContext =
+    Boolean(
+      hasFinishedDrawing &&
+        customDrawnGeometry,
+    );
+
   const hasMarketContext =
     hasMlsMarketContext ||
     hasBoundaryMarketContext ||
-    hasCustomMarketContext;
+    hasSelectedAreaMarketContext ||
+    hasDrawnMarketContext;
+
+  /*
+   * ==========================================================
+   * LOAD MARKET SNAPSHOT
+   * ==========================================================
+   */
 
   useEffect(() => {
     /*
-     * Draw Area does not have geometry yet.
+     * Draw Area:
      *
-     * Clear any previous Select Areas statistics so we never
-     * show stale numbers while the user is in Draw Area mode.
+     * Never display stale Select Areas / old Draw Area
+     * statistics while a new polygon is being created.
      */
-    if (isDrawArea) {
+    if (
+      isDrawArea &&
+      (
+        customDrawActive ||
+        !customDrawnGeometry
+      )
+    ) {
       setMarketSnapshot(null);
       setMarketSnapshotLoading(false);
+
       return;
     }
 
     /*
-     * Select Areas with zero polygons is valid,
-     * but there are no statistics to calculate.
+     * Select Areas with zero polygons is a valid empty
+     * state, but there is no market yet.
      */
     if (
       isSelectAreas &&
@@ -222,12 +275,14 @@ export default function AtlasBottomSheet() {
     ) {
       setMarketSnapshot(null);
       setMarketSnapshotLoading(false);
+
       return;
     }
 
     if (!hasMarketContext) {
       setMarketSnapshot(null);
       setMarketSnapshotLoading(false);
+
       return;
     }
 
@@ -235,11 +290,60 @@ export default function AtlasBottomSheet() {
       new AbortController();
 
     async function loadMarketSnapshot() {
-      setMarketSnapshotLoading(true);
+      setMarketSnapshotLoading(
+        true,
+      );
+
       setMarketSnapshot(null);
 
       try {
-        let url: string;
+        let response: Response;
+
+        /*
+         * ------------------------------------------------------
+         * CUSTOM MARKET — DRAW AREA
+         * ------------------------------------------------------
+         *
+         * Geometry is sent in the POST body rather than a query
+         * string.
+         */
+
+        if (
+          hasDrawnMarketContext &&
+          customDrawnGeometry
+        ) {
+          response =
+            await fetch(
+              "/api/atlas/drawn-market-snapshot",
+              {
+                method:
+                  "POST",
+
+                cache:
+                  "no-store",
+
+                signal:
+                  controller.signal,
+
+                headers: {
+                  "Content-Type":
+                    "application/json",
+                },
+
+                body:
+                  JSON.stringify({
+                    geometry:
+                      customDrawnGeometry,
+
+                    propertyType:
+                      propertyTypeFilter,
+
+                    marketType:
+                      marketTypeFilter,
+                  }),
+              },
+            );
+        }
 
         /*
          * ------------------------------------------------------
@@ -247,7 +351,9 @@ export default function AtlasBottomSheet() {
          * ------------------------------------------------------
          */
 
-        if (hasCustomMarketContext) {
+        else if (
+          hasSelectedAreaMarketContext
+        ) {
           const params =
             new URLSearchParams();
 
@@ -257,6 +363,7 @@ export default function AtlasBottomSheet() {
           ) {
             params.append(
               "boundaryKy",
+
               String(
                 boundary.boundaryKy,
               ),
@@ -273,8 +380,17 @@ export default function AtlasBottomSheet() {
             marketTypeFilter,
           );
 
-          url =
-            `/api/atlas/custom-market-snapshot?${params.toString()}`;
+          response =
+            await fetch(
+              `/api/atlas/custom-market-snapshot?${params.toString()}`,
+              {
+                cache:
+                  "no-store",
+
+                signal:
+                  controller.signal,
+              },
+            );
         }
 
         /*
@@ -289,9 +405,10 @@ export default function AtlasBottomSheet() {
         ) {
           const params =
             new URLSearchParams({
-              entityKy: String(
-                selectedEntity.entityKy,
-              ),
+              entityKy:
+                String(
+                  selectedEntity.entityKy,
+                ),
 
               propertyType:
                 propertyTypeFilter,
@@ -300,8 +417,17 @@ export default function AtlasBottomSheet() {
                 marketTypeFilter,
             });
 
-          url =
-            `/api/atlas/market-snapshot?${params.toString()}`;
+          response =
+            await fetch(
+              `/api/atlas/market-snapshot?${params.toString()}`,
+              {
+                cache:
+                  "no-store",
+
+                signal:
+                  controller.signal,
+              },
+            );
         }
 
         /*
@@ -310,12 +436,15 @@ export default function AtlasBottomSheet() {
          * ------------------------------------------------------
          */
 
-        else if (selectedBoundary) {
+        else if (
+          selectedBoundary
+        ) {
           const params =
             new URLSearchParams({
-              boundaryKy: String(
-                selectedBoundary.boundaryKy,
-              ),
+              boundaryKy:
+                String(
+                  selectedBoundary.boundaryKy,
+                ),
 
               propertyType:
                 propertyTypeFilter,
@@ -324,8 +453,17 @@ export default function AtlasBottomSheet() {
                 marketTypeFilter,
             });
 
-          url =
-            `/api/atlas/boundary-market-snapshot?${params.toString()}`;
+          response =
+            await fetch(
+              `/api/atlas/boundary-market-snapshot?${params.toString()}`,
+              {
+                cache:
+                  "no-store",
+
+                signal:
+                  controller.signal,
+              },
+            );
         }
 
         /*
@@ -334,30 +472,38 @@ export default function AtlasBottomSheet() {
 
         else {
           setMarketSnapshot(null);
-          setMarketSnapshotLoading(false);
+          setMarketSnapshotLoading(
+            false,
+          );
+
           return;
         }
 
-        const response =
-          await fetch(url, {
-            cache: "no-store",
-            signal: controller.signal,
-          });
-
         if (!response.ok) {
+          const errorData =
+            await response
+              .json()
+              .catch(
+                () => null,
+              );
+
           throw new Error(
-            "Unable to load market snapshot.",
+            errorData?.error ??
+              "Unable to load market snapshot.",
           );
         }
 
         const data =
           (await response.json()) as MarketSnapshot;
 
-        setMarketSnapshot(data);
+        setMarketSnapshot(
+          data,
+        );
       } catch (error) {
         if (
           error instanceof DOMException &&
-          error.name === "AbortError"
+          error.name ===
+            "AbortError"
         ) {
           return;
         }
@@ -367,12 +513,16 @@ export default function AtlasBottomSheet() {
           error,
         );
 
-        setMarketSnapshot(null);
+        setMarketSnapshot(
+          null,
+        );
       } finally {
         if (
           !controller.signal.aborted
         ) {
-          setMarketSnapshotLoading(false);
+          setMarketSnapshotLoading(
+            false,
+          );
         }
       }
     }
@@ -385,12 +535,20 @@ export default function AtlasBottomSheet() {
   }, [
     isSelectAreas,
     isDrawArea,
+
     customBoundaries,
+
+    customDrawnGeometry,
+    customDrawActive,
+
     hasMarketContext,
-    hasCustomMarketContext,
+    hasSelectedAreaMarketContext,
+    hasDrawnMarketContext,
     hasMlsMarketContext,
+
     selectedEntity,
     selectedBoundary,
+
     propertyTypeFilter,
     marketTypeFilter,
   ]);
@@ -403,9 +561,11 @@ export default function AtlasBottomSheet() {
 
   const isAmapas =
     !isCustomMarket &&
-    selectedEntity?.canonicalName
+    selectedEntity
+      ?.canonicalName
       ?.trim()
-      .toLowerCase() === "amapas";
+      .toLowerCase() ===
+      "amapas";
 
   const communityTagline =
     isAmapas
@@ -423,33 +583,50 @@ export default function AtlasBottomSheet() {
    */
 
   const displayedListPrice =
-    summaryMode === "avg"
-      ? marketSnapshot?.avgListPrice ??
+    summaryMode ===
+    "avg"
+      ? marketSnapshot
+          ?.avgListPrice ??
         null
-      : marketSnapshot?.medianListPrice ??
+      : marketSnapshot
+          ?.medianListPrice ??
         null;
 
   const displayedAreaPrice =
-    areaUnit === "m2"
-      ? summaryMode === "avg"
-        ? marketSnapshot?.avgListPriceM2 ??
+    areaUnit ===
+    "m2"
+      ? summaryMode ===
+        "avg"
+        ? marketSnapshot
+            ?.avgListPriceM2 ??
           null
-        : marketSnapshot?.medianListPriceM2 ??
+        : marketSnapshot
+            ?.medianListPriceM2 ??
           null
-      : summaryMode === "avg"
-        ? marketSnapshot?.avgListPriceFt2 ??
+      : summaryMode ===
+          "avg"
+        ? marketSnapshot
+            ?.avgListPriceFt2 ??
           null
-        : marketSnapshot?.medianListPriceFt2 ??
+        : marketSnapshot
+            ?.medianListPriceFt2 ??
           null;
 
   const listPriceLabel =
-    summaryMode === "avg"
+    summaryMode ===
+    "avg"
       ? "Avg List"
       : "Median List";
 
   const areaPriceLabel =
-    `${summaryMode === "avg" ? "Avg" : "Median"} $/${
-      areaUnit === "m2"
+    `${
+      summaryMode ===
+      "avg"
+        ? "Avg"
+        : "Median"
+    } $/${
+      areaUnit ===
+      "m2"
         ? "m²"
         : "ft²"
     }`;
@@ -457,13 +634,15 @@ export default function AtlasBottomSheet() {
   return (
     <section
       style={{
-        position: "absolute",
+        position:
+          "absolute",
 
         left: 0,
         right: 0,
         bottom: 0,
 
-        pointerEvents: "auto",
+        pointerEvents:
+          "auto",
 
         background:
           "rgba(255,255,255,0.94)",
@@ -485,7 +664,8 @@ export default function AtlasBottomSheet() {
             ? "82vh"
             : "44vh",
 
-        overflowY: "auto",
+        overflowY:
+          "auto",
 
         transition:
           "max-height 300ms ease",
@@ -510,7 +690,8 @@ export default function AtlasBottomSheet() {
           )
         }
         style={{
-          display: "block",
+          display:
+            "block",
 
           width: 70,
           height: 20,
@@ -525,17 +706,20 @@ export default function AtlasBottomSheet() {
           background:
             "transparent",
 
-          cursor: "pointer",
+          cursor:
+            "pointer",
         }}
       >
         <span
           style={{
-            display: "block",
+            display:
+              "block",
 
             width: 44,
             height: 5,
 
-            borderRadius: 999,
+            borderRadius:
+              999,
 
             background:
               "#cbd5e1",
@@ -548,8 +732,11 @@ export default function AtlasBottomSheet() {
 
       <div
         style={{
-          maxWidth: 680,
-          margin: "0 auto",
+          maxWidth:
+            680,
+
+          margin:
+            "0 auto",
         }}
       >
         {/* =====================================================
@@ -560,9 +747,11 @@ export default function AtlasBottomSheet() {
           <>
             <div
               style={{
-                fontSize: 11,
+                fontSize:
+                  11,
 
-                fontWeight: 750,
+                fontWeight:
+                  750,
 
                 letterSpacing:
                   "0.12em",
@@ -579,13 +768,17 @@ export default function AtlasBottomSheet() {
 
             <div
               style={{
-                marginTop: 3,
+                marginTop:
+                  3,
 
-                fontSize: 27,
+                fontSize:
+                  27,
 
-                lineHeight: 1.08,
+                lineHeight:
+                  1.08,
 
-                fontWeight: 700,
+                fontWeight:
+                  700,
 
                 color:
                   "#0f172a",
@@ -600,16 +793,20 @@ export default function AtlasBottomSheet() {
 
             <div
               style={{
-                display: "inline-flex",
+                display:
+                  "inline-flex",
 
-                marginTop: 12,
+                marginTop:
+                  12,
 
-                overflow: "hidden",
+                overflow:
+                  "hidden",
 
                 border:
                   "1px solid #99f6e4",
 
-                borderRadius: 999,
+                borderRadius:
+                  999,
 
                 background:
                   "#ffffff",
@@ -623,7 +820,8 @@ export default function AtlasBottomSheet() {
                   )
                 }
                 style={{
-                  border: 0,
+                  border:
+                    0,
 
                   padding:
                     "7px 13px",
@@ -638,11 +836,14 @@ export default function AtlasBottomSheet() {
                       ? "#ffffff"
                       : "#475569",
 
-                  fontSize: 11,
+                  fontSize:
+                    11,
 
-                  fontWeight: 750,
+                  fontWeight:
+                    750,
 
-                  cursor: "pointer",
+                  cursor:
+                    "pointer",
                 }}
               >
                 Select Areas
@@ -656,7 +857,8 @@ export default function AtlasBottomSheet() {
                   )
                 }
                 style={{
-                  border: 0,
+                  border:
+                    0,
 
                   borderLeft:
                     "1px solid #ccfbf1",
@@ -674,11 +876,14 @@ export default function AtlasBottomSheet() {
                       ? "#ffffff"
                       : "#475569",
 
-                  fontSize: 11,
+                  fontSize:
+                    11,
 
-                  fontWeight: 750,
+                  fontWeight:
+                    750,
 
-                  cursor: "pointer",
+                  cursor:
+                    "pointer",
                 }}
               >
                 Draw Area
@@ -693,19 +898,24 @@ export default function AtlasBottomSheet() {
               <>
                 <div
                   style={{
-                    marginTop: 10,
+                    marginTop:
+                      10,
 
-                    fontSize: 13,
+                    fontSize:
+                      13,
 
-                    lineHeight: 1.45,
+                    lineHeight:
+                      1.45,
 
                     color:
                       "#64748b",
                   }}
                 >
-                  {customBoundaries.length === 0
+                  {customBoundaries.length ===
+                  0
                     ? "Tap government areas on the map to build your market."
-                    : customBoundaries.length === 1
+                    : customBoundaries.length ===
+                        1
                       ? "1 government area selected."
                       : `${customBoundaries.length} government areas selected.`}
                 </div>
@@ -714,17 +924,22 @@ export default function AtlasBottomSheet() {
                 0 ? (
                   <div
                     style={{
-                      display: "flex",
+                      display:
+                        "flex",
 
-                      flexWrap: "wrap",
+                      flexWrap:
+                        "wrap",
 
                       gap: 6,
 
-                      marginTop: 10,
+                      marginTop:
+                        10,
                     }}
                   >
                     {customBoundaries.map(
-                      (boundary) => (
+                      (
+                        boundary,
+                      ) => (
                         <button
                           key={
                             boundary.boundaryKy
@@ -789,8 +1004,11 @@ export default function AtlasBottomSheet() {
                               justifyContent:
                                 "center",
 
-                              width: 16,
-                              height: 16,
+                              width:
+                                16,
+
+                              height:
+                                16,
 
                               borderRadius:
                                 999,
@@ -825,15 +1043,19 @@ export default function AtlasBottomSheet() {
             {isDrawArea ? (
               <div
                 style={{
-                  marginTop: 14,
+                  marginTop:
+                    14,
 
                   padding:
-                    "16px 16px",
+                    "14px 16px",
 
-                  borderRadius: 16,
+                  borderRadius:
+                    16,
 
                   border:
-                    "1px dashed #99f6e4",
+                    hasFinishedDrawing
+                      ? "1px solid #99f6e4"
+                      : "1px dashed #99f6e4",
 
                   background:
                     "#f0fdfa",
@@ -844,44 +1066,46 @@ export default function AtlasBottomSheet() {
               >
                 <div
                   style={{
-                    fontSize: 12,
+                    fontSize:
+                      12,
 
-                    fontWeight: 750,
+                    fontWeight:
+                      750,
                   }}
                 >
-                  Draw your market
+                  {customDrawActive
+                    ? "Drawing your market"
+                    : customDrawnGeometry
+                      ? "Custom area ready"
+                      : "Draw your market"}
                 </div>
 
                 <div
                   style={{
-                    marginTop: 5,
+                    marginTop:
+                      5,
 
-                    fontSize: 12,
+                    fontSize:
+                      12,
 
-                    lineHeight: 1.5,
+                    lineHeight:
+                      1.5,
 
                     color:
                       "#475569",
                   }}
                 >
-                  Draw a boundary on the map to
-                  define your custom market.
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 6,
-
-                    fontSize: 11,
-
-                    lineHeight: 1.45,
-
-                    color:
-                      "#64748b",
-                  }}
-                >
-                  Drawing controls will appear on
-                  the map in the next step.
+                  {customDrawActive
+                    ? customDrawVertices.length ===
+                      0
+                      ? "Tap the map to place your first point."
+                      : customDrawVertices.length <
+                          3
+                        ? `Keep adding points. ${customDrawVertices.length} selected so far.`
+                        : "Your area is taking shape. Add more points or tap Finish Area on the map."
+                    : customDrawnGeometry
+                      ? "Atlas is calculating market statistics for the exact area you drew."
+                      : "Use Start Drawing on the map, then tap around the area you want to analyze."}
                 </div>
               </div>
             ) : null}
@@ -892,13 +1116,16 @@ export default function AtlasBottomSheet() {
 
             <div
               style={{
-                display: "flex",
+                display:
+                  "flex",
 
-                flexWrap: "wrap",
+                flexWrap:
+                  "wrap",
 
                 gap: 8,
 
-                marginTop: 12,
+                marginTop:
+                  12,
               }}
             >
               {isSelectAreas &&
@@ -913,7 +1140,8 @@ export default function AtlasBottomSheet() {
                     border:
                       "1px solid #cbd5e1",
 
-                    borderRadius: 999,
+                    borderRadius:
+                      999,
 
                     padding:
                       "7px 11px",
@@ -924,9 +1152,11 @@ export default function AtlasBottomSheet() {
                     color:
                       "#475569",
 
-                    fontSize: 11,
+                    fontSize:
+                      11,
 
-                    fontWeight: 700,
+                    fontWeight:
+                      700,
 
                     cursor:
                       "pointer",
@@ -945,7 +1175,8 @@ export default function AtlasBottomSheet() {
                   border:
                     "1px solid #cbd5e1",
 
-                  borderRadius: 999,
+                  borderRadius:
+                    999,
 
                   padding:
                     "7px 11px",
@@ -956,9 +1187,11 @@ export default function AtlasBottomSheet() {
                   color:
                     "#475569",
 
-                  fontSize: 11,
+                  fontSize:
+                    11,
 
-                  fontWeight: 700,
+                  fontWeight:
+                    700,
 
                   cursor:
                     "pointer",
@@ -976,9 +1209,11 @@ export default function AtlasBottomSheet() {
             <div>
               <div
                 style={{
-                  fontSize: 11,
+                  fontSize:
+                    11,
 
-                  fontWeight: 750,
+                  fontWeight:
+                    750,
 
                   letterSpacing:
                     "0.12em",
@@ -997,9 +1232,11 @@ export default function AtlasBottomSheet() {
 
               <div
                 style={{
-                  marginTop: 3,
+                  marginTop:
+                    3,
 
-                  fontSize: 27,
+                  fontSize:
+                    27,
 
                   lineHeight:
                     1.08,
@@ -1018,9 +1255,11 @@ export default function AtlasBottomSheet() {
 
               <div
                 style={{
-                  marginTop: 5,
+                  marginTop:
+                    5,
 
-                  fontSize: 14,
+                  fontSize:
+                    14,
 
                   color:
                     "#64748b",
@@ -1043,7 +1282,8 @@ export default function AtlasBottomSheet() {
                     resetAnalysisToContext
                   }
                   style={{
-                    marginTop: 8,
+                    marginTop:
+                      8,
 
                     border:
                       "1px solid #d6b56b",
@@ -1085,9 +1325,11 @@ export default function AtlasBottomSheet() {
           <>
             <div
               style={{
-                fontSize: 11,
+                fontSize:
+                  11,
 
-                fontWeight: 700,
+                fontWeight:
+                  700,
 
                 letterSpacing:
                   "0.12em",
@@ -1104,11 +1346,14 @@ export default function AtlasBottomSheet() {
 
             <div
               style={{
-                marginTop: 3,
+                marginTop:
+                  3,
 
-                fontSize: 25,
+                fontSize:
+                  25,
 
-                fontWeight: 700,
+                fontWeight:
+                  700,
 
                 color:
                   "#0f172a",
@@ -1121,9 +1366,11 @@ export default function AtlasBottomSheet() {
 
             <div
               style={{
-                marginTop: 5,
+                marginTop:
+                  5,
 
-                fontSize: 13,
+                fontSize:
+                  13,
 
                 color:
                   "#64748b",
@@ -1131,13 +1378,15 @@ export default function AtlasBottomSheet() {
             >
               {[
                 selectedBoundary.boundaryType,
-
                 selectedBoundary.districtName,
-
                 selectedBoundary.municipalityName,
               ]
-                .filter(Boolean)
-                .join(" · ")}
+                .filter(
+                  Boolean,
+                )
+                .join(
+                  " · ",
+                )}
             </div>
           </>
         ) : (
@@ -1147,9 +1396,11 @@ export default function AtlasBottomSheet() {
           <>
             <div
               style={{
-                fontSize: 11,
+                fontSize:
+                  11,
 
-                fontWeight: 700,
+                fontWeight:
+                  700,
 
                 letterSpacing:
                   "0.12em",
@@ -1166,11 +1417,14 @@ export default function AtlasBottomSheet() {
 
             <div
               style={{
-                marginTop: 3,
+                marginTop:
+                  3,
 
-                fontSize: 25,
+                fontSize:
+                  25,
 
-                fontWeight: 700,
+                fontWeight:
+                  700,
 
                 color:
                   "#0f172a",
@@ -1181,9 +1435,11 @@ export default function AtlasBottomSheet() {
 
             <div
               style={{
-                marginTop: 5,
+                marginTop:
+                  5,
 
-                fontSize: 13,
+                fontSize:
+                  13,
 
                 color:
                   "#64748b",
@@ -1199,16 +1455,18 @@ export default function AtlasBottomSheet() {
             MARKET FILTERS
             =====================================================
             
-            Draw Area will get these once actual drawn geometry
-            can produce statistics.
+            These now apply to every completed market,
+            including a finished Draw Area.
         */}
 
         {hasMarketContext ? (
           <div
             style={{
-              marginTop: 16,
+              marginTop:
+                16,
 
-              paddingTop: 13,
+              paddingTop:
+                13,
 
               borderTop:
                 "1px solid #e2e8f0",
@@ -1218,7 +1476,8 @@ export default function AtlasBottomSheet() {
 
             <div
               style={{
-                display: "flex",
+                display:
+                  "flex",
 
                 alignItems:
                   "center",
@@ -1231,7 +1490,8 @@ export default function AtlasBottomSheet() {
             >
               <div
                 style={{
-                  width: 78,
+                  width:
+                    78,
 
                   fontSize:
                     10,
@@ -1248,7 +1508,8 @@ export default function AtlasBottomSheet() {
                   textTransform:
                     "uppercase",
 
-                  flexShrink: 0,
+                  flexShrink:
+                    0,
                 }}
               >
                 Property:
@@ -1266,6 +1527,7 @@ export default function AtlasBottomSheet() {
                   {
                     value:
                       "all",
+
                     label:
                       "All",
                   },
@@ -1273,6 +1535,7 @@ export default function AtlasBottomSheet() {
                   {
                     value:
                       "condo",
+
                     label:
                       "Condos",
                   },
@@ -1280,6 +1543,7 @@ export default function AtlasBottomSheet() {
                   {
                     value:
                       "house",
+
                     label:
                       "Houses",
                   },
@@ -1357,7 +1621,8 @@ export default function AtlasBottomSheet() {
 
             <div
               style={{
-                display: "flex",
+                display:
+                  "flex",
 
                 alignItems:
                   "center",
@@ -1367,12 +1632,14 @@ export default function AtlasBottomSheet() {
 
                 gap: 8,
 
-                marginTop: 8,
+                marginTop:
+                  8,
               }}
             >
               <div
                 style={{
-                  width: 78,
+                  width:
+                    78,
 
                   fontSize:
                     10,
@@ -1389,7 +1656,8 @@ export default function AtlasBottomSheet() {
                   textTransform:
                     "uppercase",
 
-                  flexShrink: 0,
+                  flexShrink:
+                    0,
                 }}
               >
                 Market:
@@ -1407,6 +1675,7 @@ export default function AtlasBottomSheet() {
                   {
                     value:
                       "all",
+
                     label:
                       "All",
                   },
@@ -1414,6 +1683,7 @@ export default function AtlasBottomSheet() {
                   {
                     value:
                       "resale",
+
                     label:
                       "Resale",
                   },
@@ -1421,6 +1691,7 @@ export default function AtlasBottomSheet() {
                   {
                     value:
                       "precon",
+
                     label:
                       "Pre-Con",
                   },
@@ -1501,15 +1772,18 @@ export default function AtlasBottomSheet() {
             ===================================================== */}
 
         {isSelectAreas &&
-        customBoundaries.length === 0 ? (
+        customBoundaries.length ===
+          0 ? (
           <div
             style={{
-              marginTop: 18,
+              marginTop:
+                18,
 
               padding:
                 "18px 16px",
 
-              borderRadius: 16,
+              borderRadius:
+                16,
 
               border:
                 "1px dashed #99f6e4",
@@ -1520,11 +1794,14 @@ export default function AtlasBottomSheet() {
               color:
                 "#115e59",
 
-              fontSize: 13,
+              fontSize:
+                13,
 
-              lineHeight: 1.5,
+              lineHeight:
+                1.5,
 
-              textAlign: "center",
+              textAlign:
+                "center",
             }}
           >
             Tap one or more government areas on
@@ -1778,7 +2055,8 @@ export default function AtlasBottomSheet() {
 
                 gap: 8,
 
-                marginTop: 8,
+                marginTop:
+                  8,
               }}
             >
               {/* LIST PRICE */}
@@ -1817,6 +2095,7 @@ export default function AtlasBottomSheet() {
                     {
                       value:
                         "median",
+
                       label:
                         "Median",
                     },
@@ -1824,6 +2103,7 @@ export default function AtlasBottomSheet() {
                     {
                       value:
                         "avg",
+
                       label:
                         "Avg",
                     },
@@ -1980,6 +2260,7 @@ export default function AtlasBottomSheet() {
                       {
                         value:
                           "median",
+
                         label:
                           "Median",
                       },
@@ -1987,6 +2268,7 @@ export default function AtlasBottomSheet() {
                       {
                         value:
                           "avg",
+
                         label:
                           "Avg",
                       },
@@ -2066,6 +2348,7 @@ export default function AtlasBottomSheet() {
                       {
                         value:
                           "ft2",
+
                         label:
                           "ft²",
                       },
@@ -2073,6 +2356,7 @@ export default function AtlasBottomSheet() {
                       {
                         value:
                           "m2",
+
                         label:
                           "m²",
                       },
@@ -2192,9 +2476,11 @@ export default function AtlasBottomSheet() {
           <>
             <div
               style={{
-                marginTop: 15,
+                marginTop:
+                  15,
 
-                fontSize: 13,
+                fontSize:
+                  13,
 
                 lineHeight:
                   1.55,
@@ -2423,13 +2709,15 @@ export default function AtlasBottomSheet() {
             >
               {[
                 selectedBoundary.boundaryType,
-
                 selectedBoundary.districtName,
-
                 selectedBoundary.municipalityName,
               ]
-                .filter(Boolean)
-                .join(" · ")}
+                .filter(
+                  Boolean,
+                )
+                .join(
+                  " · ",
+                )}
             </div>
           </div>
         ) : null}
