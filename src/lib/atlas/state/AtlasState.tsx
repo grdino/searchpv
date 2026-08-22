@@ -36,17 +36,6 @@ export type AtlasBoundary = {
   districtName?: string;
 };
 
-/*
- * Consumer market filters.
- *
- * These live in Atlas state rather than inside the bottom sheet
- * so the same filters can later drive:
- *
- * - market statistics
- * - listing markers
- * - Homes for Sale links
- * - market observations / fun facts
- */
 export type AtlasPropertyTypeFilter =
   | "all"
   | "condo"
@@ -62,52 +51,114 @@ export type AtlasSheetState =
   | "half"
   | "focused";
 
+/*
+ * Atlas interaction mode.
+ *
+ * explore:
+ * Normal Atlas behavior.
+ *
+ * custom-select:
+ * Government polygons can be accumulated into a
+ * user-defined Custom Market.
+ */
+export type AtlasMode =
+  | "explore"
+  | "custom-select";
+
 type AtlasStateContextValue = {
+  /*
+   * Broader geography being explored.
+   *
+   * Example:
+   * Marina Vallarta
+   */
+  contextEntity: AtlasEntity | null;
+
+  /*
+   * Geography currently driving market statistics.
+   */
+  analysisEntity: AtlasEntity | null;
+
+  /*
+   * Exact government polygon currently focused.
+   */
+  focusedBoundary: AtlasBoundary | null;
+
+  /*
+   * Backward-compatible names.
+   */
   selectedEntity: AtlasEntity | null;
   selectedBoundary: AtlasBoundary | null;
 
   /*
-   * All MLS entities that use the currently selected
-   * government boundary.
+   * MLS geographies related to the focused polygon.
    */
   relatedEntities: AtlasEntity[];
 
   /*
-   * Consumer market filters.
+   * Whether the focused polygon belongs to the
+   * broader Explore context.
    */
+  focusMatchesContext: boolean;
+
+  /*
+   * ==========================================================
+   * CUSTOM MARKET
+   * ==========================================================
+   */
+
+  mode: AtlasMode;
+
+  /*
+   * Government polygons currently included in the
+   * Custom Market.
+   *
+   * Store the full boundary object rather than only keys so
+   * future UI can immediately display names and metadata.
+   */
+  customBoundaries: AtlasBoundary[];
+
   propertyTypeFilter: AtlasPropertyTypeFilter;
   marketTypeFilter: AtlasMarketTypeFilter;
 
   sheetState: AtlasSheetState;
 
   /*
-   * Direct SearchPV selection, normally from search.
+   * ==========================================================
+   * EXPLORE ACTIONS
+   * ==========================================================
    */
+
   selectEntity: (entity: AtlasEntity) => void;
 
-  /*
-   * Government-boundary selection.
-   *
-   * The related entity list tells Atlas which MLS footprints
-   * include this government polygon.
-   */
   selectBoundary: (
     boundary: AtlasBoundary,
     relatedEntities?: AtlasEntity[],
   ) => void;
 
-  /*
-   * Explicitly choose one MLS entity while retaining the
-   * selected government polygon.
-   */
   selectGeography: (
     entity: AtlasEntity,
     boundary: AtlasBoundary,
   ) => void;
 
+  resetAnalysisToContext: () => void;
+
   /*
-   * Market-filter controls.
+   * ==========================================================
+   * CUSTOM MARKET ACTIONS
+   * ==========================================================
    */
+
+  startCustomMarket: () => void;
+
+  toggleCustomBoundary: (
+    boundary: AtlasBoundary,
+  ) => void;
+
+  clearCustomBoundaries: () => void;
+
+  exitCustomMarket: () => void;
+
   setPropertyTypeFilter: (
     filter: AtlasPropertyTypeFilter,
   ) => void;
@@ -120,166 +171,533 @@ type AtlasStateContextValue = {
   clearBoundary: () => void;
   clearSelection: () => void;
 
-  setSheetState: (state: AtlasSheetState) => void;
+  setSheetState: (
+    state: AtlasSheetState,
+  ) => void;
 };
 
 const AtlasStateContext =
-  createContext<AtlasStateContextValue | null>(null);
+  createContext<AtlasStateContextValue | null>(
+    null,
+  );
+
+function normalizeName(
+  value?: string | null,
+) {
+  return (value ?? "")
+    .trim()
+    .toLocaleLowerCase()
+    .normalize("NFD")
+    .replace(
+      /[\u0300-\u036f]/g,
+      "",
+    );
+}
+
+/*
+ * Does this MLS entity belong to the broader context?
+ */
+function entityBelongsToContext(
+  context: AtlasEntity,
+  candidate: AtlasEntity,
+) {
+  if (
+    Number(context.entityKy) ===
+    Number(candidate.entityKy)
+  ) {
+    return true;
+  }
+
+  if (
+    context.entityType === "AR" &&
+    candidate.entityType === "CM"
+  ) {
+    const contextNames =
+      new Set(
+        [
+          context.displayName,
+          context.canonicalName,
+        ]
+          .map(normalizeName)
+          .filter(Boolean),
+      );
+
+    return contextNames.has(
+      normalizeName(
+        candidate.parentName,
+      ),
+    );
+  }
+
+  return false;
+}
 
 export function AtlasStateProvider({
   children,
 }: {
   children: ReactNode;
 }) {
-  const [selectedEntity, setSelectedEntity] =
-    useState<AtlasEntity | null>(null);
+  /*
+   * ==========================================================
+   * EXPLORE STATE
+   * ==========================================================
+   */
 
-  const [selectedBoundary, setSelectedBoundary] =
-    useState<AtlasBoundary | null>(null);
+  const [
+    contextEntity,
+    setContextEntity,
+  ] =
+    useState<AtlasEntity | null>(
+      null,
+    );
 
-  const [relatedEntities, setRelatedEntities] =
+  const [
+    analysisEntity,
+    setAnalysisEntity,
+  ] =
+    useState<AtlasEntity | null>(
+      null,
+    );
+
+  const [
+    focusedBoundary,
+    setFocusedBoundary,
+  ] =
+    useState<AtlasBoundary | null>(
+      null,
+    );
+
+  const [
+    focusMatchesContext,
+    setFocusMatchesContext,
+  ] = useState(true);
+
+  const [
+    relatedEntities,
+    setRelatedEntities,
+  ] =
     useState<AtlasEntity[]>([]);
 
   /*
-   * Default consumer view:
-   *
-   * All property types
-   * All market types
+   * ==========================================================
+   * CUSTOM MARKET STATE
+   * ==========================================================
    */
+
+  const [
+    mode,
+    setMode,
+  ] =
+    useState<AtlasMode>(
+      "explore",
+    );
+
+  const [
+    customBoundaries,
+    setCustomBoundaries,
+  ] =
+    useState<AtlasBoundary[]>(
+      [],
+    );
+
+  /*
+   * ==========================================================
+   * MARKET FILTERS
+   * ==========================================================
+   */
+
   const [
     propertyTypeFilter,
     setPropertyTypeFilter,
-  ] = useState<AtlasPropertyTypeFilter>("all");
+  ] =
+    useState<AtlasPropertyTypeFilter>(
+      "all",
+    );
 
   const [
     marketTypeFilter,
     setMarketTypeFilter,
-  ] = useState<AtlasMarketTypeFilter>("all");
+  ] =
+    useState<AtlasMarketTypeFilter>(
+      "all",
+    );
 
-  const [sheetState, setSheetState] =
-    useState<AtlasSheetState>("collapsed");
+  const [
+    sheetState,
+    setSheetState,
+  ] =
+    useState<AtlasSheetState>(
+      "collapsed",
+    );
 
   /*
-   * Direct MLS entity selection.
-   *
-   * Starting a new SearchPV selection clears the previous
-   * government-boundary detail.
-   *
-   * IMPORTANT:
-   * We deliberately DO NOT reset the market filters here.
-   *
-   * If someone chooses:
-   *
-   *   Condos + Resale
-   *
-   * and then explores another neighborhood, Atlas should retain
-   * that lens so the user can compare places naturally.
+   * Existing components use selectedEntity /
+   * selectedBoundary.
    */
-  function selectEntity(entity: AtlasEntity) {
-    setSelectedEntity(entity);
-    setSelectedBoundary(null);
+  const selectedEntity =
+    analysisEntity;
+
+  const selectedBoundary =
+    focusedBoundary;
+
+  /*
+   * ==========================================================
+   * DIRECT SEARCH / MLS GEOGRAPHY SELECTION
+   * ==========================================================
+   */
+
+  function selectEntity(
+    entity: AtlasEntity,
+  ) {
+    setContextEntity(entity);
+    setAnalysisEntity(entity);
+
+    setFocusedBoundary(null);
     setRelatedEntities([]);
+    setFocusMatchesContext(true);
+
     setSheetState("half");
   }
 
   /*
-   * Government polygon selected.
+   * ==========================================================
+   * GOVERNMENT POLYGON CLICK
+   * ==========================================================
    *
-   * If the currently selected MLS entity uses this polygon,
-   * preserve it.
+   * IMPORTANT:
    *
-   * Otherwise clear the old MLS entity and let the bottom
-   * sheet show all MLS entities related to this polygon.
+   * This function remains Explore behavior.
+   *
+   * AtlasMap will eventually decide:
+   *
+   * mode === "explore"
+   *     -> selectBoundary(...)
+   *
+   * mode === "custom-select"
+   *     -> toggleCustomBoundary(...)
+   *
+   * We deliberately do NOT mix those behaviors here.
    */
+
   function selectBoundary(
     boundary: AtlasBoundary,
     entities: AtlasEntity[] = [],
   ) {
-    setSelectedBoundary(boundary);
+    setFocusedBoundary(boundary);
     setRelatedEntities(entities);
 
-    setSelectedEntity((current) => {
-      /*
-      * If the currently selected MLS geography uses this
-      * government polygon, preserve it.
-      */
-      if (current) {
-        const stillRelated = entities.some(
+    /*
+     * Existing broader context.
+     */
+    if (contextEntity) {
+      const belongsToContext =
+        entities.some(
           (entity) =>
-            Number(entity.entityKy) ===
-            Number(current.entityKy),
+            entityBelongsToContext(
+              contextEntity,
+              entity,
+            ),
         );
 
-        if (stillRelated) {
-          return current;
-        }
+      if (belongsToContext) {
+        setAnalysisEntity(
+          contextEntity,
+        );
+
+        setFocusMatchesContext(
+          true,
+        );
+
+        setSheetState("half");
+
+        return;
       }
 
       /*
-      * The previous MLS geography does not apply here,
-      * or there was no previous MLS geography.
-      *
-      * If this government polygon belongs to exactly one
-      * MLS geography, select it automatically.
-      */
-      if (entities.length === 1) {
-        return entities[0];
-      }
+       * Polygon outside current context.
+       *
+       * Preserve the broader context in memory.
+       */
+      setAnalysisEntity(null);
 
-      /*
-      * Zero or multiple MLS matches.
-      *
-      * Do not guess.
-      */
-      return null;
-    });
+      setFocusMatchesContext(
+        false,
+      );
+
+      setSheetState("half");
+
+      return;
+    }
+
+    /*
+     * No existing context.
+     *
+     * One related MLS geography is safe to
+     * adopt automatically.
+     */
+    if (entities.length === 1) {
+      setContextEntity(
+        entities[0],
+      );
+
+      setAnalysisEntity(
+        entities[0],
+      );
+
+      setFocusMatchesContext(
+        true,
+      );
+
+      setSheetState("half");
+
+      return;
+    }
+
+    /*
+     * Zero or multiple matches.
+     *
+     * Do not guess.
+     */
+    setContextEntity(null);
+    setAnalysisEntity(null);
+
+    setFocusMatchesContext(false);
 
     setSheetState("half");
   }
 
   /*
-   * User explicitly chooses one of the MLS footprints related
-   * to the selected government polygon.
+   * ==========================================================
+   * EXPLICIT RELATED MLS GEOGRAPHY SELECTION
+   * ==========================================================
    */
+
   function selectGeography(
     entity: AtlasEntity,
     boundary: AtlasBoundary,
   ) {
-    setSelectedEntity(entity);
-    setSelectedBoundary(boundary);
+    if (
+      contextEntity &&
+      focusMatchesContext
+    ) {
+      setAnalysisEntity(entity);
+
+      /*
+       * Selected MLS geography may not correspond
+       * precisely to the government polygon.
+       */
+      setFocusedBoundary(null);
+      setRelatedEntities([]);
+
+      setFocusMatchesContext(
+        true,
+      );
+
+      setSheetState("half");
+
+      return;
+    }
+
+    /*
+     * Start a new broader context.
+     */
+    setContextEntity(entity);
+    setAnalysisEntity(entity);
+
+    setFocusedBoundary(null);
+    setRelatedEntities([]);
+
+    setFocusMatchesContext(true);
+
     setSheetState("half");
   }
 
-  function clearEntity() {
-    setSelectedEntity(null);
+  /*
+   * ==========================================================
+   * RESET ANALYSIS TO BROADER CONTEXT
+   * ==========================================================
+   */
 
-    if (!selectedBoundary) {
-      setSheetState("collapsed");
+  function resetAnalysisToContext() {
+    if (!contextEntity) {
+      return;
+    }
+
+    setAnalysisEntity(
+      contextEntity,
+    );
+
+    setFocusedBoundary(null);
+    setRelatedEntities([]);
+
+    setFocusMatchesContext(true);
+
+    setSheetState("half");
+  }
+
+  /*
+   * ==========================================================
+   * CUSTOM MARKET
+   * ==========================================================
+   */
+
+  function startCustomMarket() {
+    /*
+     * Enter Custom Market mode WITHOUT destroying
+     * the existing Explore context.
+     *
+     * For now, every new Custom Market starts empty.
+     *
+     * Later we can optionally offer:
+     *
+     * "Start with current area"
+     */
+    setCustomBoundaries([]);
+
+    setMode(
+      "custom-select",
+    );
+
+    /*
+     * Leave contextEntity / analysisEntity /
+     * focusedBoundary untouched.
+     *
+     * That allows Cancel / Exit to return the user
+     * to exactly the Explore state they had before.
+     */
+  }
+
+  function toggleCustomBoundary(
+    boundary: AtlasBoundary,
+  ) {
+    setCustomBoundaries(
+      (current) => {
+        const alreadySelected =
+          current.some(
+            (item) =>
+              Number(
+                item.boundaryKy,
+              ) ===
+              Number(
+                boundary.boundaryKy,
+              ),
+          );
+
+        if (alreadySelected) {
+          return current.filter(
+            (item) =>
+              Number(
+                item.boundaryKy,
+              ) !==
+              Number(
+                boundary.boundaryKy,
+              ),
+          );
+        }
+
+        return [
+          ...current,
+          boundary,
+        ];
+      },
+    );
+  }
+
+  function clearCustomBoundaries() {
+    setCustomBoundaries([]);
+  }
+
+  function exitCustomMarket() {
+    /*
+     * Exit Custom Market and return to normal
+     * Explore behavior.
+     *
+     * The custom selection is cleared because this
+     * action represents abandoning the current
+     * Custom Market.
+     *
+     * Existing Explore context remains intact.
+     */
+    setCustomBoundaries([]);
+
+    setMode("explore");
+  }
+
+  /*
+   * ==========================================================
+   * CLEARING EXPLORE STATE
+   * ==========================================================
+   */
+
+  function clearEntity() {
+    setContextEntity(null);
+    setAnalysisEntity(null);
+
+    setFocusMatchesContext(
+      false,
+    );
+
+    if (!focusedBoundary) {
+      setSheetState(
+        "collapsed",
+      );
     }
   }
 
   function clearBoundary() {
-    setSelectedBoundary(null);
+    setFocusedBoundary(null);
     setRelatedEntities([]);
 
-    if (!selectedEntity) {
-      setSheetState("collapsed");
+    if (contextEntity) {
+      setAnalysisEntity(
+        contextEntity,
+      );
+
+      setFocusMatchesContext(
+        true,
+      );
+    } else {
+      setAnalysisEntity(null);
+
+      setFocusMatchesContext(
+        false,
+      );
+
+      setSheetState(
+        "collapsed",
+      );
     }
   }
 
   function clearSelection() {
-    setSelectedEntity(null);
-    setSelectedBoundary(null);
+    setContextEntity(null);
+    setAnalysisEntity(null);
+
+    setFocusedBoundary(null);
     setRelatedEntities([]);
-    setSheetState("collapsed");
+
+    setFocusMatchesContext(true);
+
+    setSheetState(
+      "collapsed",
+    );
   }
 
   return (
     <AtlasStateContext.Provider
       value={{
+        contextEntity,
+        analysisEntity,
+        focusedBoundary,
+
         selectedEntity,
         selectedBoundary,
+
         relatedEntities,
+        focusMatchesContext,
+
+        mode,
+        customBoundaries,
 
         propertyTypeFilter,
         marketTypeFilter,
@@ -289,6 +707,12 @@ export function AtlasStateProvider({
         selectEntity,
         selectBoundary,
         selectGeography,
+        resetAnalysisToContext,
+
+        startCustomMarket,
+        toggleCustomBoundary,
+        clearCustomBoundaries,
+        exitCustomMarket,
 
         setPropertyTypeFilter,
         setMarketTypeFilter,
@@ -306,7 +730,10 @@ export function AtlasStateProvider({
 }
 
 export function useAtlasState() {
-  const context = useContext(AtlasStateContext);
+  const context =
+    useContext(
+      AtlasStateContext,
+    );
 
   if (!context) {
     throw new Error(

@@ -57,103 +57,211 @@ function formatPrice(value: number | null) {
   }
 
   if (value >= 1_000) {
-    return `$${Math.round(value / 1_000).toLocaleString(
-      "en-US",
-    )}K`;
+    return `$${Math.round(
+      value / 1_000,
+    ).toLocaleString("en-US")}K`;
   }
 
-  return `$${Math.round(value).toLocaleString("en-US")}`;
+  return `$${Math.round(value).toLocaleString(
+    "en-US",
+  )}`;
 }
 
-function formatWholeNumber(value: number | null) {
+function formatWholeNumber(
+  value: number | null,
+) {
   if (value === null) return "—";
 
-  return Math.round(value).toLocaleString("en-US");
+  return Math.round(value).toLocaleString(
+    "en-US",
+  );
 }
 
 export default function AtlasBottomSheet() {
   const {
+    contextEntity,
+    analysisEntity,
+
     selectedEntity,
     selectedBoundary,
     relatedEntities,
+
     propertyTypeFilter,
     marketTypeFilter,
+
     sheetState,
     setSheetState,
+
     setPropertyTypeFilter,
     setMarketTypeFilter,
+
     selectGeography,
+    resetAnalysisToContext,
   } = useAtlasState();
 
-  const isFocused = sheetState === "focused";
+  const isFocused =
+    sheetState === "focused";
 
-  const [marketSnapshot, setMarketSnapshot] =
-    useState<MarketSnapshot | null>(null);
+  const [
+    marketSnapshot,
+    setMarketSnapshot,
+  ] =
+    useState<MarketSnapshot | null>(
+      null,
+    );
 
-  const [marketSnapshotLoading, setMarketSnapshotLoading] =
-    useState(false);
+  const [
+    marketSnapshotLoading,
+    setMarketSnapshotLoading,
+  ] = useState(false);
 
   /*
    * Atlas display preferences.
    *
-   * These currently live inside the bottom sheet.
+   * These apply to both:
    *
-   * Later, if we want them to persist across Atlas pages or
-   * other components, we can move them into AtlasState.
+   * - MLS Area / Community snapshots
+   * - Government Local Area snapshots
    */
-  const [summaryMode, setSummaryMode] =
+  const [
+    summaryMode,
+    setSummaryMode,
+  ] =
     useState<SummaryMode>("median");
 
-  const [areaUnit, setAreaUnit] =
+  const [
+    areaUnit,
+    setAreaUnit,
+  ] =
     useState<AreaUnit>("ft2");
 
-  const relatedChoices = relatedEntities.filter(
-    (entity) =>
-      entity.entityKy !== selectedEntity?.entityKy,
-  );
+  /*
+   * Related MLS geographies for the currently
+   * focused government polygon.
+   */
+  const relatedChoices =
+    relatedEntities.filter(
+      (entity) =>
+        entity.entityKy !==
+        selectedEntity?.entityKy,
+    );
+
+  /*
+   * ==========================================================
+   * MARKET SNAPSHOT SOURCE
+   * ==========================================================
+   *
+   * Atlas now supports:
+   *
+   * 1. MLS Community / Area statistics
+   *
+   * 2. Government Local Area statistics
+   *
+   * MLS geography takes precedence when one is
+   * actively selected.
+   */
+
+  const hasMlsMarketContext =
+    Boolean(
+      selectedEntity &&
+        ["CM", "AR"].includes(
+          selectedEntity.entityType,
+        ),
+    );
+
+  const hasBoundaryMarketContext =
+    Boolean(
+      !hasMlsMarketContext &&
+        selectedBoundary,
+    );
+
+  const hasMarketContext =
+    hasMlsMarketContext ||
+    hasBoundaryMarketContext;
 
   useEffect(() => {
-    /*
-     * Market snapshots currently exist for MLS Areas
-     * and MLS Communities.
-     *
-     * Clear any previous statistics immediately when the
-     * geography or filters change so stale numbers are never
-     * shown for a new selection.
-     */
-    if (
-      !selectedEntity ||
-      !["CM", "AR"].includes(
-        selectedEntity.entityType,
-      )
-    ) {
+    if (!hasMarketContext) {
       setMarketSnapshot(null);
       setMarketSnapshotLoading(false);
       return;
     }
 
-    const entityKy = selectedEntity.entityKy;
-
-    const controller = new AbortController();
+    const controller =
+      new AbortController();
 
     async function loadMarketSnapshot() {
       setMarketSnapshotLoading(true);
       setMarketSnapshot(null);
 
       try {
-        const params = new URLSearchParams({
-          entityKy: String(entityKy),
-          propertyType: propertyTypeFilter,
-          marketType: marketTypeFilter,
-        });
+        let url: string;
 
-        const response = await fetch(
-          `/api/atlas/market-snapshot?${params.toString()}`,
-          {
+        /*
+         * ------------------------------------------------------
+         * MLS AREA / COMMUNITY
+         * ------------------------------------------------------
+         */
+
+        if (
+          hasMlsMarketContext &&
+          selectedEntity
+        ) {
+          const params =
+            new URLSearchParams({
+              entityKy: String(
+                selectedEntity.entityKy,
+              ),
+
+              propertyType:
+                propertyTypeFilter,
+
+              marketType:
+                marketTypeFilter,
+            });
+
+          url =
+            `/api/atlas/market-snapshot?${params.toString()}`;
+        }
+
+        /*
+         * ------------------------------------------------------
+         * GOVERNMENT LOCAL AREA
+         * ------------------------------------------------------
+         */
+
+        else if (selectedBoundary) {
+          const params =
+            new URLSearchParams({
+              boundaryKy: String(
+                selectedBoundary.boundaryKy,
+              ),
+
+              propertyType:
+                propertyTypeFilter,
+
+              marketType:
+                marketTypeFilter,
+            });
+
+          url =
+            `/api/atlas/boundary-market-snapshot?${params.toString()}`;
+        }
+
+        /*
+         * Defensive fallback.
+         */
+
+        else {
+          setMarketSnapshot(null);
+          setMarketSnapshotLoading(false);
+          return;
+        }
+
+        const response =
+          await fetch(url, {
             cache: "no-store",
             signal: controller.signal,
-          },
-        );
+          });
 
         if (!response.ok) {
           throw new Error(
@@ -180,62 +288,73 @@ export default function AtlasBottomSheet() {
 
         setMarketSnapshot(null);
       } finally {
-        if (!controller.signal.aborted) {
+        if (
+          !controller.signal.aborted
+        ) {
           setMarketSnapshotLoading(false);
         }
       }
     }
 
-    loadMarketSnapshot();
+    void loadMarketSnapshot();
 
     return () => {
       controller.abort();
     };
   }, [
+    hasMarketContext,
+    hasMlsMarketContext,
     selectedEntity,
+    selectedBoundary,
     propertyTypeFilter,
     marketTypeFilter,
   ]);
 
   /*
+   * ==========================================================
    * TEMPORARY CURATED COMMUNITY CONTENT
-   *
-   * The market statistics are now live.
-   *
-   * The tagline, story and character tags are still prototype
-   * content for Amapas only. We can move these into a curated
-   * content source later.
+   * ==========================================================
    */
+
   const isAmapas =
     selectedEntity?.canonicalName
       ?.trim()
       .toLowerCase() === "amapas";
 
-  const communityTagline = isAmapas
-    ? "Hillside living above Zona Romántica"
-    : selectedEntity?.parentName
-      ? `Explore ${selectedEntity.parentName}`
-      : "Explore this part of Banderas Bay";
+  const communityTagline =
+    isAmapas
+      ? "Hillside living above Zona Romántica"
+      : selectedEntity?.parentName
+        ? `Explore ${selectedEntity.parentName}`
+        : "Explore this part of Banderas Bay";
 
   /*
-   * Current ACTIVE pricing display.
+   * ==========================================================
+   * ACTIVE PRICING DISPLAY
+   * ==========================================================
    *
-   * Pricing intentionally represents Active listings only.
+   * Pricing represents ACTIVE inventory only.
    */
 
   const displayedListPrice =
     summaryMode === "avg"
-      ? marketSnapshot?.avgListPrice ?? null
-      : marketSnapshot?.medianListPrice ?? null;
+      ? marketSnapshot?.avgListPrice ??
+        null
+      : marketSnapshot?.medianListPrice ??
+        null;
 
   const displayedAreaPrice =
     areaUnit === "m2"
       ? summaryMode === "avg"
-        ? marketSnapshot?.avgListPriceM2 ?? null
-        : marketSnapshot?.medianListPriceM2 ?? null
+        ? marketSnapshot?.avgListPriceM2 ??
+          null
+        : marketSnapshot?.medianListPriceM2 ??
+          null
       : summaryMode === "avg"
-        ? marketSnapshot?.avgListPriceFt2 ?? null
-        : marketSnapshot?.medianListPriceFt2 ?? null;
+        ? marketSnapshot?.avgListPriceFt2 ??
+          null
+        : marketSnapshot?.medianListPriceFt2 ??
+          null;
 
   const listPriceLabel =
     summaryMode === "avg"
@@ -244,31 +363,52 @@ export default function AtlasBottomSheet() {
 
   const areaPriceLabel =
     `${summaryMode === "avg" ? "Avg" : "Median"} $/${
-      areaUnit === "m2" ? "m²" : "ft²"
+      areaUnit === "m2"
+        ? "m²"
+        : "ft²"
     }`;
 
   return (
     <section
       style={{
         position: "absolute",
+
         left: 0,
         right: 0,
         bottom: 0,
+
         pointerEvents: "auto",
-        background: "rgba(255,255,255,0.94)",
-        borderRadius: "28px 28px 0 0",
-        padding: "10px 20px 24px",
+
+        background:
+          "rgba(255,255,255,0.94)",
+
+        borderRadius:
+          "28px 28px 0 0",
+
+        padding:
+          "10px 20px 24px",
+
         boxShadow:
           "0 -10px 35px rgba(15,23,42,0.12)",
-        backdropFilter: "blur(16px)",
 
-        maxHeight: isFocused ? "82vh" : "44vh",
+        backdropFilter:
+          "blur(16px)",
+
+        maxHeight:
+          isFocused
+            ? "82vh"
+            : "44vh",
+
         overflowY: "auto",
 
-        transition: "max-height 300ms ease",
+        transition:
+          "max-height 300ms ease",
       }}
     >
-      {/* Sheet expand / collapse handle */}
+      {/* =====================================================
+          SHEET HANDLE
+          ===================================================== */}
+
       <button
         type="button"
         aria-label={
@@ -278,28 +418,44 @@ export default function AtlasBottomSheet() {
         }
         onClick={() =>
           setSheetState(
-            isFocused ? "half" : "focused",
+            isFocused
+              ? "half"
+              : "focused",
           )
         }
         style={{
           display: "block",
+
           width: 70,
           height: 20,
+
           padding: 0,
-          margin: "0 auto 8px",
+
+          margin:
+            "0 auto 8px",
+
           border: 0,
-          background: "transparent",
+
+          background:
+            "transparent",
+
           cursor: "pointer",
         }}
       >
         <span
           style={{
             display: "block",
+
             width: 44,
             height: 5,
+
             borderRadius: 999,
-            background: "#cbd5e1",
-            margin: "0 auto",
+
+            background:
+              "#cbd5e1",
+
+            margin:
+              "0 auto",
           }}
         />
       </button>
@@ -311,115 +467,347 @@ export default function AtlasBottomSheet() {
         }}
       >
         {/* =====================================================
-            MLS / SEARCHPV ENTITY SELECTED
+            HEADING
             ===================================================== */}
 
         {selectedEntity ? (
+          /*
+           * ---------------------------------------------------
+           * MLS / SEARCHPV GEOGRAPHY
+           * ---------------------------------------------------
+           */
+          <>
+            <div>
+              <div
+                style={{
+                  fontSize: 11,
+
+                  fontWeight: 750,
+
+                  letterSpacing:
+                    "0.12em",
+
+                  color:
+                    "#a9792b",
+
+                  textTransform:
+                    "uppercase",
+                }}
+              >
+                {entityTypeLabel(
+                  selectedEntity.entityType,
+                )}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 3,
+
+                  fontSize: 27,
+
+                  lineHeight:
+                    1.08,
+
+                  fontWeight:
+                    700,
+
+                  color:
+                    "#0f172a",
+                }}
+              >
+                {
+                  selectedEntity.displayName
+                }
+              </div>
+
+              <div
+                style={{
+                  marginTop: 5,
+
+                  fontSize: 14,
+
+                  color:
+                    "#64748b",
+                }}
+              >
+                {communityTagline}
+              </div>
+
+              {/* Return to broader context */}
+
+              {contextEntity &&
+              analysisEntity &&
+              Number(
+                contextEntity.entityKy,
+              ) !==
+                Number(
+                  analysisEntity.entityKy,
+                ) ? (
+                <button
+                  type="button"
+                  onClick={
+                    resetAnalysisToContext
+                  }
+                  style={{
+                    marginTop: 8,
+
+                    border:
+                      "1px solid #d6b56b",
+
+                    borderRadius:
+                      999,
+
+                    padding:
+                      "6px 10px",
+
+                    background:
+                      "#fffaf0",
+
+                    color:
+                      "#8a5a18",
+
+                    fontSize:
+                      11,
+
+                    fontWeight:
+                      700,
+
+                    cursor:
+                      "pointer",
+                  }}
+                >
+                  All{" "}
+                  {
+                    contextEntity.displayName
+                  }
+                </button>
+              ) : null}
+            </div>
+          </>
+        ) : selectedBoundary ? (
+          /*
+           * ---------------------------------------------------
+           * GOVERNMENT LOCAL AREA
+           * ---------------------------------------------------
+           */
           <>
             <div
               style={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                gap: 16,
+                fontSize: 11,
+
+                fontWeight: 700,
+
+                letterSpacing:
+                  "0.12em",
+
+                color:
+                  "#94a3b8",
+
+                textTransform:
+                  "uppercase",
               }}
             >
-              <div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 750,
-                    letterSpacing: "0.12em",
-                    color: "#a9792b",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {entityTypeLabel(
-                    selectedEntity.entityType,
-                  )}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 3,
-                    fontSize: 27,
-                    lineHeight: 1.08,
-                    fontWeight: 700,
-                    color: "#0f172a",
-                  }}
-                >
-                  {selectedEntity.displayName}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 5,
-                    fontSize: 14,
-                    color: "#64748b",
-                  }}
-                >
-                  {communityTagline}
-                </div>
-              </div>
+              Local Area
             </div>
-
-            {/* ================================================
-                MARKET FILTERS
-                ================================================ */}
 
             <div
               style={{
-                marginTop: 16,
-                paddingTop: 13,
-                borderTop: "1px solid #e2e8f0",
+                marginTop: 3,
+
+                fontSize: 25,
+
+                fontWeight: 700,
+
+                color:
+                  "#0f172a",
               }}
             >
-              {/* Property type */}
+              {
+                selectedBoundary.boundaryName
+              }
+            </div>
+
+            <div
+              style={{
+                marginTop: 5,
+
+                fontSize: 13,
+
+                color:
+                  "#64748b",
+              }}
+            >
+              {[
+                selectedBoundary.boundaryType,
+
+                selectedBoundary.districtName,
+
+                selectedBoundary.municipalityName,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </div>
+          </>
+        ) : (
+          /*
+           * ---------------------------------------------------
+           * NOTHING SELECTED
+           * ---------------------------------------------------
+           */
+          <>
+            <div
+              style={{
+                fontSize: 11,
+
+                fontWeight: 700,
+
+                letterSpacing:
+                  "0.12em",
+
+                color:
+                  "#94a3b8",
+
+                textTransform:
+                  "uppercase",
+              }}
+            >
+              Explore the Bay
+            </div>
+
+            <div
+              style={{
+                marginTop: 3,
+
+                fontSize: 25,
+
+                fontWeight: 700,
+
+                color:
+                  "#0f172a",
+              }}
+            >
+              Banderas Bay
+            </div>
+
+            <div
+              style={{
+                marginTop: 5,
+
+                fontSize: 13,
+
+                color:
+                  "#64748b",
+              }}
+            >
+              Tap the map or search for a place
+              to start exploring.
+            </div>
+          </>
+        )}
+
+        {/* =====================================================
+            MARKET FILTERS
+            =====================================================
+            
+            These now work for BOTH:
+            
+            - MLS geography
+            - Government Local Area
+        */}
+
+        {hasMarketContext ? (
+          <div
+            style={{
+              marginTop: 16,
+
+              paddingTop: 13,
+
+              borderTop:
+                "1px solid #e2e8f0",
+            }}
+          >
+            {/* PROPERTY TYPE */}
+
+            <div
+              style={{
+                display: "flex",
+
+                alignItems:
+                  "center",
+
+                justifyContent:
+                  "flex-start",
+
+                gap: 8,
+              }}
+            >
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  gap: 8,
+                  width: 78,
+
+                  fontSize:
+                    10,
+
+                  fontWeight:
+                    750,
+
+                  letterSpacing:
+                    "0.10em",
+
+                  color:
+                    "#94a3b8",
+
+                  textTransform:
+                    "uppercase",
+
+                  flexShrink: 0,
                 }}
               >
-                <div
-                  style={{
-                    width: 78,
-                    fontSize: 10,
-                    fontWeight: 750,
-                    letterSpacing: "0.10em",
-                    color: "#94a3b8",
-                    textTransform: "uppercase",
-                    flexShrink: 0,
-                  }}
-                >
-                  Property:
-                </div>
+                Property:
+              </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 5,
-                  }}
-                >
-                  {[
-                    { value: "all", label: "All" },
-                    {
-                      value: "condo",
-                      label: "Condos",
-                    },
-                    {
-                      value: "house",
-                      label: "Houses",
-                    },
-                  ].map((option) => {
+              <div
+                style={{
+                  display:
+                    "flex",
+
+                  gap: 5,
+                }}
+              >
+                {[
+                  {
+                    value:
+                      "all",
+                    label:
+                      "All",
+                  },
+
+                  {
+                    value:
+                      "condo",
+                    label:
+                      "Condos",
+                  },
+
+                  {
+                    value:
+                      "house",
+                    label:
+                      "Houses",
+                  },
+                ].map(
+                  (
+                    option,
+                  ) => {
                     const active =
-                      propertyTypeFilter === option.value;
+                      propertyTypeFilter ===
+                      option.value;
 
                     return (
                       <button
-                        key={option.value}
+                        key={
+                          option.value
+                        }
                         type="button"
                         onClick={() =>
                           setPropertyTypeFilter(
@@ -430,76 +818,131 @@ export default function AtlasBottomSheet() {
                           )
                         }
                         style={{
-                          border: active
-                            ? "1px solid #a9792b"
-                            : "1px solid #e2e8f0",
-                          borderRadius: 999,
-                          padding: "6px 11px",
-                          background: active
-                            ? "#fff8e8"
-                            : "#ffffff",
-                          color: active
-                            ? "#8a5a18"
-                            : "#64748b",
-                          fontSize: 11,
-                          fontWeight: 700,
-                          cursor: "pointer",
+                          border:
+                            active
+                              ? "1px solid #a9792b"
+                              : "1px solid #e2e8f0",
+
+                          borderRadius:
+                            999,
+
+                          padding:
+                            "6px 11px",
+
+                          background:
+                            active
+                              ? "#fff8e8"
+                              : "#ffffff",
+
+                          color:
+                            active
+                              ? "#8a5a18"
+                              : "#64748b",
+
+                          fontSize:
+                            11,
+
+                          fontWeight:
+                            700,
+
+                          cursor:
+                            "pointer",
                         }}
                       >
-                        {option.label}
+                        {
+                          option.label
+                        }
                       </button>
                     );
-                  })}
-                </div>
+                  },
+                )}
               </div>
+            </div>
 
-              {/* Market type */}
+            {/* MARKET TYPE */}
+
+            <div
+              style={{
+                display: "flex",
+
+                alignItems:
+                  "center",
+
+                justifyContent:
+                  "flex-start",
+
+                gap: 8,
+
+                marginTop: 8,
+              }}
+            >
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  gap: 8,
-                  marginTop: 8,
+                  width: 78,
+
+                  fontSize:
+                    10,
+
+                  fontWeight:
+                    750,
+
+                  letterSpacing:
+                    "0.10em",
+
+                  color:
+                    "#94a3b8",
+
+                  textTransform:
+                    "uppercase",
+
+                  flexShrink: 0,
                 }}
               >
-                <div
-                  style={{
-                    width: 78,
-                    fontSize: 10,
-                    fontWeight: 750,
-                    letterSpacing: "0.10em",
-                    color: "#94a3b8",
-                    textTransform: "uppercase",
-                    flexShrink: 0,
-                  }}
-                >
-                  Market:
-                </div>
+                Market:
+              </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 5,
-                  }}
-                >
-                  {[
-                    { value: "all", label: "All" },
-                    {
-                      value: "resale",
-                      label: "Resale",
-                    },
-                    {
-                      value: "precon",
-                      label: "Pre-Con",
-                    },
-                  ].map((option) => {
+              <div
+                style={{
+                  display:
+                    "flex",
+
+                  gap: 5,
+                }}
+              >
+                {[
+                  {
+                    value:
+                      "all",
+                    label:
+                      "All",
+                  },
+
+                  {
+                    value:
+                      "resale",
+                    label:
+                      "Resale",
+                  },
+
+                  {
+                    value:
+                      "precon",
+                    label:
+                      "Pre-Con",
+                  },
+                ].map(
+                  (
+                    option,
+                  ) => {
                     const active =
-                      marketTypeFilter === option.value;
+                      marketTypeFilter ===
+                      option.value;
 
                     return (
                       <button
-                        key={option.value}
+                        key={
+                          option.value
+                        }
                         type="button"
                         onClick={() =>
                           setMarketTypeFilter(
@@ -510,216 +953,524 @@ export default function AtlasBottomSheet() {
                           )
                         }
                         style={{
-                          border: active
-                            ? "1px solid #a9792b"
-                            : "1px solid #e2e8f0",
-                          borderRadius: 999,
-                          padding: "6px 11px",
-                          background: active
-                            ? "#fff8e8"
-                            : "#ffffff",
-                          color: active
-                            ? "#8a5a18"
-                            : "#64748b",
-                          fontSize: 11,
-                          fontWeight: 700,
-                          cursor: "pointer",
+                          border:
+                            active
+                              ? "1px solid #a9792b"
+                              : "1px solid #e2e8f0",
+
+                          borderRadius:
+                            999,
+
+                          padding:
+                            "6px 11px",
+
+                          background:
+                            active
+                              ? "#fff8e8"
+                              : "#ffffff",
+
+                          color:
+                            active
+                              ? "#8a5a18"
+                              : "#64748b",
+
+                          fontSize:
+                            11,
+
+                          fontWeight:
+                            700,
+
+                          cursor:
+                            "pointer",
                         }}
                       >
-                        {option.label}
+                        {
+                          option.label
+                        }
                       </button>
                     );
-                  })}
-                </div>
+                  },
+                )}
               </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* =====================================================
+            LIVE MARKET SNAPSHOT
+            =====================================================
+            
+            Same UI regardless of whether the statistics came
+            from an MLS geography or government polygon.
+        */}
+
+        {hasMarketContext ? (
+          <>
+            {/* ACTIVITY ROW */}
+
+            <div
+              style={{
+                display:
+                  "grid",
+
+                gridTemplateColumns:
+                  "repeat(3, minmax(0, 1fr))",
+
+                gap: 8,
+
+                marginTop:
+                  16,
+              }}
+            >
+              {/* ACTIVE */}
+
+              <button
+                type="button"
+                aria-label="View active listings"
+                style={{
+                  border:
+                    "1px solid #e2e8f0",
+
+                  padding:
+                    "11px 12px",
+
+                  borderRadius:
+                    14,
+
+                  background:
+                    "#f8fafc",
+
+                  textAlign:
+                    "left",
+
+                  cursor:
+                    "pointer",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize:
+                      10,
+
+                    fontWeight:
+                      700,
+
+                    letterSpacing:
+                      "0.08em",
+
+                    textTransform:
+                      "uppercase",
+
+                    color:
+                      "#94a3b8",
+                  }}
+                >
+                  Active
+                </div>
+
+                <div
+                  style={{
+                    marginTop:
+                      3,
+
+                    fontSize:
+                      20,
+
+                    fontWeight:
+                      750,
+
+                    color:
+                      "#0f172a",
+                  }}
+                >
+                  {marketSnapshotLoading
+                    ? "…"
+                    : marketSnapshot
+                        ?.activeCount ??
+                      "—"}
+                </div>
+              </button>
+
+              {/* PENDING */}
+
+              <button
+                type="button"
+                aria-label="View pending listings"
+                style={{
+                  border:
+                    "1px solid #e2e8f0",
+
+                  padding:
+                    "11px 12px",
+
+                  borderRadius:
+                    14,
+
+                  background:
+                    "#f8fafc",
+
+                  textAlign:
+                    "left",
+
+                  cursor:
+                    "pointer",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize:
+                      10,
+
+                    fontWeight:
+                      700,
+
+                    letterSpacing:
+                      "0.08em",
+
+                    textTransform:
+                      "uppercase",
+
+                    color:
+                      "#94a3b8",
+                  }}
+                >
+                  Pending
+                </div>
+
+                <div
+                  style={{
+                    marginTop:
+                      3,
+
+                    fontSize:
+                      20,
+
+                    fontWeight:
+                      750,
+
+                    color:
+                      "#0f172a",
+                  }}
+                >
+                  {marketSnapshotLoading
+                    ? "…"
+                    : marketSnapshot
+                        ?.pendingCount ??
+                      "—"}
+                </div>
+              </button>
+
+              {/* SOLD */}
+
+              <button
+                type="button"
+                aria-label="View sold listings from the last 12 months"
+                style={{
+                  border:
+                    "1px solid #e2e8f0",
+
+                  padding:
+                    "11px 12px",
+
+                  borderRadius:
+                    14,
+
+                  background:
+                    "#f8fafc",
+
+                  textAlign:
+                    "left",
+
+                  cursor:
+                    "pointer",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize:
+                      10,
+
+                    fontWeight:
+                      700,
+
+                    letterSpacing:
+                      "0.08em",
+
+                    textTransform:
+                      "uppercase",
+
+                    color:
+                      "#94a3b8",
+                  }}
+                >
+                  Sold 12 Mo
+                </div>
+
+                <div
+                  style={{
+                    marginTop:
+                      3,
+
+                    fontSize:
+                      20,
+
+                    fontWeight:
+                      750,
+
+                    color:
+                      "#0f172a",
+                  }}
+                >
+                  {marketSnapshotLoading
+                    ? "…"
+                    : marketSnapshot
+                        ?.sales12Mo ??
+                      "—"}
+                </div>
+              </button>
             </div>
 
             {/* ================================================
-                LIVE MARKET SNAPSHOT
+                PRICING ROW
                 ================================================ */}
 
-            {["CM", "AR"].includes(
-              selectedEntity.entityType,
-            ) ? (
-              <>
-                {/* Activity row */}
+            <div
+              style={{
+                display:
+                  "grid",
+
+                gridTemplateColumns:
+                  "repeat(2, minmax(0, 1fr))",
+
+                gap: 8,
+
+                marginTop: 8,
+              }}
+            >
+              {/* LIST PRICE */}
+
+              <div
+                style={{
+                  padding:
+                    "10px 12px 11px",
+
+                  borderRadius:
+                    14,
+
+                  background:
+                    "#f8fafc",
+                }}
+              >
+                {/* MEDIAN / AVG */}
+
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                      "repeat(3, minmax(0, 1fr))",
-                    gap: 8,
-                    marginTop: 16,
+                    display:
+                      "inline-flex",
+
+                    overflow:
+                      "hidden",
+
+                    borderRadius:
+                      999,
+
+                    border:
+                      "1px solid #e2e8f0",
+
+                    marginBottom:
+                      10,
                   }}
                 >
-                  {/* Active */}
-                  <button
-                    type="button"
-                    aria-label="View active listings"
-                    style={{
-                      border: "1px solid #e2e8f0",
-                      padding: "11px 12px",
-                      borderRadius: 14,
-                      background: "#f8fafc",
-                      textAlign: "left",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: "#94a3b8",
-                      }}
-                    >
-                      Active
-                    </div>
+                  {[
+                    {
+                      value:
+                        "median",
+                      label:
+                        "Median",
+                    },
 
-                    <div
-                      style={{
-                        marginTop: 3,
-                        fontSize: 20,
-                        fontWeight: 750,
-                        color: "#0f172a",
-                      }}
-                    >
-                      {marketSnapshotLoading
-                        ? "…"
-                        : marketSnapshot?.activeCount ??
-                          "—"}
-                    </div>
-                  </button>
+                    {
+                      value:
+                        "avg",
+                      label:
+                        "Avg",
+                    },
+                  ].map(
+                    (
+                      option,
+                    ) => {
+                      const active =
+                        summaryMode ===
+                        option.value;
 
-                  {/* Pending */}
-                  <button
-                    type="button"
-                    aria-label="View pending listings"
-                    style={{
-                      border: "1px solid #e2e8f0",
-                      padding: "11px 12px",
-                      borderRadius: 14,
-                      background: "#f8fafc",
-                      textAlign: "left",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: "#94a3b8",
-                      }}
-                    >
-                      Pending
-                    </div>
+                      return (
+                        <button
+                          key={
+                            option.value
+                          }
+                          type="button"
+                          onClick={() =>
+                            setSummaryMode(
+                              option.value as SummaryMode,
+                            )
+                          }
+                          style={{
+                            border:
+                              0,
 
-                    <div
-                      style={{
-                        marginTop: 3,
-                        fontSize: 20,
-                        fontWeight: 750,
-                        color: "#0f172a",
-                      }}
-                    >
-                      {marketSnapshotLoading
-                        ? "…"
-                        : marketSnapshot?.pendingCount ??
-                          "—"}
-                    </div>
-                  </button>
+                            padding:
+                              "5px 9px",
 
-                  {/* Sold 12 Mo */}
-                  <button
-                    type="button"
-                    aria-label="View sold listings from the last 12 months"
-                    style={{
-                      border: "1px solid #e2e8f0",
-                      padding: "11px 12px",
-                      borderRadius: 14,
-                      background: "#f8fafc",
-                      textAlign: "left",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: "#94a3b8",
-                      }}
-                    >
-                      Sold 12 Mo
-                    </div>
+                            background:
+                              active
+                                ? "#0f172a"
+                                : "#ffffff",
 
-                    <div
-                      style={{
-                        marginTop: 3,
-                        fontSize: 20,
-                        fontWeight: 750,
-                        color: "#0f172a",
-                      }}
-                    >
-                      {marketSnapshotLoading
-                        ? "…"
-                        : marketSnapshot?.sales12Mo ??
-                          "—"}
-                    </div>
-                  </button>
+                            color:
+                              active
+                                ? "#ffffff"
+                                : "#64748b",
+
+                            fontSize:
+                              10,
+
+                            fontWeight:
+                              700,
+
+                            cursor:
+                              "pointer",
+                          }}
+                        >
+                          {
+                            option.label
+                          }
+                        </button>
+                      );
+                    },
+                  )}
                 </div>
 
-                {/* ================================================
-                    PRICING ROW
-                    ================================================ */}
+                <div
+                  style={{
+                    fontSize:
+                      10,
+
+                    fontWeight:
+                      700,
+
+                    letterSpacing:
+                      "0.08em",
+
+                    textTransform:
+                      "uppercase",
+
+                    color:
+                      "#94a3b8",
+                  }}
+                >
+                  {
+                    listPriceLabel
+                  }
+                </div>
 
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                      "repeat(2, minmax(0, 1fr))",
-                    gap: 8,
-                    marginTop: 8,
+                    marginTop:
+                      3,
+
+                    fontSize:
+                      20,
+
+                    fontWeight:
+                      750,
+
+                    color:
+                      "#0f172a",
                   }}
                 >
-                  {/* List price */}
+                  {marketSnapshotLoading
+                    ? "…"
+                    : formatPrice(
+                        displayedListPrice,
+                      )}
+                </div>
+              </div>
+
+              {/* PRICE PER AREA */}
+
+              <div
+                style={{
+                  padding:
+                    "10px 12px 11px",
+
+                  borderRadius:
+                    14,
+
+                  background:
+                    "#f8fafc",
+                }}
+              >
+                <div
+                  style={{
+                    display:
+                      "flex",
+
+                    alignItems:
+                      "center",
+
+                    justifyContent:
+                      "flex-start",
+
+                    gap: 7,
+
+                    marginBottom:
+                      10,
+                  }}
+                >
+                  {/* MEDIAN / AVG */}
+
                   <div
                     style={{
-                      padding: "10px 12px 11px",
-                      borderRadius: 14,
-                      background: "#f8fafc",
+                      display:
+                        "inline-flex",
+
+                      overflow:
+                        "hidden",
+
+                      borderRadius:
+                        999,
+
+                      border:
+                        "1px solid #e2e8f0",
                     }}
                   >
-                    {/* Median / Avg toggle */}
-                    <div
-                      style={{
-                        display: "inline-flex",
-                        overflow: "hidden",
-                        borderRadius: 999,
-                        border: "1px solid #e2e8f0",
-                        marginBottom: 10,
-                      }}
-                    >
-                      {[
-                        {
-                          value: "median",
-                          label: "Median",
-                        },
-                        {
-                          value: "avg",
-                          label: "Avg",
-                        },
-                      ].map((option) => {
+                    {[
+                      {
+                        value:
+                          "median",
+                        label:
+                          "Median",
+                      },
+
+                      {
+                        value:
+                          "avg",
+                        label:
+                          "Avg",
+                      },
+                    ].map(
+                      (
+                        option,
+                      ) => {
                         const active =
-                          summaryMode === option.value;
+                          summaryMode ===
+                          option.value;
 
                         return (
                           <button
-                            key={option.value}
+                            key={
+                              option.value
+                            }
                             type="button"
                             onClick={() =>
                               setSummaryMode(
@@ -727,411 +1478,381 @@ export default function AtlasBottomSheet() {
                               )
                             }
                             style={{
-                              border: 0,
-                              padding: "5px 9px",
-                              background: active
-                                ? "#0f172a"
-                                : "#ffffff",
-                              color: active
-                                ? "#ffffff"
-                                : "#64748b",
-                              fontSize: 10,
-                              fontWeight: 700,
-                              cursor: "pointer",
+                              border:
+                                0,
+
+                              padding:
+                                "5px 9px",
+
+                              background:
+                                active
+                                  ? "#0f172a"
+                                  : "#ffffff",
+
+                              color:
+                                active
+                                  ? "#ffffff"
+                                  : "#64748b",
+
+                              fontSize:
+                                10,
+
+                              fontWeight:
+                                700,
+
+                              cursor:
+                                "pointer",
                             }}
                           >
-                            {option.label}
+                            {
+                              option.label
+                            }
                           </button>
                         );
-                      })}
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: "#94a3b8",
-                      }}
-                    >
-                      {listPriceLabel}
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 3,
-                        fontSize: 20,
-                        fontWeight: 750,
-                        color: "#0f172a",
-                      }}
-                    >
-                      {marketSnapshotLoading
-                        ? "…"
-                        : formatPrice(
-                            displayedListPrice,
-                          )}
-                    </div>
+                      },
+                    )}
                   </div>
 
-                  {/* Price per area */}
+                  {/* FT² / M² */}
+
                   <div
                     style={{
-                      padding: "10px 12px 11px",
-                      borderRadius: 14,
-                      background: "#f8fafc",
+                      display:
+                        "inline-flex",
+
+                      overflow:
+                        "hidden",
+
+                      borderRadius:
+                        999,
+
+                      border:
+                        "1px solid #e2e8f0",
                     }}
                   >
-                    {/* Median / Avg + ft² / m² controls */}
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "flex-start",
-                        gap: 7,
-                        marginBottom: 10,
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "inline-flex",
-                          overflow: "hidden",
-                          borderRadius: 999,
-                          border: "1px solid #e2e8f0",
-                        }}
-                      >
-                        {[
-                          {
-                            value: "median",
-                            label: "Median",
-                          },
-                          {
-                            value: "avg",
-                            label: "Avg",
-                          },
-                        ].map((option) => {
-                          const active =
-                            summaryMode === option.value;
+                    {[
+                      {
+                        value:
+                          "ft2",
+                        label:
+                          "ft²",
+                      },
 
-                          return (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() =>
-                                setSummaryMode(
-                                  option.value as SummaryMode,
-                                )
-                              }
-                              style={{
-                                border: 0,
-                                padding: "5px 9px",
-                                background: active
+                      {
+                        value:
+                          "m2",
+                        label:
+                          "m²",
+                      },
+                    ].map(
+                      (
+                        option,
+                      ) => {
+                        const active =
+                          areaUnit ===
+                          option.value;
+
+                        return (
+                          <button
+                            key={
+                              option.value
+                            }
+                            type="button"
+                            onClick={() =>
+                              setAreaUnit(
+                                option.value as AreaUnit,
+                              )
+                            }
+                            style={{
+                              border:
+                                0,
+
+                              padding:
+                                "5px 9px",
+
+                              background:
+                                active
                                   ? "#0f172a"
                                   : "#ffffff",
-                                color: active
+
+                              color:
+                                active
                                   ? "#ffffff"
                                   : "#64748b",
-                                fontSize: 10,
-                                fontWeight: 700,
-                                cursor: "pointer",
-                              }}
-                            >
-                              {option.label}
-                            </button>
-                          );
-                        })}
-                      </div>
 
-                      <div
-                        style={{
-                          display: "inline-flex",
-                          overflow: "hidden",
-                          borderRadius: 999,
-                          border: "1px solid #e2e8f0",
-                        }}
-                      >
-                        {[
-                          {
-                            value: "ft2",
-                            label: "ft²",
-                          },
-                          {
-                            value: "m2",
-                            label: "m²",
-                          },
-                        ].map((option) => {
-                          const active =
-                            areaUnit === option.value;
+                              fontSize:
+                                10,
 
-                          return (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() =>
-                                setAreaUnit(
-                                  option.value as AreaUnit,
-                                )
-                              }
-                              style={{
-                                border: 0,
-                                padding: "5px 9px",
-                                background: active
-                                  ? "#0f172a"
-                                  : "#ffffff",
-                                color: active
-                                  ? "#ffffff"
-                                  : "#64748b",
-                                fontSize: 10,
-                                fontWeight: 700,
-                                cursor: "pointer",
-                              }}
-                            >
-                              {option.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
+                              fontWeight:
+                                700,
 
-                    <div
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: "#94a3b8",
-                      }}
-                    >
-                      {areaPriceLabel}
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 3,
-                        fontSize: 20,
-                        fontWeight: 750,
-                        color: "#0f172a",
-                      }}
-                    >
-                      {marketSnapshotLoading
-                        ? "…"
-                        : displayedAreaPrice !== null
-                          ? `$${formatWholeNumber(
-                              displayedAreaPrice,
-                            )}`
-                          : "—"}
-                    </div>
+                              cursor:
+                                "pointer",
+                            }}
+                          >
+                            {
+                              option.label
+                            }
+                          </button>
+                        );
+                      },
+                    )}
                   </div>
                 </div>
-              </>
-            ) : null}
 
-            {/* ================================================
-                COMMUNITY STORY
-                ================================================ */}
+                <div
+                  style={{
+                    fontSize:
+                      10,
 
-            {isAmapas ? (
-              <div
-                style={{
-                  marginTop: 15,
-                  fontSize: 13,
-                  lineHeight: 1.55,
-                  color: "#475569",
-                }}
-              >
-                Amapas climbs the hills just south of Zona
-                Romántica, with a mix of established condos,
-                newer developments and elevated homes known
-                for views across Banderas Bay.
+                    fontWeight:
+                      700,
+
+                    letterSpacing:
+                      "0.08em",
+
+                    textTransform:
+                      "uppercase",
+
+                    color:
+                      "#94a3b8",
+                  }}
+                >
+                  {
+                    areaPriceLabel
+                  }
+                </div>
+
+                <div
+                  style={{
+                    marginTop:
+                      3,
+
+                    fontSize:
+                      20,
+
+                    fontWeight:
+                      750,
+
+                    color:
+                      "#0f172a",
+                  }}
+                >
+                  {marketSnapshotLoading
+                    ? "…"
+                    : displayedAreaPrice !==
+                        null
+                      ? `$${formatWholeNumber(
+                          displayedAreaPrice,
+                        )}`
+                      : "—"}
+                </div>
               </div>
-            ) : null}
+            </div>
+          </>
+        ) : null}
 
-            {/* ================================================
-                QUICK CHARACTER TAGS
-                ================================================ */}
+        {/* =====================================================
+            TEMPORARY AMAPAS CONTENT
+            ===================================================== */}
 
-            {isAmapas ? (
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 7,
-                  marginTop: 12,
-                }}
-              >
-                {[
-                  "Ocean Views",
-                  "Condos",
-                  "Near Zona Romántica",
-                  "Hillside",
-                ].map((label) => (
+        {isAmapas ? (
+          <>
+            <div
+              style={{
+                marginTop: 15,
+
+                fontSize: 13,
+
+                lineHeight:
+                  1.55,
+
+                color:
+                  "#475569",
+              }}
+            >
+              Amapas climbs the hills just south of
+              Zona Romántica, with a mix of
+              established condos, newer developments
+              and elevated homes known for views
+              across Banderas Bay.
+            </div>
+
+            <div
+              style={{
+                display:
+                  "flex",
+
+                flexWrap:
+                  "wrap",
+
+                gap: 7,
+
+                marginTop:
+                  12,
+              }}
+            >
+              {[
+                "Ocean Views",
+                "Condos",
+                "Near Zona Romántica",
+                "Hillside",
+              ].map(
+                (
+                  label,
+                ) => (
                   <span
-                    key={label}
+                    key={
+                      label
+                    }
                     style={{
-                      borderRadius: 999,
-                      padding: "6px 10px",
-                      background: "#f1f5f9",
-                      color: "#475569",
-                      fontSize: 11,
-                      fontWeight: 650,
+                      borderRadius:
+                        999,
+
+                      padding:
+                        "6px 10px",
+
+                      background:
+                        "#f1f5f9",
+
+                      color:
+                        "#475569",
+
+                      fontSize:
+                        11,
+
+                      fontWeight:
+                        650,
                     }}
                   >
                     {label}
                   </span>
-                ))}
-              </div>
-            ) : null}
-
-            {/* ================================================
-                PRIMARY ACTIONS
-                ================================================ */}
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(2, minmax(0, 1fr))",
-                gap: 8,
-                marginTop: 16,
-              }}
-            >
-              <button
-                type="button"
-                style={{
-                  border: "1px solid #e2e8f0",
-                  borderRadius: 14,
-                  padding: "11px 8px",
-                  background: "#ffffff",
-                  color: "#334155",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                Market Stats
-              </button>
-
-              <button
-                type="button"
-                style={{
-                  border: "1px solid #e2e8f0",
-                  borderRadius: 14,
-                  padding: "11px 8px",
-                  background: "#ffffff",
-                  color: "#334155",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                Nearby
-              </button>
+                ),
+              )}
             </div>
           </>
-        ) : selectedBoundary ? (
-          /* ===================================================
-             GOVERNMENT BOUNDARY ONLY
-             =================================================== */
-          <>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-                color: "#94a3b8",
-                textTransform: "uppercase",
-              }}
-            >
-              Local Area
-            </div>
-
-            <div
-              style={{
-                marginTop: 3,
-                fontSize: 25,
-                fontWeight: 700,
-                color: "#0f172a",
-              }}
-            >
-              {selectedBoundary.boundaryName}
-            </div>
-
-            <div
-              style={{
-                marginTop: 5,
-                fontSize: 13,
-                color: "#64748b",
-              }}
-            >
-              {[
-                selectedBoundary.boundaryType,
-                selectedBoundary.districtName,
-                selectedBoundary.municipalityName,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </div>
-          </>
-        ) : (
-          /* ===================================================
-             NOTHING SELECTED
-             =================================================== */
-          <>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-                color: "#94a3b8",
-                textTransform: "uppercase",
-              }}
-            >
-              Explore the Bay
-            </div>
-
-            <div
-              style={{
-                marginTop: 3,
-                fontSize: 25,
-                fontWeight: 700,
-                color: "#0f172a",
-              }}
-            >
-              Banderas Bay
-            </div>
-
-            <div
-              style={{
-                marginTop: 5,
-                fontSize: 13,
-                color: "#64748b",
-              }}
-            >
-              Tap the map or search for a place to start
-              exploring.
-            </div>
-          </>
-        )}
+        ) : null}
 
         {/* =====================================================
-            CLICKED GOVERNMENT AREA
-            ===================================================== */}
+            PRIMARY ACTIONS
+            =====================================================
+            
+            Display for both MLS and government market contexts.
+        */}
 
-        {selectedEntity && selectedBoundary ? (
+        {hasMarketContext ? (
           <div
             style={{
-              marginTop: 16,
-              paddingTop: 12,
-              borderTop: "1px solid #e2e8f0",
+              display:
+                "grid",
+
+              gridTemplateColumns:
+                "repeat(2, minmax(0, 1fr))",
+
+              gap: 8,
+
+              marginTop:
+                16,
+            }}
+          >
+            <button
+              type="button"
+              style={{
+                border:
+                  "1px solid #e2e8f0",
+
+                borderRadius:
+                  14,
+
+                padding:
+                  "11px 8px",
+
+                background:
+                  "#ffffff",
+
+                color:
+                  "#334155",
+
+                fontSize:
+                  12,
+
+                fontWeight:
+                  700,
+
+                cursor:
+                  "pointer",
+              }}
+            >
+              Market Stats
+            </button>
+
+            <button
+              type="button"
+              style={{
+                border:
+                  "1px solid #e2e8f0",
+
+                borderRadius:
+                  14,
+
+                padding:
+                  "11px 8px",
+
+                background:
+                  "#ffffff",
+
+                color:
+                  "#334155",
+
+                fontSize:
+                  12,
+
+                fontWeight:
+                  700,
+
+                cursor:
+                  "pointer",
+              }}
+            >
+              Nearby
+            </button>
+          </div>
+        ) : null}
+
+        {/* =====================================================
+            CLICKED GOVERNMENT AREA INSIDE MLS CONTEXT
+            ===================================================== */}
+
+        {selectedEntity &&
+        selectedBoundary ? (
+          <div
+            style={{
+              marginTop:
+                16,
+
+              paddingTop:
+                12,
+
+              borderTop:
+                "1px solid #e2e8f0",
             }}
           >
             <div
               style={{
-                fontSize: 10,
-                fontWeight: 750,
-                letterSpacing: "0.10em",
-                color: "#94a3b8",
-                textTransform: "uppercase",
+                fontSize:
+                  10,
+
+                fontWeight:
+                  750,
+
+                letterSpacing:
+                  "0.10em",
+
+                color:
+                  "#94a3b8",
+
+                textTransform:
+                  "uppercase",
               }}
             >
               Local Government Area
@@ -1139,25 +1860,41 @@ export default function AtlasBottomSheet() {
 
             <div
               style={{
-                marginTop: 3,
-                fontSize: 15,
-                fontWeight: 650,
-                color: "#334155",
+                marginTop:
+                  3,
+
+                fontSize:
+                  15,
+
+                fontWeight:
+                  650,
+
+                color:
+                  "#334155",
               }}
             >
-              {selectedBoundary.boundaryName}
+              {
+                selectedBoundary.boundaryName
+              }
             </div>
 
             <div
               style={{
-                marginTop: 2,
-                fontSize: 11,
-                color: "#64748b",
+                marginTop:
+                  2,
+
+                fontSize:
+                  11,
+
+                color:
+                  "#64748b",
               }}
             >
               {[
                 selectedBoundary.boundaryType,
+
                 selectedBoundary.districtName,
+
                 selectedBoundary.municipalityName,
               ]
                 .filter(Boolean)
@@ -1167,84 +1904,135 @@ export default function AtlasBottomSheet() {
         ) : null}
 
         {/* =====================================================
-            AMBIGUOUS / RELATED MLS FOOTPRINTS
+            RELATED MLS GEOGRAPHIES
             ===================================================== */}
 
         {selectedBoundary &&
-        relatedChoices.length > 0 ? (
+        relatedChoices.length >
+          0 ? (
           <div
             style={{
-              marginTop: 13,
-              paddingTop: 12,
-              borderTop: "1px solid #e2e8f0",
+              marginTop:
+                13,
+
+              paddingTop:
+                12,
+
+              borderTop:
+                "1px solid #e2e8f0",
             }}
           >
             <div
               style={{
-                fontSize: 10,
-                fontWeight: 750,
-                letterSpacing: "0.10em",
-                color: "#94a3b8",
-                textTransform: "uppercase",
+                fontSize:
+                  10,
+
+                fontWeight:
+                  750,
+
+                letterSpacing:
+                  "0.10em",
+
+                color:
+                  "#94a3b8",
+
+                textTransform:
+                  "uppercase",
               }}
             >
               {selectedEntity
                 ? "Also Part Of"
-                : relatedChoices.length > 1
+                : relatedChoices.length >
+                    1
                   ? "Explore Real Estate Areas"
                   : "Real Estate Area"}
             </div>
 
             {!selectedEntity &&
-            relatedChoices.length > 1 ? (
+            relatedChoices.length >
+              1 ? (
               <div
                 style={{
-                  marginTop: 4,
-                  fontSize: 12,
-                  color: "#64748b",
+                  marginTop:
+                    4,
+
+                  fontSize:
+                    12,
+
+                  color:
+                    "#64748b",
                 }}
               >
-                This local area overlaps more than one real
-                estate community.
+                This local area overlaps more than one
+                real estate community.
               </div>
             ) : null}
 
             <div
               style={{
-                display: "flex",
-                flexWrap: "wrap",
+                display:
+                  "flex",
+
+                flexWrap:
+                  "wrap",
+
                 gap: 8,
-                marginTop: 8,
+
+                marginTop:
+                  8,
               }}
             >
-              {relatedChoices.map((entity) => (
-                <button
-                  key={entity.entityKy}
-                  type="button"
-                  onClick={() =>
-                    selectGeography(
-                      entity,
-                      selectedBoundary,
-                    )
-                  }
-                  style={{
-                    border: "1px solid #cbd5e1",
-                    borderRadius: 999,
-                    padding: "7px 12px",
-                    background: "#ffffff",
-                    color: "#334155",
-                    fontSize: 12,
-                    fontWeight: 650,
-                    cursor: "pointer",
-                  }}
-                >
-                  {entity.displayName}
+              {relatedChoices.map(
+                (
+                  entity,
+                ) => (
+                  <button
+                    key={
+                      entity.entityKy
+                    }
+                    type="button"
+                    onClick={() =>
+                      selectGeography(
+                        entity,
+                        selectedBoundary,
+                      )
+                    }
+                    style={{
+                      border:
+                        "1px solid #cbd5e1",
 
-                  {entity.parentName
-                    ? ` · ${entity.parentName}`
-                    : ""}
-                </button>
-              ))}
+                      borderRadius:
+                        999,
+
+                      padding:
+                        "7px 12px",
+
+                      background:
+                        "#ffffff",
+
+                      color:
+                        "#334155",
+
+                      fontSize:
+                        12,
+
+                      fontWeight:
+                        650,
+
+                      cursor:
+                        "pointer",
+                    }}
+                  >
+                    {
+                      entity.displayName
+                    }
+
+                    {entity.parentName
+                      ? ` · ${entity.parentName}`
+                      : ""}
+                  </button>
+                ),
+              )}
             </div>
           </div>
         ) : null}
