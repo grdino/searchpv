@@ -16,13 +16,9 @@ export default function AtlasMap() {
   /*
    * Keep the complete government-boundary features available
    * outside the one-time Mapbox load callback.
-   *
-   * Custom Market highlighting uses these full geometries.
    */
   const fullBoundaryFeaturesRef =
-    useRef<Map<number, any>>(
-      new Map(),
-    );
+    useRef<Map<number, any>>(new Map());
 
   const {
     contextEntity,
@@ -31,10 +27,24 @@ export default function AtlasMap() {
     selectBoundary,
 
     mode,
+
+    customMarketMethod,
+
     customBoundaries,
     startCustomMarket,
     toggleCustomBoundary,
     clearCustomBoundaries,
+
+    customDrawVertices,
+    customDrawnGeometry,
+    customDrawActive,
+
+    startCustomDraw,
+    addCustomDrawVertex,
+    undoCustomDrawVertex,
+    finishCustomDraw,
+    clearCustomDraw,
+
     exitCustomMarket,
   } = useAtlasState();
 
@@ -43,9 +53,8 @@ export default function AtlasMap() {
    * CURRENT REACT STATE FOR PERMANENT MAPBOX EVENT HANDLERS
    * ==========================================================
    *
-   * Mapbox handlers are registered once.
-   *
-   * Refs ensure those handlers always see current React state.
+   * Mapbox event handlers are registered once.
+   * Refs allow those handlers to see current React state.
    */
 
   const selectBoundaryRef =
@@ -54,8 +63,17 @@ export default function AtlasMap() {
   const modeRef =
     useRef(mode);
 
+  const customMarketMethodRef =
+    useRef(customMarketMethod);
+
+  const customDrawActiveRef =
+    useRef(customDrawActive);
+
   const toggleCustomBoundaryRef =
     useRef(toggleCustomBoundary);
+
+  const addCustomDrawVertexRef =
+    useRef(addCustomDrawVertex);
 
   useEffect(() => {
     selectBoundaryRef.current =
@@ -68,9 +86,24 @@ export default function AtlasMap() {
   }, [mode]);
 
   useEffect(() => {
+    customMarketMethodRef.current =
+      customMarketMethod;
+  }, [customMarketMethod]);
+
+  useEffect(() => {
+    customDrawActiveRef.current =
+      customDrawActive;
+  }, [customDrawActive]);
+
+  useEffect(() => {
     toggleCustomBoundaryRef.current =
       toggleCustomBoundary;
   }, [toggleCustomBoundary]);
+
+  useEffect(() => {
+    addCustomDrawVertexRef.current =
+      addCustomDrawVertex;
+  }, [addCustomDrawVertex]);
 
   // ============================================================
   // CREATE MAP
@@ -141,16 +174,13 @@ export default function AtlasMap() {
     );
 
     const resizeFrame =
-      requestAnimationFrame(
-        () => {
-          if (
-            mapRef.current ===
-            map
-          ) {
-            map.resize();
-          }
-        },
-      );
+      requestAnimationFrame(() => {
+        if (
+          mapRef.current === map
+        ) {
+          map.resize();
+        }
+      });
 
     map.on("load", () => {
       map.resize();
@@ -190,11 +220,10 @@ export default function AtlasMap() {
 
           "fill-opacity": 0,
 
-          "fill-opacity-transition":
-            {
-              duration: 800,
-              delay: 0,
-            },
+          "fill-opacity-transition": {
+            duration: 800,
+            delay: 0,
+          },
         },
       });
 
@@ -219,11 +248,10 @@ export default function AtlasMap() {
           "line-opacity":
             0,
 
-          "line-opacity-transition":
-            {
-              duration: 800,
-              delay: 0,
-            },
+          "line-opacity-transition": {
+            duration: 800,
+            delay: 0,
+          },
         },
       });
 
@@ -350,11 +378,7 @@ export default function AtlasMap() {
       });
 
       // ========================================================
-      // 4. CUSTOM MARKET SELECTION
-      //
-      // Completely independent from Context / Analysis / Focus.
-      //
-      // Multiple government polygons can be displayed here.
+      // 4. CUSTOM MARKET — SELECT AREAS
       // ========================================================
 
       map.addSource(
@@ -383,9 +407,6 @@ export default function AtlasMap() {
         slot: "top",
 
         paint: {
-          /*
-           * Deliberately different from normal Explore focus.
-           */
           "fill-color":
             "#0f766e",
 
@@ -418,27 +439,179 @@ export default function AtlasMap() {
       });
 
       // ========================================================
-      // 5. ALL GOVERNMENT BOUNDARIES
+      // 5. CUSTOM MARKET — DRAW AREA
+      // ========================================================
+      //
+      // One GeoJSON source contains:
+      //
+      // - completed / preview polygon
+      // - developing line
+      // - vertex points
+      // ========================================================
+
+      map.addSource(
+        "atlas-custom-draw",
+        {
+          type: "geojson",
+
+          data: {
+            type:
+              "FeatureCollection",
+
+            features: [],
+          },
+        },
+      );
+
+      /*
+       * Polygon fill.
+       */
+      map.addLayer({
+        id:
+          "atlas-custom-draw-fill",
+
+        type: "fill",
+
+        source:
+          "atlas-custom-draw",
+
+        slot: "top",
+
+        filter: [
+          "==",
+          ["geometry-type"],
+          "Polygon",
+        ],
+
+        paint: {
+          "fill-color":
+            "#0f766e",
+
+          "fill-opacity":
+            0.22,
+        },
+      });
+
+      /*
+       * Polygon outline.
+       */
+      map.addLayer({
+        id:
+          "atlas-custom-draw-polygon-line",
+
+        type: "line",
+
+        source:
+          "atlas-custom-draw",
+
+        slot: "top",
+
+        filter: [
+          "==",
+          ["geometry-type"],
+          "Polygon",
+        ],
+
+        paint: {
+          "line-color":
+            "#115e59",
+
+          "line-width":
+            3,
+
+          "line-opacity":
+            1,
+        },
+      });
+
+      /*
+       * Developing line while drawing.
+       */
+      map.addLayer({
+        id:
+          "atlas-custom-draw-line",
+
+        type: "line",
+
+        source:
+          "atlas-custom-draw",
+
+        slot: "top",
+
+        filter: [
+          "==",
+          ["geometry-type"],
+          "LineString",
+        ],
+
+        paint: {
+          "line-color":
+            "#0f766e",
+
+          "line-width":
+            3,
+
+          "line-opacity":
+            0.95,
+
+          "line-dasharray": [
+            1.5,
+            1,
+          ],
+        },
+      });
+
+      /*
+       * Vertex markers.
+       */
+      map.addLayer({
+        id:
+          "atlas-custom-draw-vertices",
+
+        type: "circle",
+
+        source:
+          "atlas-custom-draw",
+
+        slot: "top",
+
+        filter: [
+          "==",
+          ["geometry-type"],
+          "Point",
+        ],
+
+        paint: {
+          "circle-radius":
+            5,
+
+          "circle-color":
+            "#ffffff",
+
+          "circle-stroke-color":
+            "#0f766e",
+
+          "circle-stroke-width":
+            3,
+        },
+      });
+
+      // ========================================================
+      // 6. ALL GOVERNMENT BOUNDARIES
       // ========================================================
 
       fetch(
         "/api/atlas/boundaries",
       )
-        .then(
-          (
-            response,
-          ) => {
-            if (
-              !response.ok
-            ) {
-              throw new Error(
-                "Unable to load government boundaries.",
-              );
-            }
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(
+              "Unable to load government boundaries.",
+            );
+          }
 
-            return response.json();
-          },
-        )
+          return response.json();
+        })
         .then(
           (
             boundaryData,
@@ -491,9 +664,6 @@ export default function AtlasMap() {
               }
             }
 
-            /*
-             * Make complete geometry available to React effects.
-             */
             fullBoundaryFeaturesRef.current =
               fullBoundaryFeatures;
 
@@ -542,35 +712,33 @@ export default function AtlasMap() {
                 "line-color":
                   "#475569",
 
-                "line-width":
+                "line-width": [
+                  "interpolate",
                   [
-                    "interpolate",
-                    [
-                      "linear",
-                    ],
-                    ["zoom"],
-                    9,
-                    0.5,
-                    12,
-                    0.8,
-                    15,
-                    1.1,
+                    "linear",
                   ],
+                  ["zoom"],
+                  9,
+                  0.5,
+                  12,
+                  0.8,
+                  15,
+                  1.1,
+                ],
 
-                "line-opacity":
+                "line-opacity": [
+                  "interpolate",
                   [
-                    "interpolate",
-                    [
-                      "linear",
-                    ],
-                    ["zoom"],
-                    9,
-                    0.12,
-                    12,
-                    0.2,
-                    15,
-                    0.28,
+                    "linear",
                   ],
+                  ["zoom"],
+                  9,
+                  0.12,
+                  12,
+                  0.2,
+                  15,
+                  0.28,
+                ],
               },
             });
 
@@ -646,28 +814,34 @@ export default function AtlasMap() {
                 };
 
                 // ==============================================
-                // CUSTOM MARKET MODE
-                // ==============================================
-                //
-                // This is intentionally checked BEFORE any
-                // normal Explore behavior.
-                //
-                // No MLS geography lookup.
-                // No focus change.
-                // No context change.
-                // No analysis change.
-                //
-                // Just toggle this polygon.
+                // CUSTOM MARKET
                 // ==============================================
 
                 if (
                   modeRef.current ===
                   "custom-select"
                 ) {
-                  toggleCustomBoundaryRef.current(
-                    boundary,
-                  );
+                  /*
+                   * SELECT AREAS
+                   */
+                  if (
+                    customMarketMethodRef.current ===
+                    "select"
+                  ) {
+                    toggleCustomBoundaryRef.current(
+                      boundary,
+                    );
+                  }
 
+                  /*
+                   * DRAW AREA
+                   *
+                   * Do not toggle the government boundary.
+                   *
+                   * The generic map click handler registered
+                   * below will capture the longitude / latitude
+                   * and add the drawing vertex.
+                   */
                   return;
                 }
 
@@ -754,6 +928,19 @@ export default function AtlasMap() {
               "atlas-boundaries-hit",
 
               () => {
+                if (
+                  modeRef.current ===
+                    "custom-select" &&
+                  customMarketMethodRef.current ===
+                    "draw" &&
+                  customDrawActiveRef.current
+                ) {
+                  map.getCanvas().style.cursor =
+                    "crosshair";
+
+                  return;
+                }
+
                 map.getCanvas().style.cursor =
                   "pointer";
               },
@@ -765,6 +952,19 @@ export default function AtlasMap() {
               "atlas-boundaries-hit",
 
               () => {
+                if (
+                  modeRef.current ===
+                    "custom-select" &&
+                  customMarketMethodRef.current ===
+                    "draw" &&
+                  customDrawActiveRef.current
+                ) {
+                  map.getCanvas().style.cursor =
+                    "crosshair";
+
+                  return;
+                }
+
                 map.getCanvas().style.cursor =
                   "";
               },
@@ -781,6 +981,49 @@ export default function AtlasMap() {
             );
           },
         );
+
+      // ========================================================
+      // GENERIC MAP CLICK — DRAW AREA
+      // ========================================================
+      //
+      // This is independent of government polygons.
+      //
+      // A user can draw across any part of the map.
+      // ========================================================
+
+      map.on(
+        "click",
+        (
+          event,
+        ) => {
+          if (
+            modeRef.current !==
+            "custom-select"
+          ) {
+            return;
+          }
+
+          if (
+            customMarketMethodRef.current !==
+            "draw"
+          ) {
+            return;
+          }
+
+          if (
+            !customDrawActiveRef.current
+          ) {
+            return;
+          }
+
+          addCustomDrawVertexRef.current(
+            [
+              event.lngLat.lng,
+              event.lngLat.lat,
+            ],
+          );
+        },
+      );
     });
 
     // ==========================================================
@@ -788,16 +1031,14 @@ export default function AtlasMap() {
     // ==========================================================
 
     const resizeObserver =
-      new ResizeObserver(
-        () => {
-          if (
-            mapRef.current ===
-            map
-          ) {
-            map.resize();
-          }
-        },
-      );
+      new ResizeObserver(() => {
+        if (
+          mapRef.current ===
+          map
+        ) {
+          map.resize();
+        }
+      });
 
     resizeObserver.observe(
       container,
@@ -823,13 +1064,7 @@ export default function AtlasMap() {
   }, []);
 
   // ============================================================
-  // CUSTOM MARKET MAP DISPLAY
-  // ============================================================
-  //
-  // React state contains AtlasBoundary objects.
-  //
-  // Here we translate their keys back into the complete GeoJSON
-  // features loaded from /api/atlas/boundaries.
+  // CUSTOM MARKET — SELECT AREAS DISPLAY
   // ============================================================
 
   useEffect(() => {
@@ -852,11 +1087,17 @@ export default function AtlasMap() {
     }
 
     /*
-     * Outside Custom Market mode, show no custom selection.
+     * Only show the selected government polygons while
+     * Select Areas is the active Custom Market method.
+     *
+     * The selection remains in React state when switching
+     * to Draw Area and returns when switching back.
      */
     if (
       mode !==
-      "custom-select"
+        "custom-select" ||
+      customMarketMethod !==
+        "select"
     ) {
       customSource.setData({
         type:
@@ -880,9 +1121,7 @@ export default function AtlasMap() {
               ),
             ),
         )
-        .filter(
-          Boolean,
-        );
+        .filter(Boolean);
 
     customSource.setData({
       type:
@@ -892,7 +1131,232 @@ export default function AtlasMap() {
     });
   }, [
     mode,
+    customMarketMethod,
     customBoundaries,
+  ]);
+
+  // ============================================================
+  // CUSTOM MARKET — DRAW AREA DISPLAY
+  // ============================================================
+
+  useEffect(() => {
+    const map =
+      mapRef.current;
+
+    if (!map) {
+      return;
+    }
+
+    const drawSource =
+      map.getSource(
+        "atlas-custom-draw",
+      ) as
+        | mapboxgl.GeoJSONSource
+        | undefined;
+
+    if (!drawSource) {
+      return;
+    }
+
+    /*
+     * Hide drawing while outside Draw Area.
+     *
+     * Geometry remains preserved in AtlasState and returns
+     * when the user switches back to Draw Area.
+     */
+    if (
+      mode !==
+        "custom-select" ||
+      customMarketMethod !==
+        "draw"
+    ) {
+      drawSource.setData({
+        type:
+          "FeatureCollection",
+
+        features: [],
+      });
+
+      return;
+    }
+
+    const features:
+      any[] = [];
+
+    /*
+     * ----------------------------------------------------------
+     * FINISHED POLYGON
+     * ----------------------------------------------------------
+     */
+
+    if (
+      customDrawnGeometry &&
+      !customDrawActive
+    ) {
+      features.push({
+        type:
+          "Feature",
+
+        properties: {
+          drawingState:
+            "finished",
+        },
+
+        geometry:
+          customDrawnGeometry,
+      });
+    }
+
+    /*
+     * ----------------------------------------------------------
+     * ACTIVE / IN-PROGRESS DRAWING
+     * ----------------------------------------------------------
+     */
+
+    if (
+      customDrawActive
+    ) {
+      /*
+       * Vertex markers.
+       */
+      for (
+        let index = 0;
+        index <
+        customDrawVertices.length;
+        index += 1
+      ) {
+        features.push({
+          type:
+            "Feature",
+
+          properties: {
+            drawingState:
+              "vertex",
+
+            vertexIndex:
+              index,
+          },
+
+          geometry: {
+            type:
+              "Point",
+
+            coordinates:
+              customDrawVertices[
+                index
+              ],
+          },
+        });
+      }
+
+      /*
+       * Developing outline.
+       */
+      if (
+        customDrawVertices.length >=
+        2
+      ) {
+        features.push({
+          type:
+            "Feature",
+
+          properties: {
+            drawingState:
+              "line",
+          },
+
+          geometry: {
+            type:
+              "LineString",
+
+            coordinates:
+              customDrawVertices,
+          },
+        });
+      }
+
+      /*
+       * Once we have three vertices, show a live polygon
+       * preview by temporarily closing the ring.
+       */
+      if (
+        customDrawVertices.length >=
+        3
+      ) {
+        const previewRing = [
+          ...customDrawVertices,
+          customDrawVertices[0],
+        ];
+
+        features.push({
+          type:
+            "Feature",
+
+          properties: {
+            drawingState:
+              "preview",
+          },
+
+          geometry: {
+            type:
+              "Polygon",
+
+            coordinates: [
+              previewRing,
+            ],
+          },
+        });
+      }
+    }
+
+    drawSource.setData({
+      type:
+        "FeatureCollection",
+
+      features,
+    });
+  }, [
+    mode,
+    customMarketMethod,
+    customDrawVertices,
+    customDrawnGeometry,
+    customDrawActive,
+  ]);
+
+  // ============================================================
+  // DRAWING CURSOR
+  // ============================================================
+
+  useEffect(() => {
+    const map =
+      mapRef.current;
+
+    if (!map) {
+      return;
+    }
+
+    const canvas =
+      map.getCanvas();
+
+    if (
+      mode ===
+        "custom-select" &&
+      customMarketMethod ===
+        "draw" &&
+      customDrawActive
+    ) {
+      canvas.style.cursor =
+        "crosshair";
+
+      return;
+    }
+
+    canvas.style.cursor =
+      "";
+  }, [
+    mode,
+    customMarketMethod,
+    customDrawActive,
   ]);
 
   // ============================================================
@@ -1005,9 +1469,7 @@ export default function AtlasMap() {
       const currentMap =
         mapRef.current;
 
-      if (
-        !currentMap
-      ) {
+      if (!currentMap) {
         return;
       }
 
@@ -1018,9 +1480,7 @@ export default function AtlasMap() {
           | mapboxgl.GeoJSONSource
           | undefined;
 
-      if (
-        !entitySource
-      ) {
+      if (!entitySource) {
         currentMap.once(
           "load",
           showContextEntity,
@@ -1273,16 +1733,12 @@ export default function AtlasMap() {
         | mapboxgl.GeoJSONSource
         | undefined;
 
-    if (!analysisSource) {
+    if (
+      !analysisSource
+    ) {
       return;
     }
 
-    /*
-     * Give the async function a permanently narrowed reference.
-     *
-     * TypeScript otherwise considers analysisSource potentially
-     * undefined after crossing the async function boundary.
-     */
     const safeAnalysisSource =
       analysisSource;
 
@@ -1299,7 +1755,9 @@ export default function AtlasMap() {
       )
     ) {
       safeAnalysisSource.setData({
-        type: "FeatureCollection",
+        type:
+          "FeatureCollection",
+
         features: [],
       });
 
@@ -1318,11 +1776,14 @@ export default function AtlasMap() {
           await fetch(
             `/api/atlas/entity-geometry?entityKy=${entity.entityKy}`,
             {
-              cache: "no-store",
+              cache:
+                "no-store",
             },
           );
 
-        if (!response.ok) {
+        if (
+          !response.ok
+        ) {
           throw new Error(
             "Unable to load analysis entity geometry.",
           );
@@ -1331,13 +1792,19 @@ export default function AtlasMap() {
         const entityGeometry =
           await response.json();
 
-        if (cancelled) {
+        if (
+          cancelled
+        ) {
           return;
         }
 
-        if (!entityGeometry?.geometry) {
+        if (
+          !entityGeometry?.geometry
+        ) {
           safeAnalysisSource.setData({
-            type: "FeatureCollection",
+            type:
+              "FeatureCollection",
+
             features: [],
           });
 
@@ -1345,7 +1812,8 @@ export default function AtlasMap() {
         }
 
         const feature = {
-          type: "Feature",
+          type:
+            "Feature",
 
           properties: {
             entityKy:
@@ -1363,19 +1831,25 @@ export default function AtlasMap() {
         };
 
         safeAnalysisSource.setData({
-          type: "FeatureCollection",
+          type:
+            "FeatureCollection",
+
           features: [
             feature as any,
           ],
         });
-      } catch (error) {
+      } catch (
+        error
+      ) {
         console.error(
           "Atlas analysis geometry error:",
           error,
         );
 
         safeAnalysisSource.setData({
-          type: "FeatureCollection",
+          type:
+            "FeatureCollection",
+
           features: [],
         });
       }
@@ -1384,7 +1858,8 @@ export default function AtlasMap() {
     void showAnalysisEntity();
 
     return () => {
-      cancelled = true;
+      cancelled =
+        true;
     };
   }, [
     analysisEntity,
@@ -1413,10 +1888,6 @@ export default function AtlasMap() {
           position:
             "absolute",
 
-          /*
-           * Keep this below the search control and away from
-           * Mapbox navigation.
-           */
           top: 82,
           left: 16,
 
@@ -1428,6 +1899,11 @@ export default function AtlasMap() {
       >
         {mode ===
         "explore" ? (
+          /*
+           * ----------------------------------------------------
+           * ENTER CUSTOM MARKET
+           * ----------------------------------------------------
+           */
           <button
             type="button"
             onClick={
@@ -1466,7 +1942,13 @@ export default function AtlasMap() {
           >
             Custom Market
           </button>
-        ) : (
+        ) : customMarketMethod ===
+          "select" ? (
+          /*
+           * ----------------------------------------------------
+           * SELECT AREAS CONTROLS
+           * ----------------------------------------------------
+           */
           <div
             style={{
               display:
@@ -1556,6 +2038,379 @@ export default function AtlasMap() {
                 Clear
               </button>
             ) : null}
+
+            <button
+              type="button"
+              onClick={
+                exitCustomMarket
+              }
+              style={{
+                border:
+                  "1px solid #cbd5e1",
+
+                borderRadius:
+                  999,
+
+                padding:
+                  "6px 9px",
+
+                background:
+                  "#ffffff",
+
+                color:
+                  "#475569",
+
+                fontSize:
+                  11,
+
+                fontWeight:
+                  700,
+
+                cursor:
+                  "pointer",
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          /*
+           * ----------------------------------------------------
+           * DRAW AREA CONTROLS
+           * ----------------------------------------------------
+           */
+          <div
+            style={{
+              display:
+                "flex",
+
+              alignItems:
+                "center",
+
+              flexWrap:
+                "wrap",
+
+              gap: 7,
+
+              padding:
+                "7px",
+
+              maxWidth:
+                "calc(100vw - 32px)",
+
+              border:
+                "1px solid rgba(15,118,110,0.28)",
+
+              borderRadius:
+                16,
+
+              background:
+                "rgba(255,255,255,0.96)",
+
+              boxShadow:
+                "0 5px 18px rgba(15,23,42,0.14)",
+
+              backdropFilter:
+                "blur(12px)",
+            }}
+          >
+            {/* NO DRAWING YET */}
+
+            {!customDrawActive &&
+            !customDrawnGeometry ? (
+              <>
+                <div
+                  style={{
+                    padding:
+                      "0 5px",
+
+                    color:
+                      "#115e59",
+
+                    fontSize:
+                      12,
+
+                    fontWeight:
+                      750,
+
+                    whiteSpace:
+                      "nowrap",
+                  }}
+                >
+                  Draw Area
+                </div>
+
+                <button
+                  type="button"
+                  onClick={
+                    startCustomDraw
+                  }
+                  style={{
+                    border:
+                      "1px solid #0f766e",
+
+                    borderRadius:
+                      999,
+
+                    padding:
+                      "6px 10px",
+
+                    background:
+                      "#0f766e",
+
+                    color:
+                      "#ffffff",
+
+                    fontSize:
+                      11,
+
+                    fontWeight:
+                      700,
+
+                    cursor:
+                      "pointer",
+                  }}
+                >
+                  Start Drawing
+                </button>
+              </>
+            ) : null}
+
+            {/* ACTIVE DRAWING */}
+
+            {customDrawActive ? (
+              <>
+                <div
+                  style={{
+                    padding:
+                      "0 5px",
+
+                    color:
+                      "#115e59",
+
+                    fontSize:
+                      12,
+
+                    fontWeight:
+                      750,
+
+                    whiteSpace:
+                      "nowrap",
+                  }}
+                >
+                  {customDrawVertices.length ===
+                  1
+                    ? "1 point"
+                    : `${customDrawVertices.length} points`}
+                </div>
+
+                {customDrawVertices.length >
+                0 ? (
+                  <button
+                    type="button"
+                    onClick={
+                      undoCustomDrawVertex
+                    }
+                    style={{
+                      border:
+                        "1px solid #cbd5e1",
+
+                      borderRadius:
+                        999,
+
+                      padding:
+                        "6px 9px",
+
+                      background:
+                        "#ffffff",
+
+                      color:
+                        "#475569",
+
+                      fontSize:
+                        11,
+
+                      fontWeight:
+                        700,
+
+                      cursor:
+                        "pointer",
+                    }}
+                  >
+                    Undo
+                  </button>
+                ) : null}
+
+                {customDrawVertices.length >=
+                3 ? (
+                  <button
+                    type="button"
+                    onClick={
+                      finishCustomDraw
+                    }
+                    style={{
+                      border:
+                        "1px solid #0f766e",
+
+                      borderRadius:
+                        999,
+
+                      padding:
+                        "6px 10px",
+
+                      background:
+                        "#0f766e",
+
+                      color:
+                        "#ffffff",
+
+                      fontSize:
+                        11,
+
+                      fontWeight:
+                        700,
+
+                      cursor:
+                        "pointer",
+                    }}
+                  >
+                    Finish Area
+                  </button>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={
+                    clearCustomDraw
+                  }
+                  style={{
+                    border:
+                      "1px solid #cbd5e1",
+
+                    borderRadius:
+                      999,
+
+                    padding:
+                      "6px 9px",
+
+                    background:
+                      "#ffffff",
+
+                    color:
+                      "#475569",
+
+                    fontSize:
+                      11,
+
+                    fontWeight:
+                      700,
+
+                    cursor:
+                      "pointer",
+                  }}
+                >
+                  Clear
+                </button>
+              </>
+            ) : null}
+
+            {/* FINISHED DRAWING */}
+
+            {!customDrawActive &&
+            customDrawnGeometry ? (
+              <>
+                <div
+                  style={{
+                    padding:
+                      "0 5px",
+
+                    color:
+                      "#115e59",
+
+                    fontSize:
+                      12,
+
+                    fontWeight:
+                      750,
+
+                    whiteSpace:
+                      "nowrap",
+                  }}
+                >
+                  Area drawn
+                </div>
+
+                <button
+                  type="button"
+                  onClick={
+                    startCustomDraw
+                  }
+                  style={{
+                    border:
+                      "1px solid #0f766e",
+
+                    borderRadius:
+                      999,
+
+                    padding:
+                      "6px 10px",
+
+                    background:
+                      "#ffffff",
+
+                    color:
+                      "#115e59",
+
+                    fontSize:
+                      11,
+
+                    fontWeight:
+                      700,
+
+                    cursor:
+                      "pointer",
+                  }}
+                >
+                  Redraw
+                </button>
+
+                <button
+                  type="button"
+                  onClick={
+                    clearCustomDraw
+                  }
+                  style={{
+                    border:
+                      "1px solid #cbd5e1",
+
+                    borderRadius:
+                      999,
+
+                    padding:
+                      "6px 9px",
+
+                    background:
+                      "#ffffff",
+
+                    color:
+                      "#475569",
+
+                    fontSize:
+                      11,
+
+                    fontWeight:
+                      700,
+
+                    cursor:
+                      "pointer",
+                  }}
+                >
+                  Clear
+                </button>
+              </>
+            ) : null}
+
+            {/* EXIT CUSTOM MARKET */}
 
             <button
               type="button"

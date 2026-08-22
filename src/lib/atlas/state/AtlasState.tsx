@@ -72,20 +72,38 @@ export type AtlasMode =
  *
  * draw:
  * User draws a custom polygon.
- *
- * Drawing geometry itself will be added in the
- * next implementation step.
  */
 export type AtlasCustomMarketMethod =
   | "select"
   | "draw";
 
+/*
+ * A single longitude / latitude vertex.
+ *
+ * Mapbox uses:
+ *
+ * [longitude, latitude]
+ */
+export type AtlasDrawVertex =
+  [
+    number,
+    number,
+  ];
+
+/*
+ * Finished Custom Market polygon.
+ *
+ * Keep this intentionally small and GeoJSON-compatible so it
+ * can later be sent directly to the statistics API.
+ */
+export type AtlasDrawnGeometry = {
+  type: "Polygon";
+  coordinates: number[][][];
+};
+
 type AtlasStateContextValue = {
   /*
    * Broader geography being explored.
-   *
-   * Example:
-   * Marina Vallarta
    */
   contextEntity: AtlasEntity | null;
 
@@ -124,19 +142,31 @@ type AtlasStateContextValue = {
 
   mode: AtlasMode;
 
-  /*
-   * Which Custom Market creation method is active.
-   */
   customMarketMethod: AtlasCustomMarketMethod;
 
   /*
-   * Government polygons currently included in the
-   * Custom Market Select Areas method.
-   *
-   * Store the full boundary object rather than only keys so
-   * the UI can display names and metadata immediately.
+   * Government polygons included through Select Areas.
    */
   customBoundaries: AtlasBoundary[];
+
+  /*
+   * Vertices currently being created in Draw Area mode.
+   *
+   * These are the editable/in-progress points.
+   */
+  customDrawVertices: AtlasDrawVertex[];
+
+  /*
+   * Completed polygon.
+   *
+   * Null means no finished custom drawing currently exists.
+   */
+  customDrawnGeometry: AtlasDrawnGeometry | null;
+
+  /*
+   * Whether a polygon is actively being created.
+   */
+  customDrawActive: boolean;
 
   propertyTypeFilter: AtlasPropertyTypeFilter;
   marketTypeFilter: AtlasMarketTypeFilter;
@@ -165,7 +195,7 @@ type AtlasStateContextValue = {
 
   /*
    * ==========================================================
-   * CUSTOM MARKET ACTIONS
+   * CUSTOM MARKET — GENERAL
    * ==========================================================
    */
 
@@ -175,13 +205,37 @@ type AtlasStateContextValue = {
     method: AtlasCustomMarketMethod,
   ) => void;
 
+  exitCustomMarket: () => void;
+
+  /*
+   * ==========================================================
+   * CUSTOM MARKET — SELECT AREAS
+   * ==========================================================
+   */
+
   toggleCustomBoundary: (
     boundary: AtlasBoundary,
   ) => void;
 
   clearCustomBoundaries: () => void;
 
-  exitCustomMarket: () => void;
+  /*
+   * ==========================================================
+   * CUSTOM MARKET — DRAW AREA
+   * ==========================================================
+   */
+
+  startCustomDraw: () => void;
+
+  addCustomDrawVertex: (
+    vertex: AtlasDrawVertex,
+  ) => void;
+
+  undoCustomDrawVertex: () => void;
+
+  finishCustomDraw: () => void;
+
+  clearCustomDraw: () => void;
 
   setPropertyTypeFilter: (
     filter: AtlasPropertyTypeFilter,
@@ -316,11 +370,6 @@ export function AtlasStateProvider({
       "explore",
     );
 
-  /*
-   * Default Custom Market workflow:
-   *
-   * Select existing government areas.
-   */
   const [
     customMarketMethod,
     setCustomMarketMethodState,
@@ -329,6 +378,9 @@ export function AtlasStateProvider({
       "select",
     );
 
+  /*
+   * Select Areas state.
+   */
   const [
     customBoundaries,
     setCustomBoundaries,
@@ -336,6 +388,31 @@ export function AtlasStateProvider({
     useState<AtlasBoundary[]>(
       [],
     );
+
+  /*
+   * Draw Area state.
+   */
+  const [
+    customDrawVertices,
+    setCustomDrawVertices,
+  ] =
+    useState<AtlasDrawVertex[]>(
+      [],
+    );
+
+  const [
+    customDrawnGeometry,
+    setCustomDrawnGeometry,
+  ] =
+    useState<AtlasDrawnGeometry | null>(
+      null,
+    );
+
+  const [
+    customDrawActive,
+    setCustomDrawActive,
+  ] =
+    useState(false);
 
   /*
    * ==========================================================
@@ -400,16 +477,6 @@ export function AtlasStateProvider({
    * ==========================================================
    * GOVERNMENT POLYGON CLICK
    * ==========================================================
-   *
-   * This remains normal Explore behavior.
-   *
-   * AtlasMap decides whether a click should call:
-   *
-   * mode === "explore"
-   *     -> selectBoundary(...)
-   *
-   * mode === "custom-select"
-   *     -> Custom Market behavior
    */
 
   function selectBoundary(
@@ -419,9 +486,6 @@ export function AtlasStateProvider({
     setFocusedBoundary(boundary);
     setRelatedEntities(entities);
 
-    /*
-     * Existing broader context.
-     */
     if (contextEntity) {
       const belongsToContext =
         entities.some(
@@ -448,8 +512,6 @@ export function AtlasStateProvider({
 
       /*
        * Polygon outside current context.
-       *
-       * Preserve broader context in memory.
        */
       setAnalysisEntity(null);
 
@@ -464,9 +526,6 @@ export function AtlasStateProvider({
 
     /*
      * No existing context.
-     *
-     * One related MLS geography is safe to
-     * adopt automatically.
      */
     if (entities.length === 1) {
       setContextEntity(
@@ -488,8 +547,6 @@ export function AtlasStateProvider({
 
     /*
      * Zero or multiple matches.
-     *
-     * Do not guess.
      */
     setContextEntity(null);
     setAnalysisEntity(null);
@@ -515,10 +572,6 @@ export function AtlasStateProvider({
     ) {
       setAnalysisEntity(entity);
 
-      /*
-       * Selected MLS geography may not correspond
-       * precisely to the government polygon.
-       */
       setFocusedBoundary(null);
       setRelatedEntities([]);
 
@@ -570,54 +623,63 @@ export function AtlasStateProvider({
 
   /*
    * ==========================================================
-   * CUSTOM MARKET
+   * CUSTOM MARKET — GENERAL
    * ==========================================================
    */
 
   function startCustomMarket() {
     /*
-     * Every new Custom Market begins in Select Areas mode.
+     * Every new Custom Market begins with Select Areas.
      */
     setCustomMarketMethodState(
       "select",
     );
 
     /*
-     * Start with no selected government polygons.
+     * Start both methods empty.
      */
     setCustomBoundaries([]);
+
+    setCustomDrawVertices([]);
+    setCustomDrawnGeometry(null);
+    setCustomDrawActive(false);
 
     setMode(
       "custom-select",
     );
 
     /*
-     * Leave Explore context untouched.
-     *
-     * Cancel / Exit returns the user to exactly
-     * where they were before Custom Market.
+     * Preserve Explore context underneath.
      */
   }
 
-  /*
-   * Switch between:
-   *
-   * Select Areas
-   * Draw Area
-   *
-   * IMPORTANT:
-   *
-   * Do not clear customBoundaries when switching.
-   *
-   * That makes switching methods reversible.
-   */
   function setCustomMarketMethod(
     method: AtlasCustomMarketMethod,
   ) {
     setCustomMarketMethodState(
       method,
     );
+
+    /*
+     * Switching methods should not destroy either method's
+     * saved work.
+     *
+     * However, if the user leaves Draw Area while actively
+     * sketching an unfinished polygon, stop the active drawing
+     * interaction while preserving its vertices.
+     */
+    if (method !== "draw") {
+      setCustomDrawActive(
+        false,
+      );
+    }
   }
+
+  /*
+   * ==========================================================
+   * CUSTOM MARKET — SELECT AREAS
+   * ==========================================================
+   */
 
   function toggleCustomBoundary(
     boundary: AtlasBoundary,
@@ -659,17 +721,117 @@ export function AtlasStateProvider({
     setCustomBoundaries([]);
   }
 
+  /*
+   * ==========================================================
+   * CUSTOM MARKET — DRAW AREA
+   * ==========================================================
+   */
+
+  function startCustomDraw() {
+    /*
+     * Starting a fresh drawing clears any previous completed
+     * geometry and prior vertices.
+     */
+    setCustomDrawVertices(
+      [],
+    );
+
+    setCustomDrawnGeometry(
+      null,
+    );
+
+    setCustomDrawActive(
+      true,
+    );
+  }
+
+  function addCustomDrawVertex(
+    vertex: AtlasDrawVertex,
+  ) {
+    if (
+      !customDrawActive
+    ) {
+      return;
+    }
+
+    setCustomDrawVertices(
+      (current) => [
+        ...current,
+        vertex,
+      ],
+    );
+  }
+
+  function undoCustomDrawVertex() {
+    setCustomDrawVertices(
+      (current) =>
+        current.slice(
+          0,
+          -1,
+        ),
+    );
+  }
+
+  function finishCustomDraw() {
+    /*
+     * GeoJSON Polygon needs at least:
+     *
+     * 3 distinct vertices
+     *
+     * plus a closing vertex equal to the first point.
+     */
+    if (
+      customDrawVertices.length <
+      3
+    ) {
+      return;
+    }
+
+    const ring = [
+      ...customDrawVertices,
+      customDrawVertices[0],
+    ];
+
+    setCustomDrawnGeometry({
+      type:
+        "Polygon",
+
+      coordinates: [
+        ring,
+      ],
+    });
+
+    setCustomDrawActive(
+      false,
+    );
+  }
+
+  function clearCustomDraw() {
+    setCustomDrawVertices(
+      [],
+    );
+
+    setCustomDrawnGeometry(
+      null,
+    );
+
+    setCustomDrawActive(
+      false,
+    );
+  }
+
   function exitCustomMarket() {
     /*
-     * Exit Custom Market and return to Explore.
-     *
-     * Abandon the current Custom Market selection.
+     * Abandon the current Custom Market entirely.
      */
     setCustomBoundaries([]);
 
+    setCustomDrawVertices([]);
+    setCustomDrawnGeometry(null);
+    setCustomDrawActive(false);
+
     /*
-     * Reset the next Custom Market session to
-     * Select Areas.
+     * Next Custom Market begins in Select Areas.
      */
     setCustomMarketMethodState(
       "select",
@@ -753,7 +915,12 @@ export function AtlasStateProvider({
 
         mode,
         customMarketMethod,
+
         customBoundaries,
+
+        customDrawVertices,
+        customDrawnGeometry,
+        customDrawActive,
 
         propertyTypeFilter,
         marketTypeFilter,
@@ -767,9 +934,16 @@ export function AtlasStateProvider({
 
         startCustomMarket,
         setCustomMarketMethod,
+        exitCustomMarket,
+
         toggleCustomBoundary,
         clearCustomBoundaries,
-        exitCustomMarket,
+
+        startCustomDraw,
+        addCustomDrawVertex,
+        undoCustomDrawVertex,
+        finishCustomDraw,
+        clearCustomDraw,
 
         setPropertyTypeFilter,
         setMarketTypeFilter,
