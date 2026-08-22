@@ -1273,11 +1273,18 @@ export default function AtlasMap() {
         | mapboxgl.GeoJSONSource
         | undefined;
 
-    if (
-      !analysisSource
-    ) {
+    if (!analysisSource) {
       return;
     }
+
+    /*
+     * Give the async function a permanently narrowed reference.
+     *
+     * TypeScript otherwise considers analysisSource potentially
+     * undefined after crossing the async function boundary.
+     */
+    const safeAnalysisSource =
+      analysisSource;
 
     if (
       !analysisEntity ||
@@ -1291,10 +1298,8 @@ export default function AtlasMap() {
           )
       )
     ) {
-      analysisSource.setData({
-        type:
-          "FeatureCollection",
-
+      safeAnalysisSource.setData({
+        type: "FeatureCollection",
         features: [],
       });
 
@@ -1313,14 +1318,11 @@ export default function AtlasMap() {
           await fetch(
             `/api/atlas/entity-geometry?entityKy=${entity.entityKy}`,
             {
-              cache:
-                "no-store",
+              cache: "no-store",
             },
           );
 
-        if (
-          !response.ok
-        ) {
+        if (!response.ok) {
           throw new Error(
             "Unable to load analysis entity geometry.",
           );
@@ -1329,30 +1331,21 @@ export default function AtlasMap() {
         const entityGeometry =
           await response.json();
 
-        if (
-          cancelled
-        ) {
+        if (cancelled) {
           return;
         }
 
-        if (
-          !entityGeometry?.geometry
-        ) {
-          analysisSource.setData(
-            {
-              type:
-                "FeatureCollection",
-
-              features: [],
-            },
-          );
+        if (!entityGeometry?.geometry) {
+          safeAnalysisSource.setData({
+            type: "FeatureCollection",
+            features: [],
+          });
 
           return;
         }
 
         const feature = {
-          type:
-            "Feature",
+          type: "Feature",
 
           properties: {
             entityKy:
@@ -1369,26 +1362,20 @@ export default function AtlasMap() {
             entityGeometry.geometry,
         };
 
-        analysisSource.setData({
-          type:
-            "FeatureCollection",
-
+        safeAnalysisSource.setData({
+          type: "FeatureCollection",
           features: [
             feature as any,
           ],
         });
-      } catch (
-        error
-      ) {
+      } catch (error) {
         console.error(
           "Atlas analysis geometry error:",
           error,
         );
 
-        analysisSource.setData({
-          type:
-            "FeatureCollection",
-
+        safeAnalysisSource.setData({
+          type: "FeatureCollection",
           features: [],
         });
       }
@@ -1397,8 +1384,7 @@ export default function AtlasMap() {
     void showAnalysisEntity();
 
     return () => {
-      cancelled =
-        true;
+      cancelled = true;
     };
   }, [
     analysisEntity,
