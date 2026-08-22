@@ -42,6 +42,9 @@ type MarketSnapshot = {
 
   avgListPriceM2: number | null;
   medianListPriceM2: number | null;
+
+  boundaryCount?: number;
+  boundaryKys?: number[];
 };
 
 function formatPrice(value: number | null) {
@@ -86,6 +89,11 @@ export default function AtlasBottomSheet() {
     selectedBoundary,
     relatedEntities,
 
+    mode,
+    customBoundaries,
+    clearCustomBoundaries,
+    exitCustomMarket,
+
     propertyTypeFilter,
     marketTypeFilter,
 
@@ -101,6 +109,9 @@ export default function AtlasBottomSheet() {
 
   const isFocused =
     sheetState === "focused";
+
+  const isCustomMarket =
+    mode === "custom-select";
 
   const [
     marketSnapshot,
@@ -118,10 +129,11 @@ export default function AtlasBottomSheet() {
   /*
    * Atlas display preferences.
    *
-   * These apply to both:
+   * These apply to:
    *
-   * - MLS Area / Community snapshots
-   * - Government Local Area snapshots
+   * - MLS Areas / Communities
+   * - Government Local Areas
+   * - Custom Markets
    */
   const [
     summaryMode,
@@ -154,16 +166,14 @@ export default function AtlasBottomSheet() {
    * Atlas now supports:
    *
    * 1. MLS Community / Area statistics
-   *
    * 2. Government Local Area statistics
-   *
-   * MLS geography takes precedence when one is
-   * actively selected.
+   * 3. Custom Market statistics
    */
 
   const hasMlsMarketContext =
     Boolean(
-      selectedEntity &&
+      !isCustomMarket &&
+        selectedEntity &&
         ["CM", "AR"].includes(
           selectedEntity.entityType,
         ),
@@ -171,15 +181,36 @@ export default function AtlasBottomSheet() {
 
   const hasBoundaryMarketContext =
     Boolean(
-      !hasMlsMarketContext &&
+      !isCustomMarket &&
+        !hasMlsMarketContext &&
         selectedBoundary,
+    );
+
+  const hasCustomMarketContext =
+    Boolean(
+      isCustomMarket &&
+        customBoundaries.length > 0,
     );
 
   const hasMarketContext =
     hasMlsMarketContext ||
-    hasBoundaryMarketContext;
+    hasBoundaryMarketContext ||
+    hasCustomMarketContext;
 
   useEffect(() => {
+    /*
+     * Custom Market with zero selected polygons is valid,
+     * but there are no statistics to calculate yet.
+     */
+    if (
+      isCustomMarket &&
+      customBoundaries.length === 0
+    ) {
+      setMarketSnapshot(null);
+      setMarketSnapshotLoading(false);
+      return;
+    }
+
     if (!hasMarketContext) {
       setMarketSnapshot(null);
       setMarketSnapshotLoading(false);
@@ -198,11 +229,47 @@ export default function AtlasBottomSheet() {
 
         /*
          * ------------------------------------------------------
+         * CUSTOM MARKET
+         * ------------------------------------------------------
+         */
+
+        if (hasCustomMarketContext) {
+          const params =
+            new URLSearchParams();
+
+          for (
+            const boundary of
+              customBoundaries
+          ) {
+            params.append(
+              "boundaryKy",
+              String(
+                boundary.boundaryKy,
+              ),
+            );
+          }
+
+          params.set(
+            "propertyType",
+            propertyTypeFilter,
+          );
+
+          params.set(
+            "marketType",
+            marketTypeFilter,
+          );
+
+          url =
+            `/api/atlas/custom-market-snapshot?${params.toString()}`;
+        }
+
+        /*
+         * ------------------------------------------------------
          * MLS AREA / COMMUNITY
          * ------------------------------------------------------
          */
 
-        if (
+        else if (
           hasMlsMarketContext &&
           selectedEntity
         ) {
@@ -302,7 +369,10 @@ export default function AtlasBottomSheet() {
       controller.abort();
     };
   }, [
+    isCustomMarket,
+    customBoundaries,
     hasMarketContext,
+    hasCustomMarketContext,
     hasMlsMarketContext,
     selectedEntity,
     selectedBoundary,
@@ -317,6 +387,7 @@ export default function AtlasBottomSheet() {
    */
 
   const isAmapas =
+    !isCustomMarket &&
     selectedEntity?.canonicalName
       ?.trim()
       .toLowerCase() === "amapas";
@@ -467,15 +538,193 @@ export default function AtlasBottomSheet() {
         }}
       >
         {/* =====================================================
-            HEADING
+            CUSTOM MARKET HEADING
             ===================================================== */}
 
-        {selectedEntity ? (
-          /*
-           * ---------------------------------------------------
-           * MLS / SEARCHPV GEOGRAPHY
-           * ---------------------------------------------------
-           */
+        {isCustomMarket ? (
+          <>
+            <div
+              style={{
+                fontSize: 11,
+
+                fontWeight: 750,
+
+                letterSpacing:
+                  "0.12em",
+
+                color:
+                  "#0f766e",
+
+                textTransform:
+                  "uppercase",
+              }}
+            >
+              Custom Market
+            </div>
+
+            <div
+              style={{
+                marginTop: 3,
+
+                fontSize: 27,
+
+                lineHeight: 1.08,
+
+                fontWeight: 700,
+
+                color:
+                  "#0f172a",
+              }}
+            >
+              Your Selected Area
+            </div>
+
+            <div
+              style={{
+                marginTop: 5,
+
+                fontSize: 13,
+
+                lineHeight: 1.45,
+
+                color:
+                  "#64748b",
+              }}
+            >
+              {customBoundaries.length === 0
+                ? "Tap government areas on the map to build your market."
+                : customBoundaries.length === 1
+                  ? "1 government area selected."
+                  : `${customBoundaries.length} government areas selected.`}
+            </div>
+
+            {customBoundaries.length >
+            0 ? (
+              <div
+                style={{
+                  display: "flex",
+
+                  flexWrap: "wrap",
+
+                  gap: 6,
+
+                  marginTop: 10,
+                }}
+              >
+                {customBoundaries.map(
+                  (boundary) => (
+                    <span
+                      key={
+                        boundary.boundaryKy
+                      }
+                      style={{
+                        borderRadius: 999,
+
+                        padding:
+                          "5px 9px",
+
+                        background:
+                          "#ecfdf5",
+
+                        color:
+                          "#115e59",
+
+                        fontSize: 10,
+
+                        fontWeight: 700,
+
+                        border:
+                          "1px solid #a7f3d0",
+                      }}
+                    >
+                      {
+                        boundary.boundaryName
+                      }
+                    </span>
+                  ),
+                )}
+              </div>
+            ) : null}
+
+            <div
+              style={{
+                display: "flex",
+
+                gap: 8,
+
+                marginTop: 12,
+              }}
+            >
+              {customBoundaries.length >
+              0 ? (
+                <button
+                  type="button"
+                  onClick={
+                    clearCustomBoundaries
+                  }
+                  style={{
+                    border:
+                      "1px solid #cbd5e1",
+
+                    borderRadius: 999,
+
+                    padding:
+                      "7px 11px",
+
+                    background:
+                      "#ffffff",
+
+                    color:
+                      "#475569",
+
+                    fontSize: 11,
+
+                    fontWeight: 700,
+
+                    cursor:
+                      "pointer",
+                  }}
+                >
+                  Clear Areas
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={
+                  exitCustomMarket
+                }
+                style={{
+                  border:
+                    "1px solid #cbd5e1",
+
+                  borderRadius: 999,
+
+                  padding:
+                    "7px 11px",
+
+                  background:
+                    "#ffffff",
+
+                  color:
+                    "#475569",
+
+                  fontSize: 11,
+
+                  fontWeight: 700,
+
+                  cursor:
+                    "pointer",
+                }}
+              >
+                Exit Custom Market
+              </button>
+            </div>
+          </>
+        ) : selectedEntity ? (
+          /* ===================================================
+             MLS / SEARCHPV GEOGRAPHY
+             =================================================== */
           <>
             <div>
               <div
@@ -533,8 +782,6 @@ export default function AtlasBottomSheet() {
                 {communityTagline}
               </div>
 
-              {/* Return to broader context */}
-
               {contextEntity &&
               analysisEntity &&
               Number(
@@ -585,11 +832,9 @@ export default function AtlasBottomSheet() {
             </div>
           </>
         ) : selectedBoundary ? (
-          /*
-           * ---------------------------------------------------
-           * GOVERNMENT LOCAL AREA
-           * ---------------------------------------------------
-           */
+          /* ===================================================
+             GOVERNMENT LOCAL AREA
+             =================================================== */
           <>
             <div
               style={{
@@ -649,11 +894,9 @@ export default function AtlasBottomSheet() {
             </div>
           </>
         ) : (
-          /*
-           * ---------------------------------------------------
-           * NOTHING SELECTED
-           * ---------------------------------------------------
-           */
+          /* ===================================================
+             NOTHING SELECTED
+             =================================================== */
           <>
             <div
               style={{
@@ -707,13 +950,7 @@ export default function AtlasBottomSheet() {
 
         {/* =====================================================
             MARKET FILTERS
-            =====================================================
-            
-            These now work for BOTH:
-            
-            - MLS geography
-            - Government Local Area
-        */}
+            ===================================================== */}
 
         {hasMarketContext ? (
           <div
@@ -820,7 +1057,9 @@ export default function AtlasBottomSheet() {
                         style={{
                           border:
                             active
-                              ? "1px solid #a9792b"
+                              ? isCustomMarket
+                                ? "1px solid #0f766e"
+                                : "1px solid #a9792b"
                               : "1px solid #e2e8f0",
 
                           borderRadius:
@@ -831,12 +1070,16 @@ export default function AtlasBottomSheet() {
 
                           background:
                             active
-                              ? "#fff8e8"
+                              ? isCustomMarket
+                                ? "#ecfdf5"
+                                : "#fff8e8"
                               : "#ffffff",
 
                           color:
                             active
-                              ? "#8a5a18"
+                              ? isCustomMarket
+                                ? "#115e59"
+                                : "#8a5a18"
                               : "#64748b",
 
                           fontSize:
@@ -955,7 +1198,9 @@ export default function AtlasBottomSheet() {
                         style={{
                           border:
                             active
-                              ? "1px solid #a9792b"
+                              ? isCustomMarket
+                                ? "1px solid #0f766e"
+                                : "1px solid #a9792b"
                               : "1px solid #e2e8f0",
 
                           borderRadius:
@@ -966,12 +1211,16 @@ export default function AtlasBottomSheet() {
 
                           background:
                             active
-                              ? "#fff8e8"
+                              ? isCustomMarket
+                                ? "#ecfdf5"
+                                : "#fff8e8"
                               : "#ffffff",
 
                           color:
                             active
-                              ? "#8a5a18"
+                              ? isCustomMarket
+                                ? "#115e59"
+                                : "#8a5a18"
                               : "#64748b",
 
                           fontSize:
@@ -997,12 +1246,46 @@ export default function AtlasBottomSheet() {
         ) : null}
 
         {/* =====================================================
+            CUSTOM MARKET EMPTY STATE
+            ===================================================== */}
+
+        {isCustomMarket &&
+        customBoundaries.length === 0 ? (
+          <div
+            style={{
+              marginTop: 18,
+
+              padding:
+                "18px 16px",
+
+              borderRadius: 16,
+
+              border:
+                "1px dashed #99f6e4",
+
+              background:
+                "#f0fdfa",
+
+              color:
+                "#115e59",
+
+              fontSize: 13,
+
+              lineHeight: 1.5,
+
+              textAlign: "center",
+            }}
+          >
+            Tap one or more government areas on
+            the map. Atlas will combine them into
+            one Custom Market and calculate the
+            statistics automatically.
+          </div>
+        ) : null}
+
+        {/* =====================================================
             LIVE MARKET SNAPSHOT
-            =====================================================
-            
-            Same UI regardless of whether the statistics came
-            from an MLS geography or government polygon.
-        */}
+            ===================================================== */}
 
         {hasMarketContext ? (
           <>
@@ -1261,8 +1544,6 @@ export default function AtlasBottomSheet() {
                     "#f8fafc",
                 }}
               >
-                {/* MEDIAN / AVG */}
-
                 <div
                   style={{
                     display:
@@ -1735,12 +2016,10 @@ export default function AtlasBottomSheet() {
 
         {/* =====================================================
             PRIMARY ACTIONS
-            =====================================================
-            
-            Display for both MLS and government market contexts.
-        */}
+            ===================================================== */}
 
-        {hasMarketContext ? (
+        {!isCustomMarket &&
+        hasMarketContext ? (
           <div
             style={{
               display:
@@ -1823,7 +2102,8 @@ export default function AtlasBottomSheet() {
             CLICKED GOVERNMENT AREA INSIDE MLS CONTEXT
             ===================================================== */}
 
-        {selectedEntity &&
+        {!isCustomMarket &&
+        selectedEntity &&
         selectedBoundary ? (
           <div
             style={{
@@ -1907,7 +2187,8 @@ export default function AtlasBottomSheet() {
             RELATED MLS GEOGRAPHIES
             ===================================================== */}
 
-        {selectedBoundary &&
+        {!isCustomMarket &&
+        selectedBoundary &&
         relatedChoices.length >
           0 ? (
           <div
