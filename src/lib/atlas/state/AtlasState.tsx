@@ -58,12 +58,27 @@ export type AtlasSheetState =
  * Normal Atlas behavior.
  *
  * custom-select:
- * Government polygons can be accumulated into a
- * user-defined Custom Market.
+ * User is building a Custom Market.
  */
 export type AtlasMode =
   | "explore"
   | "custom-select";
+
+/*
+ * Method used to define the Custom Market.
+ *
+ * select:
+ * User selects existing government polygons.
+ *
+ * draw:
+ * User draws a custom polygon.
+ *
+ * Drawing geometry itself will be added in the
+ * next implementation step.
+ */
+export type AtlasCustomMarketMethod =
+  | "select"
+  | "draw";
 
 type AtlasStateContextValue = {
   /*
@@ -110,11 +125,16 @@ type AtlasStateContextValue = {
   mode: AtlasMode;
 
   /*
+   * Which Custom Market creation method is active.
+   */
+  customMarketMethod: AtlasCustomMarketMethod;
+
+  /*
    * Government polygons currently included in the
-   * Custom Market.
+   * Custom Market Select Areas method.
    *
    * Store the full boundary object rather than only keys so
-   * future UI can immediately display names and metadata.
+   * the UI can display names and metadata immediately.
    */
   customBoundaries: AtlasBoundary[];
 
@@ -150,6 +170,10 @@ type AtlasStateContextValue = {
    */
 
   startCustomMarket: () => void;
+
+  setCustomMarketMethod: (
+    method: AtlasCustomMarketMethod,
+  ) => void;
 
   toggleCustomBoundary: (
     boundary: AtlasBoundary,
@@ -292,6 +316,19 @@ export function AtlasStateProvider({
       "explore",
     );
 
+  /*
+   * Default Custom Market workflow:
+   *
+   * Select existing government areas.
+   */
+  const [
+    customMarketMethod,
+    setCustomMarketMethodState,
+  ] =
+    useState<AtlasCustomMarketMethod>(
+      "select",
+    );
+
   const [
     customBoundaries,
     setCustomBoundaries,
@@ -364,19 +401,15 @@ export function AtlasStateProvider({
    * GOVERNMENT POLYGON CLICK
    * ==========================================================
    *
-   * IMPORTANT:
+   * This remains normal Explore behavior.
    *
-   * This function remains Explore behavior.
-   *
-   * AtlasMap will eventually decide:
+   * AtlasMap decides whether a click should call:
    *
    * mode === "explore"
    *     -> selectBoundary(...)
    *
    * mode === "custom-select"
-   *     -> toggleCustomBoundary(...)
-   *
-   * We deliberately do NOT mix those behaviors here.
+   *     -> Custom Market behavior
    */
 
   function selectBoundary(
@@ -416,7 +449,7 @@ export function AtlasStateProvider({
       /*
        * Polygon outside current context.
        *
-       * Preserve the broader context in memory.
+       * Preserve broader context in memory.
        */
       setAnalysisEntity(null);
 
@@ -543,14 +576,14 @@ export function AtlasStateProvider({
 
   function startCustomMarket() {
     /*
-     * Enter Custom Market mode WITHOUT destroying
-     * the existing Explore context.
-     *
-     * For now, every new Custom Market starts empty.
-     *
-     * Later we can optionally offer:
-     *
-     * "Start with current area"
+     * Every new Custom Market begins in Select Areas mode.
+     */
+    setCustomMarketMethodState(
+      "select",
+    );
+
+    /*
+     * Start with no selected government polygons.
      */
     setCustomBoundaries([]);
 
@@ -559,12 +592,31 @@ export function AtlasStateProvider({
     );
 
     /*
-     * Leave contextEntity / analysisEntity /
-     * focusedBoundary untouched.
+     * Leave Explore context untouched.
      *
-     * That allows Cancel / Exit to return the user
-     * to exactly the Explore state they had before.
+     * Cancel / Exit returns the user to exactly
+     * where they were before Custom Market.
      */
+  }
+
+  /*
+   * Switch between:
+   *
+   * Select Areas
+   * Draw Area
+   *
+   * IMPORTANT:
+   *
+   * Do not clear customBoundaries when switching.
+   *
+   * That makes switching methods reversible.
+   */
+  function setCustomMarketMethod(
+    method: AtlasCustomMarketMethod,
+  ) {
+    setCustomMarketMethodState(
+      method,
+    );
   }
 
   function toggleCustomBoundary(
@@ -609,16 +661,19 @@ export function AtlasStateProvider({
 
   function exitCustomMarket() {
     /*
-     * Exit Custom Market and return to normal
-     * Explore behavior.
+     * Exit Custom Market and return to Explore.
      *
-     * The custom selection is cleared because this
-     * action represents abandoning the current
-     * Custom Market.
-     *
-     * Existing Explore context remains intact.
+     * Abandon the current Custom Market selection.
      */
     setCustomBoundaries([]);
+
+    /*
+     * Reset the next Custom Market session to
+     * Select Areas.
+     */
+    setCustomMarketMethodState(
+      "select",
+    );
 
     setMode("explore");
   }
@@ -697,6 +752,7 @@ export function AtlasStateProvider({
         focusMatchesContext,
 
         mode,
+        customMarketMethod,
         customBoundaries,
 
         propertyTypeFilter,
@@ -710,6 +766,7 @@ export function AtlasStateProvider({
         resetAnalysisToContext,
 
         startCustomMarket,
+        setCustomMarketMethod,
         toggleCustomBoundary,
         clearCustomBoundaries,
         exitCustomMarket,

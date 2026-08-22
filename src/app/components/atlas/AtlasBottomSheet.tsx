@@ -19,13 +19,9 @@ function entityTypeLabel(entityType: string) {
   }
 }
 
-type SummaryMode =
-  | "median"
-  | "avg";
+type SummaryMode = "median" | "avg";
 
-type AreaUnit =
-  | "ft2"
-  | "m2";
+type AreaUnit = "ft2" | "m2";
 
 type MarketSnapshot = {
   snapshotDate: string | null;
@@ -60,24 +56,18 @@ function formatPrice(value: number | null) {
   }
 
   if (value >= 1_000) {
-    return `$${Math.round(
-      value / 1_000,
-    ).toLocaleString("en-US")}K`;
+    return `$${Math.round(value / 1_000).toLocaleString(
+      "en-US",
+    )}K`;
   }
 
-  return `$${Math.round(value).toLocaleString(
-    "en-US",
-  )}`;
+  return `$${Math.round(value).toLocaleString("en-US")}`;
 }
 
-function formatWholeNumber(
-  value: number | null,
-) {
+function formatWholeNumber(value: number | null) {
   if (value === null) return "—";
 
-  return Math.round(value).toLocaleString(
-    "en-US",
-  );
+  return Math.round(value).toLocaleString("en-US");
 }
 
 export default function AtlasBottomSheet() {
@@ -90,6 +80,9 @@ export default function AtlasBottomSheet() {
     relatedEntities,
 
     mode,
+    customMarketMethod,
+    setCustomMarketMethod,
+
     customBoundaries,
     toggleCustomBoundary,
     clearCustomBoundaries,
@@ -114,13 +107,20 @@ export default function AtlasBottomSheet() {
   const isCustomMarket =
     mode === "custom-select";
 
+  const isSelectAreas =
+    isCustomMarket &&
+    customMarketMethod === "select";
+
+  const isDrawArea =
+    isCustomMarket &&
+    customMarketMethod === "draw";
+
   const [
     marketSnapshot,
     setMarketSnapshot,
-  ] =
-    useState<MarketSnapshot | null>(
-      null,
-    );
+  ] = useState<MarketSnapshot | null>(
+    null,
+  );
 
   const [
     marketSnapshotLoading,
@@ -139,14 +139,12 @@ export default function AtlasBottomSheet() {
   const [
     summaryMode,
     setSummaryMode,
-  ] =
-    useState<SummaryMode>("median");
+  ] = useState<SummaryMode>("median");
 
   const [
     areaUnit,
     setAreaUnit,
-  ] =
-    useState<AreaUnit>("ft2");
+  ] = useState<AreaUnit>("ft2");
 
   /*
    * Related MLS geographies for the currently
@@ -164,11 +162,14 @@ export default function AtlasBottomSheet() {
    * MARKET SNAPSHOT SOURCE
    * ==========================================================
    *
-   * Atlas now supports:
+   * Atlas currently supports:
    *
    * 1. MLS Community / Area statistics
    * 2. Government Local Area statistics
-   * 3. Custom Market statistics
+   * 3. Custom Market Select Areas statistics
+   *
+   * Draw Area statistics will be added after actual drawing
+   * geometry is wired into AtlasMap.
    */
 
   const hasMlsMarketContext =
@@ -189,7 +190,7 @@ export default function AtlasBottomSheet() {
 
   const hasCustomMarketContext =
     Boolean(
-      isCustomMarket &&
+      isSelectAreas &&
         customBoundaries.length > 0,
     );
 
@@ -200,11 +201,23 @@ export default function AtlasBottomSheet() {
 
   useEffect(() => {
     /*
-     * Custom Market with zero selected polygons is valid,
-     * but there are no statistics to calculate yet.
+     * Draw Area does not have geometry yet.
+     *
+     * Clear any previous Select Areas statistics so we never
+     * show stale numbers while the user is in Draw Area mode.
+     */
+    if (isDrawArea) {
+      setMarketSnapshot(null);
+      setMarketSnapshotLoading(false);
+      return;
+    }
+
+    /*
+     * Select Areas with zero polygons is valid,
+     * but there are no statistics to calculate.
      */
     if (
-      isCustomMarket &&
+      isSelectAreas &&
       customBoundaries.length === 0
     ) {
       setMarketSnapshot(null);
@@ -230,7 +243,7 @@ export default function AtlasBottomSheet() {
 
         /*
          * ------------------------------------------------------
-         * CUSTOM MARKET
+         * CUSTOM MARKET — SELECT AREAS
          * ------------------------------------------------------
          */
 
@@ -370,7 +383,8 @@ export default function AtlasBottomSheet() {
       controller.abort();
     };
   }, [
-    isCustomMarket,
+    isSelectAreas,
+    isDrawArea,
     customBoundaries,
     hasMarketContext,
     hasCustomMarketContext,
@@ -539,7 +553,7 @@ export default function AtlasBottomSheet() {
         }}
       >
         {/* =====================================================
-            CUSTOM MARKET HEADING
+            CUSTOM MARKET
             ===================================================== */}
 
         {isCustomMarket ? (
@@ -580,114 +594,316 @@ export default function AtlasBottomSheet() {
               Your Selected Area
             </div>
 
+            {/* ================================================
+                CUSTOM MARKET METHOD
+                ================================================ */}
+
             <div
               style={{
-                marginTop: 5,
+                display: "inline-flex",
 
-                fontSize: 13,
+                marginTop: 12,
 
-                lineHeight: 1.45,
+                overflow: "hidden",
 
-                color:
-                  "#64748b",
+                border:
+                  "1px solid #99f6e4",
+
+                borderRadius: 999,
+
+                background:
+                  "#ffffff",
               }}
             >
-              {customBoundaries.length === 0
-                ? "Tap government areas on the map to build your market."
-                : customBoundaries.length === 1
-                  ? "1 government area selected."
-                  : `${customBoundaries.length} government areas selected.`}
-            </div>
-
-            {customBoundaries.length >
-            0 ? (
-              <div
+              <button
+                type="button"
+                onClick={() =>
+                  setCustomMarketMethod(
+                    "select",
+                  )
+                }
                 style={{
-                  display: "flex",
+                  border: 0,
 
-                  flexWrap: "wrap",
+                  padding:
+                    "7px 13px",
 
-                  gap: 6,
+                  background:
+                    isSelectAreas
+                      ? "#0f766e"
+                      : "#ffffff",
 
-                  marginTop: 10,
+                  color:
+                    isSelectAreas
+                      ? "#ffffff"
+                      : "#475569",
+
+                  fontSize: 11,
+
+                  fontWeight: 750,
+
+                  cursor: "pointer",
                 }}
               >
-                {customBoundaries.map(
-                  (boundary) => (
-                    <button
-                      key={boundary.boundaryKy}
-                      type="button"
-                      onClick={() =>
-                        toggleCustomBoundary(boundary)
-                      }
-                      aria-label={`Remove ${boundary.boundaryName} from Custom Market`}
-                      title={`Remove ${boundary.boundaryName}`}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 6,
+                Select Areas
+              </button>
 
-                        borderRadius: 999,
+              <button
+                type="button"
+                onClick={() =>
+                  setCustomMarketMethod(
+                    "draw",
+                  )
+                }
+                style={{
+                  border: 0,
 
-                        padding: "5px 8px 5px 9px",
+                  borderLeft:
+                    "1px solid #ccfbf1",
 
-                        background: "#ecfdf5",
+                  padding:
+                    "7px 13px",
 
-                        color: "#115e59",
+                  background:
+                    isDrawArea
+                      ? "#0f766e"
+                      : "#ffffff",
 
-                        fontSize: 10,
-                        fontWeight: 700,
+                  color:
+                    isDrawArea
+                      ? "#ffffff"
+                      : "#475569",
 
-                        border:
-                          "1px solid #a7f3d0",
+                  fontSize: 11,
 
-                        cursor: "pointer",
-                      }}
-                    >
-                      <span>
-                        {boundary.boundaryName}
-                      </span>
+                  fontWeight: 750,
 
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                Draw Area
+              </button>
+            </div>
 
-                          width: 16,
-                          height: 16,
+            {/* ================================================
+                SELECT AREAS MODE
+                ================================================ */}
 
-                          borderRadius: 999,
+            {isSelectAreas ? (
+              <>
+                <div
+                  style={{
+                    marginTop: 10,
 
-                          background:
-                            "rgba(15,118,110,0.10)",
+                    fontSize: 13,
 
-                          fontSize: 13,
-                          lineHeight: 1,
+                    lineHeight: 1.45,
 
-                          fontWeight: 700,
-                        }}
-                      >
-                        ×
-                      </span>
-                    </button>
-                  ),
-                )}
+                    color:
+                      "#64748b",
+                  }}
+                >
+                  {customBoundaries.length === 0
+                    ? "Tap government areas on the map to build your market."
+                    : customBoundaries.length === 1
+                      ? "1 government area selected."
+                      : `${customBoundaries.length} government areas selected.`}
+                </div>
+
+                {customBoundaries.length >
+                0 ? (
+                  <div
+                    style={{
+                      display: "flex",
+
+                      flexWrap: "wrap",
+
+                      gap: 6,
+
+                      marginTop: 10,
+                    }}
+                  >
+                    {customBoundaries.map(
+                      (boundary) => (
+                        <button
+                          key={
+                            boundary.boundaryKy
+                          }
+                          type="button"
+                          onClick={() =>
+                            toggleCustomBoundary(
+                              boundary,
+                            )
+                          }
+                          aria-label={`Remove ${boundary.boundaryName} from Custom Market`}
+                          title={`Remove ${boundary.boundaryName}`}
+                          style={{
+                            display:
+                              "inline-flex",
+
+                            alignItems:
+                              "center",
+
+                            gap: 6,
+
+                            borderRadius:
+                              999,
+
+                            padding:
+                              "5px 8px 5px 9px",
+
+                            background:
+                              "#ecfdf5",
+
+                            color:
+                              "#115e59",
+
+                            fontSize:
+                              10,
+
+                            fontWeight:
+                              700,
+
+                            border:
+                              "1px solid #a7f3d0",
+
+                            cursor:
+                              "pointer",
+                          }}
+                        >
+                          <span>
+                            {
+                              boundary.boundaryName
+                            }
+                          </span>
+
+                          <span
+                            aria-hidden="true"
+                            style={{
+                              display:
+                                "inline-flex",
+
+                              alignItems:
+                                "center",
+
+                              justifyContent:
+                                "center",
+
+                              width: 16,
+                              height: 16,
+
+                              borderRadius:
+                                999,
+
+                              background:
+                                "rgba(15,118,110,0.10)",
+
+                              fontSize:
+                                13,
+
+                              lineHeight:
+                                1,
+
+                              fontWeight:
+                                700,
+                            }}
+                          >
+                            ×
+                          </span>
+                        </button>
+                      ),
+                    )}
+                  </div>
+                ) : null}
+              </>
+            ) : null}
+
+            {/* ================================================
+                DRAW AREA MODE
+                ================================================ */}
+
+            {isDrawArea ? (
+              <div
+                style={{
+                  marginTop: 14,
+
+                  padding:
+                    "16px 16px",
+
+                  borderRadius: 16,
+
+                  border:
+                    "1px dashed #99f6e4",
+
+                  background:
+                    "#f0fdfa",
+
+                  color:
+                    "#115e59",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 12,
+
+                    fontWeight: 750,
+                  }}
+                >
+                  Draw your market
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 5,
+
+                    fontSize: 12,
+
+                    lineHeight: 1.5,
+
+                    color:
+                      "#475569",
+                  }}
+                >
+                  Draw a boundary on the map to
+                  define your custom market.
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 6,
+
+                    fontSize: 11,
+
+                    lineHeight: 1.45,
+
+                    color:
+                      "#64748b",
+                  }}
+                >
+                  Drawing controls will appear on
+                  the map in the next step.
+                </div>
               </div>
             ) : null}
+
+            {/* ================================================
+                CUSTOM MARKET ACTIONS
+                ================================================ */}
 
             <div
               style={{
                 display: "flex",
+
+                flexWrap: "wrap",
 
                 gap: 8,
 
                 marginTop: 12,
               }}
             >
-              {customBoundaries.length >
-              0 ? (
+              {isSelectAreas &&
+              customBoundaries.length >
+                0 ? (
                 <button
                   type="button"
                   onClick={
@@ -981,7 +1197,11 @@ export default function AtlasBottomSheet() {
 
         {/* =====================================================
             MARKET FILTERS
-            ===================================================== */}
+            =====================================================
+            
+            Draw Area will get these once actual drawn geometry
+            can produce statistics.
+        */}
 
         {hasMarketContext ? (
           <div
@@ -1277,10 +1497,10 @@ export default function AtlasBottomSheet() {
         ) : null}
 
         {/* =====================================================
-            CUSTOM MARKET EMPTY STATE
+            SELECT AREAS EMPTY STATE
             ===================================================== */}
 
-        {isCustomMarket &&
+        {isSelectAreas &&
         customBoundaries.length === 0 ? (
           <div
             style={{
