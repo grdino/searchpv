@@ -91,6 +91,7 @@ export default function AtlasBottomSheet() {
 
     mode,
     customBoundaries,
+    toggleCustomBoundary,
     clearCustomBoundaries,
     exitCustomMarket,
 
@@ -613,34 +614,64 @@ export default function AtlasBottomSheet() {
               >
                 {customBoundaries.map(
                   (boundary) => (
-                    <span
-                      key={
-                        boundary.boundaryKy
+                    <button
+                      key={boundary.boundaryKy}
+                      type="button"
+                      onClick={() =>
+                        toggleCustomBoundary(boundary)
                       }
+                      aria-label={`Remove ${boundary.boundaryName} from Custom Market`}
+                      title={`Remove ${boundary.boundaryName}`}
                       style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+
                         borderRadius: 999,
 
-                        padding:
-                          "5px 9px",
+                        padding: "5px 8px 5px 9px",
 
-                        background:
-                          "#ecfdf5",
+                        background: "#ecfdf5",
 
-                        color:
-                          "#115e59",
+                        color: "#115e59",
 
                         fontSize: 10,
-
                         fontWeight: 700,
 
                         border:
                           "1px solid #a7f3d0",
+
+                        cursor: "pointer",
                       }}
                     >
-                      {
-                        boundary.boundaryName
-                      }
-                    </span>
+                      <span>
+                        {boundary.boundaryName}
+                      </span>
+
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+
+                          width: 16,
+                          height: 16,
+
+                          borderRadius: 999,
+
+                          background:
+                            "rgba(15,118,110,0.10)",
+
+                          fontSize: 13,
+                          lineHeight: 1,
+
+                          fontWeight: 700,
+                        }}
+                      >
+                        ×
+                      </span>
+                    </button>
                   ),
                 )}
               </div>
