@@ -15,6 +15,13 @@ type MarketTypeFilter =
   | "resale"
   | "precon";
 
+type BedroomFilter =
+  | "all"
+  | "0br"
+  | "1br"
+  | "2br"
+  | "3br_plus";
+
 export async function GET(
   request: NextRequest,
 ) {
@@ -27,23 +34,36 @@ export async function GET(
   const propertyType =
     (request.nextUrl.searchParams.get(
       "propertyType",
-    ) ?? "all") as PropertyTypeFilter;
+    ) ??
+      "all") as PropertyTypeFilter;
 
   const marketType =
     (request.nextUrl.searchParams.get(
       "marketType",
-    ) ?? "all") as MarketTypeFilter;
+    ) ??
+      "all") as MarketTypeFilter;
+
+  const bedroom =
+    (request.nextUrl.searchParams.get(
+      "bedroom",
+    ) ??
+      "all") as BedroomFilter;
 
   /*
    * ----------------------------------------------------------
-   * Validate request
+   * VALIDATE REQUEST
    * ----------------------------------------------------------
    */
 
-  if (!Number.isFinite(boundaryKy)) {
+  if (
+    !Number.isFinite(
+      boundaryKy,
+    )
+  ) {
     return NextResponse.json(
       {
-        error: "Invalid boundaryKy.",
+        error:
+          "Invalid boundaryKy.",
       },
       {
         status: 400,
@@ -52,13 +72,18 @@ export async function GET(
   }
 
   if (
-    !["all", "condo", "house"].includes(
+    ![
+      "all",
+      "condo",
+      "house",
+    ].includes(
       propertyType,
     )
   ) {
     return NextResponse.json(
       {
-        error: "Invalid propertyType.",
+        error:
+          "Invalid propertyType.",
       },
       {
         status: 400,
@@ -67,13 +92,40 @@ export async function GET(
   }
 
   if (
-    !["all", "resale", "precon"].includes(
+    ![
+      "all",
+      "resale",
+      "precon",
+    ].includes(
       marketType,
     )
   ) {
     return NextResponse.json(
       {
-        error: "Invalid marketType.",
+        error:
+          "Invalid marketType.",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  if (
+    ![
+      "all",
+      "0br",
+      "1br",
+      "2br",
+      "3br_plus",
+    ].includes(
+      bedroom,
+    )
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Invalid bedroom.",
       },
       {
         status: 400,
@@ -83,7 +135,7 @@ export async function GET(
 
   /*
    * ----------------------------------------------------------
-   * Call spatial government-boundary market snapshot
+   * LOAD GOVERNMENT-BOUNDARY SNAPSHOT
    * ----------------------------------------------------------
    */
 
@@ -96,9 +148,17 @@ export async function GET(
   } = await supabase.rpc(
     "atlas_boundary_market_snapshot",
     {
-      p_boundary_ky: boundaryKy,
-      p_property_type: propertyType,
-      p_market_type: marketType,
+      p_boundary_ky:
+        boundaryKy,
+
+      p_property_type:
+        propertyType,
+
+      p_market_type:
+        marketType,
+
+      p_bedroom:
+        bedroom,
     },
   );
 
@@ -110,20 +170,14 @@ export async function GET(
 
     return NextResponse.json(
       {
-        error: error.message,
+        error:
+          error.message,
       },
       {
         status: 500,
       },
     );
   }
-
-  /*
-   * RPC returns one jsonb object.
-   *
-   * A missing boundary may result in null rather than an
-   * application error, so handle that explicitly.
-   */
 
   if (!data) {
     return NextResponse.json(
@@ -137,5 +191,7 @@ export async function GET(
     );
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json(
+    data,
+  );
 }

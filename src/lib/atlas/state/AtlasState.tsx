@@ -40,17 +40,6 @@ export type AtlasBoundary = {
  * A Popular Area is an exact Atlas geographic footprint.
  *
  * It is deliberately NOT an MLS entity.
- *
- * Examples:
- *
- * Emiliano Zapata
- *   -> [437]
- *
- * Nuevo Nayarit
- *   -> [626]
- *
- * Las Glorias
- *   -> [365, 366, 370]
  */
 export type AtlasPopularArea = {
   footprintKey: string;
@@ -69,56 +58,41 @@ export type AtlasMarketTypeFilter =
   | "resale"
   | "precon";
 
+/*
+ * Bedroom segments deliberately use the same codes already
+ * exposed by public.active_listing / public.pending_listing:
+ *
+ * all       = all bedrooms
+ * 0br       = Studio
+ * 1br       = 1 bedroom
+ * 2br       = 2 bedrooms
+ * 3br_plus  = 3 or more bedrooms
+ */
+export type AtlasBedroomFilter =
+  | "all"
+  | "0br"
+  | "1br"
+  | "2br"
+  | "3br_plus";
+
 export type AtlasSheetState =
   | "collapsed"
   | "half"
   | "focused";
 
-/*
- * Atlas interaction mode.
- *
- * explore:
- * Normal Atlas behavior.
- *
- * custom-select:
- * User is building a Custom Market.
- */
 export type AtlasMode =
   | "explore"
   | "custom-select";
 
-/*
- * Method used to define the Custom Market.
- *
- * select:
- * User selects existing government polygons.
- *
- * draw:
- * User draws a custom polygon.
- */
 export type AtlasCustomMarketMethod =
   | "select"
   | "draw";
 
-/*
- * A single longitude / latitude vertex.
- *
- * Mapbox uses:
- *
- * [longitude, latitude]
- */
-export type AtlasDrawVertex =
-  [
-    number,
-    number,
-  ];
+export type AtlasDrawVertex = [
+  number,
+  number,
+];
 
-/*
- * Finished Custom Market polygon.
- *
- * Keep this intentionally small and GeoJSON-compatible so it
- * can later be sent directly to the statistics API.
- */
 export type AtlasDrawnGeometry = {
   type: "Polygon";
   coordinates: number[][][];
@@ -141,12 +115,7 @@ type AtlasStateContextValue = {
   focusedBoundary: AtlasBoundary | null;
 
   /*
-   * Exact footprint selected from the Popular Areas
-   * discovery shortcuts.
-   *
-   * This remains separate from MLS entity selection so the
-   * displayed name, highlighted geography and statistics can
-   * all describe the same physical footprint.
+   * Exact footprint selected from Popular Areas.
    */
   popularAreaSelection: AtlasPopularArea | null;
 
@@ -162,8 +131,7 @@ type AtlasStateContextValue = {
   relatedEntities: AtlasEntity[];
 
   /*
-   * Whether the focused polygon belongs to the
-   * broader Explore context.
+   * Whether the focused polygon belongs to broader context.
    */
   focusMatchesContext: boolean;
 
@@ -177,32 +145,25 @@ type AtlasStateContextValue = {
 
   customMarketMethod: AtlasCustomMarketMethod;
 
-  /*
-   * Government polygons included through Select Areas.
-   */
   customBoundaries: AtlasBoundary[];
 
-  /*
-   * Vertices currently being created in Draw Area mode.
-   *
-   * These are the editable/in-progress points.
-   */
   customDrawVertices: AtlasDrawVertex[];
 
-  /*
-   * Completed polygon.
-   *
-   * Null means no finished custom drawing currently exists.
-   */
   customDrawnGeometry: AtlasDrawnGeometry | null;
 
-  /*
-   * Whether a polygon is actively being created.
-   */
   customDrawActive: boolean;
 
+  /*
+   * ==========================================================
+   * MARKET FILTERS
+   * ==========================================================
+   */
+
   propertyTypeFilter: AtlasPropertyTypeFilter;
+
   marketTypeFilter: AtlasMarketTypeFilter;
+
+  bedroomFilter: AtlasBedroomFilter;
 
   sheetState: AtlasSheetState;
 
@@ -212,7 +173,9 @@ type AtlasStateContextValue = {
    * ==========================================================
    */
 
-  selectEntity: (entity: AtlasEntity) => void;
+  selectEntity: (
+    entity: AtlasEntity,
+  ) => void;
 
   selectBoundary: (
     boundary: AtlasBoundary,
@@ -282,12 +245,22 @@ type AtlasStateContextValue = {
 
   clearCustomDraw: () => void;
 
+  /*
+   * ==========================================================
+   * FILTER ACTIONS
+   * ==========================================================
+   */
+
   setPropertyTypeFilter: (
     filter: AtlasPropertyTypeFilter,
   ) => void;
 
   setMarketTypeFilter: (
     filter: AtlasMarketTypeFilter,
+  ) => void;
+
+  setBedroomFilter: (
+    filter: AtlasBedroomFilter,
   ) => void;
 
   clearEntity: () => void;
@@ -390,10 +363,6 @@ export function AtlasStateProvider({
       null,
     );
 
-  /*
-   * Popular Area footprint selected from the discovery
-   * shortcuts underneath Atlas Search.
-   */
   const [
     popularAreaSelection,
     setPopularAreaSelection,
@@ -435,9 +404,6 @@ export function AtlasStateProvider({
       "select",
     );
 
-  /*
-   * Select Areas state.
-   */
   const [
     customBoundaries,
     setCustomBoundaries,
@@ -446,9 +412,6 @@ export function AtlasStateProvider({
       [],
     );
 
-  /*
-   * Draw Area state.
-   */
   const [
     customDrawVertices,
     setCustomDrawVertices,
@@ -494,6 +457,14 @@ export function AtlasStateProvider({
     );
 
   const [
+    bedroomFilter,
+    setBedroomFilter,
+  ] =
+    useState<AtlasBedroomFilter>(
+      "all",
+    );
+
+  const [
     sheetState,
     setSheetState,
   ] =
@@ -520,10 +491,6 @@ export function AtlasStateProvider({
   function selectEntity(
     entity: AtlasEntity,
   ) {
-    /*
-     * A direct MLS geography selection replaces any Popular
-     * Area footprint selection.
-     */
     setPopularAreaSelection(
       null,
     );
@@ -547,14 +514,6 @@ export function AtlasStateProvider({
   function selectPopularArea(
     area: AtlasPopularArea,
   ) {
-    /*
-     * Popular Areas are standalone geographic footprints.
-     *
-     * Do not assign an arbitrary MLS entity as the context or
-     * analysis entity. AtlasMap will use boundaryKys to
-     * highlight and fit the exact footprint, while the
-     * BottomSheet can use the same boundaryKys for statistics.
-     */
     setPopularAreaSelection(
       area,
     );
@@ -569,9 +528,6 @@ export function AtlasStateProvider({
       true,
     );
 
-    /*
-     * Popular Area discovery is normal Explore behavior.
-     */
     setMode("explore");
 
     setSheetState("half");
@@ -603,11 +559,6 @@ export function AtlasStateProvider({
     boundary: AtlasBoundary,
     entities: AtlasEntity[] = [],
   ) {
-    /*
-     * Clicking an individual map polygon exits the Popular
-     * Area footprint selection and resumes ordinary Explore
-     * behavior.
-     */
     setPopularAreaSelection(
       null,
     );
@@ -639,9 +590,6 @@ export function AtlasStateProvider({
         return;
       }
 
-      /*
-       * Polygon outside current context.
-       */
       setAnalysisEntity(null);
 
       setFocusMatchesContext(
@@ -653,9 +601,6 @@ export function AtlasStateProvider({
       return;
     }
 
-    /*
-     * No existing context.
-     */
     if (entities.length === 1) {
       setContextEntity(
         entities[0],
@@ -674,9 +619,6 @@ export function AtlasStateProvider({
       return;
     }
 
-    /*
-     * Zero or multiple matches.
-     */
     setContextEntity(null);
     setAnalysisEntity(null);
 
@@ -717,9 +659,6 @@ export function AtlasStateProvider({
       return;
     }
 
-    /*
-     * Start a new broader context.
-     */
     setContextEntity(entity);
     setAnalysisEntity(entity);
 
@@ -765,23 +704,14 @@ export function AtlasStateProvider({
    */
 
   function startCustomMarket() {
-    /*
-     * Custom Market is a separate analysis mode.
-     */
     setPopularAreaSelection(
       null,
     );
 
-    /*
-     * Every new Custom Market begins with Select Areas.
-     */
     setCustomMarketMethodState(
       "select",
     );
 
-    /*
-     * Start both methods empty.
-     */
     setCustomBoundaries([]);
 
     setCustomDrawVertices([]);
@@ -791,10 +721,6 @@ export function AtlasStateProvider({
     setMode(
       "custom-select",
     );
-
-    /*
-     * Preserve Explore context underneath.
-     */
   }
 
   function setCustomMarketMethod(
@@ -804,14 +730,6 @@ export function AtlasStateProvider({
       method,
     );
 
-    /*
-     * Switching methods should not destroy either method's
-     * saved work.
-     *
-     * However, if the user leaves Draw Area while actively
-     * sketching an unfinished polygon, stop the active drawing
-     * interaction while preserving its vertices.
-     */
     if (method !== "draw") {
       setCustomDrawActive(
         false,
@@ -872,10 +790,6 @@ export function AtlasStateProvider({
    */
 
   function startCustomDraw() {
-    /*
-     * Starting a fresh drawing clears any previous completed
-     * geometry and prior vertices.
-     */
     setCustomDrawVertices(
       [],
     );
@@ -917,13 +831,6 @@ export function AtlasStateProvider({
   }
 
   function finishCustomDraw() {
-    /*
-     * GeoJSON Polygon needs at least:
-     *
-     * 3 distinct vertices
-     *
-     * plus a closing vertex equal to the first point.
-     */
     if (
       customDrawVertices.length <
       3
@@ -965,18 +872,12 @@ export function AtlasStateProvider({
   }
 
   function exitCustomMarket() {
-    /*
-     * Abandon the current Custom Market entirely.
-     */
     setCustomBoundaries([]);
 
     setCustomDrawVertices([]);
     setCustomDrawnGeometry(null);
     setCustomDrawActive(false);
 
-    /*
-     * Next Custom Market begins in Select Areas.
-     */
     setCustomMarketMethodState(
       "select",
     );
@@ -1079,6 +980,7 @@ export function AtlasStateProvider({
 
         propertyTypeFilter,
         marketTypeFilter,
+        bedroomFilter,
 
         sheetState,
 
@@ -1105,6 +1007,7 @@ export function AtlasStateProvider({
 
         setPropertyTypeFilter,
         setMarketTypeFilter,
+        setBedroomFilter,
 
         clearEntity,
         clearBoundary,

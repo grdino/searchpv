@@ -15,6 +15,13 @@ type MarketTypeFilter =
   | "resale"
   | "precon";
 
+type BedroomFilter =
+  | "all"
+  | "0br"
+  | "1br"
+  | "2br"
+  | "3br_plus";
+
 export async function GET(
   request: NextRequest,
 ) {
@@ -23,6 +30,7 @@ export async function GET(
    *
    * ?boundaryKy=349&boundaryKy=365
    */
+
   const boundaryKyValues =
     request.nextUrl.searchParams.getAll(
       "boundaryKy",
@@ -31,17 +39,27 @@ export async function GET(
   const boundaryKys =
     boundaryKyValues
       .map(Number)
-      .filter(Number.isFinite);
+      .filter(
+        Number.isFinite,
+      );
 
   const propertyType =
     (request.nextUrl.searchParams.get(
       "propertyType",
-    ) ?? "all") as PropertyTypeFilter;
+    ) ??
+      "all") as PropertyTypeFilter;
 
   const marketType =
     (request.nextUrl.searchParams.get(
       "marketType",
-    ) ?? "all") as MarketTypeFilter;
+    ) ??
+      "all") as MarketTypeFilter;
+
+  const bedroom =
+    (request.nextUrl.searchParams.get(
+      "bedroom",
+    ) ??
+      "all") as BedroomFilter;
 
   /*
    * ----------------------------------------------------------
@@ -70,11 +88,17 @@ export async function GET(
    */
   const uniqueBoundaryKys =
     Array.from(
-      new Set(boundaryKys),
+      new Set(
+        boundaryKys,
+      ),
     );
 
   if (
-    !["all", "condo", "house"].includes(
+    ![
+      "all",
+      "condo",
+      "house",
+    ].includes(
       propertyType,
     )
   ) {
@@ -90,7 +114,11 @@ export async function GET(
   }
 
   if (
-    !["all", "resale", "precon"].includes(
+    ![
+      "all",
+      "resale",
+      "precon",
+    ].includes(
       marketType,
     )
   ) {
@@ -98,6 +126,28 @@ export async function GET(
       {
         error:
           "Invalid marketType.",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  if (
+    ![
+      "all",
+      "0br",
+      "1br",
+      "2br",
+      "3br_plus",
+    ].includes(
+      bedroom,
+    )
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Invalid bedroom.",
       },
       {
         status: 400,
@@ -128,6 +178,9 @@ export async function GET(
 
       p_market_type:
         marketType,
+
+      p_bedroom:
+        bedroom,
     },
   );
 

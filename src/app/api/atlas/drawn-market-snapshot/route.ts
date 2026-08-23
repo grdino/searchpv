@@ -15,6 +15,13 @@ type MarketTypeFilter =
   | "resale"
   | "precon";
 
+type BedroomFilter =
+  | "all"
+  | "0br"
+  | "1br"
+  | "2br"
+  | "3br_plus";
+
 type DrawnGeometry = {
   type: "Polygon";
   coordinates: number[][][];
@@ -26,6 +33,8 @@ type DrawnMarketSnapshotRequest = {
   propertyType?: PropertyTypeFilter;
 
   marketType?: MarketTypeFilter;
+
+  bedroom?: BedroomFilter;
 };
 
 export async function POST(
@@ -65,6 +74,10 @@ export async function POST(
     body.marketType ??
     "all";
 
+  const bedroom =
+    body.bedroom ??
+    "all";
+
   /*
    * ----------------------------------------------------------
    * VALIDATE GEOMETRY
@@ -100,16 +113,19 @@ export async function POST(
   /*
    * Basic coordinate validation.
    *
-   * GeoJSON coordinates use:
+   * GeoJSON:
    *
    * [longitude, latitude]
    */
+
   for (
     const ring of
       geometry.coordinates
   ) {
     if (
-      !Array.isArray(ring) ||
+      !Array.isArray(
+        ring,
+      ) ||
       ring.length < 4
     ) {
       return NextResponse.json(
@@ -124,7 +140,8 @@ export async function POST(
     }
 
     for (
-      const coordinate of ring
+      const coordinate of
+        ring
     ) {
       if (
         !Array.isArray(
@@ -225,6 +242,28 @@ export async function POST(
     );
   }
 
+  if (
+    ![
+      "all",
+      "0br",
+      "1br",
+      "2br",
+      "3br_plus",
+    ].includes(
+      bedroom,
+    )
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Invalid bedroom.",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
   /*
    * ----------------------------------------------------------
    * CALL POSTGRESQL RPC
@@ -248,6 +287,9 @@ export async function POST(
 
       p_market_type:
         marketType,
+
+      p_bedroom:
+        bedroom,
     },
   );
 

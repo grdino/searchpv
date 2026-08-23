@@ -1,4 +1,18 @@
--- 2026-08-22 - New version adding med $/ft and $/M for the atals developement stats
+-- 2026-08-22 - New version 
+
+/* ============================================================
+   RPT.DEVELOPMENT_SNAPSHOT
+
+   CURRENT LIVE COLUMNS 1-74 ARE PRESERVED IN EXACT ORDER.
+
+   New bedroom-specific ACTIVE pricing fields are appended
+   after existing columns:
+
+   75+:
+     avg / median list price by bedroom
+     avg / median $/ft² by bedroom
+     avg / median $/m² by bedroom
+   ============================================================ */
 
 create or replace view rpt.development_snapshot as
 
@@ -8,7 +22,6 @@ with latest_snap_date as
         max(
             invntry_snap.invntry_snap_date_ky
         ) as invntry_snap_date_ky
-
     from dw.invntry_snap
 ),
 
@@ -34,18 +47,9 @@ market_segments as
     from
     (
         values
-            (
-                'all'::text,
-                null::boolean
-            ),
-            (
-                'pre_construction'::text,
-                true
-            ),
-            (
-                'resale'::text,
-                false
-            )
+            ('all'::text, null::boolean),
+            ('pre_construction'::text, true),
+            ('resale'::text, false)
     )
     x(
         market_segment,
@@ -62,18 +66,9 @@ property_type_segments as
     from
     (
         values
-            (
-                'all'::text,
-                null::text
-            ),
-            (
-                'condos'::text,
-                'Condos'::text
-            ),
-            (
-                'houses'::text,
-                'Houses'::text
-            )
+            ('all'::text, null::text),
+            ('condos'::text, 'Condos'::text),
+            ('houses'::text, 'Houses'::text)
     )
     x(
         property_type_segment,
@@ -106,9 +101,7 @@ property_counts as
         and p.area_ds is not null
         and p.cmnty_ds is not null
         and p.dvlpmnt_ds is not null
-        and trim(
-            both from p.dvlpmnt_ds
-        ) <> ''
+        and trim(both from p.dvlpmnt_ds) <> ''
 
     group by
         p.zone_ds,
@@ -134,6 +127,10 @@ current_inventory as
         ms.market_segment,
 
         pts.property_type_segment,
+
+        /* ----------------------------------------------------
+           ACTIVE / PENDING COUNTS
+           ---------------------------------------------------- */
 
         count(*) filter (
             where lower(i.stts_cd) = 'a'
@@ -183,10 +180,12 @@ current_inventory as
               and l.bdrm_nb >= 3
         ) as pending_3br_plus,
 
+        /* ----------------------------------------------------
+           OVERALL ACTIVE PRICING
+           ---------------------------------------------------- */
+
         round(
-            avg(
-                i.snap_list_prc_am
-            )
+            avg(i.snap_list_prc_am)
             filter (
                 where lower(i.stts_cd) = 'a'
             )
@@ -194,78 +193,293 @@ current_inventory as
 
         percentile_cont(0.5)
         within group (
-            order by
-                i.snap_list_prc_am::double precision
+            order by i.snap_list_prc_am::double precision
         )
         filter (
             where lower(i.stts_cd) = 'a'
         ) as median_list_price,
 
-        /*
-         * Active average $ / ft².
-         *
-         * Exclude zero / invalid values so Avg and Median
-         * use the same valid population.
-         */
         round(
-            avg(
-                i.prc_ft2_qt
-            )
+            avg(i.prc_ft2_qt)
             filter (
                 where lower(i.stts_cd) = 'a'
                   and i.prc_ft2_qt > 0
             )
         ) as avg_list_price_ft2,
 
-        /*
-         * NEW:
-         * Active median $ / ft².
-         */
         percentile_cont(0.5)
         within group (
-            order by
-                i.prc_ft2_qt::double precision
+            order by i.prc_ft2_qt::double precision
         )
         filter (
             where lower(i.stts_cd) = 'a'
               and i.prc_ft2_qt > 0
         ) as median_list_price_ft2,
 
-        /*
-         * Active average $ / m².
-         */
         round(
-            avg(
-                i.prc_ft2_qt *
-                10.7639
-            )
+            avg(i.prc_ft2_qt * 10.7639)
             filter (
                 where lower(i.stts_cd) = 'a'
                   and i.prc_ft2_qt > 0
             )
         ) as avg_list_price_m2,
 
-        /*
-         * NEW:
-         * Active median $ / m².
-         */
         percentile_cont(0.5)
         within group (
             order by
-                (
-                    i.prc_ft2_qt *
-                    10.7639
-                )::double precision
+                (i.prc_ft2_qt * 10.7639)::double precision
         )
         filter (
             where lower(i.stts_cd) = 'a'
               and i.prc_ft2_qt > 0
         ) as median_list_price_m2,
 
+        /* ====================================================
+           NEW — ACTIVE LIST PRICE BY BEDROOM
+           ==================================================== */
+
         round(
-            avg(
-                i.dom_qt
+            avg(i.snap_list_prc_am)
+            filter (
+                where lower(i.stts_cd) = 'a'
+                  and l.bdrm_nb = 0
+                  and i.snap_list_prc_am > 0
             )
+        ) as avg_list_price_0br,
+
+        percentile_cont(0.5)
+        within group (
+            order by i.snap_list_prc_am::double precision
+        )
+        filter (
+            where lower(i.stts_cd) = 'a'
+              and l.bdrm_nb = 0
+              and i.snap_list_prc_am > 0
+        ) as median_list_price_0br,
+
+        round(
+            avg(i.snap_list_prc_am)
+            filter (
+                where lower(i.stts_cd) = 'a'
+                  and l.bdrm_nb = 1
+                  and i.snap_list_prc_am > 0
+            )
+        ) as avg_list_price_1br,
+
+        percentile_cont(0.5)
+        within group (
+            order by i.snap_list_prc_am::double precision
+        )
+        filter (
+            where lower(i.stts_cd) = 'a'
+              and l.bdrm_nb = 1
+              and i.snap_list_prc_am > 0
+        ) as median_list_price_1br,
+
+        round(
+            avg(i.snap_list_prc_am)
+            filter (
+                where lower(i.stts_cd) = 'a'
+                  and l.bdrm_nb = 2
+                  and i.snap_list_prc_am > 0
+            )
+        ) as avg_list_price_2br,
+
+        percentile_cont(0.5)
+        within group (
+            order by i.snap_list_prc_am::double precision
+        )
+        filter (
+            where lower(i.stts_cd) = 'a'
+              and l.bdrm_nb = 2
+              and i.snap_list_prc_am > 0
+        ) as median_list_price_2br,
+
+        round(
+            avg(i.snap_list_prc_am)
+            filter (
+                where lower(i.stts_cd) = 'a'
+                  and l.bdrm_nb >= 3
+                  and i.snap_list_prc_am > 0
+            )
+        ) as avg_list_price_3br_plus,
+
+        percentile_cont(0.5)
+        within group (
+            order by i.snap_list_prc_am::double precision
+        )
+        filter (
+            where lower(i.stts_cd) = 'a'
+              and l.bdrm_nb >= 3
+              and i.snap_list_prc_am > 0
+        ) as median_list_price_3br_plus,
+
+        /* ====================================================
+           NEW — ACTIVE $/FT² BY BEDROOM
+           ==================================================== */
+
+        round(
+            avg(i.prc_ft2_qt)
+            filter (
+                where lower(i.stts_cd) = 'a'
+                  and l.bdrm_nb = 0
+                  and i.prc_ft2_qt > 0
+            )
+        ) as avg_list_price_ft2_0br,
+
+        percentile_cont(0.5)
+        within group (
+            order by i.prc_ft2_qt::double precision
+        )
+        filter (
+            where lower(i.stts_cd) = 'a'
+              and l.bdrm_nb = 0
+              and i.prc_ft2_qt > 0
+        ) as median_list_price_ft2_0br,
+
+        round(
+            avg(i.prc_ft2_qt)
+            filter (
+                where lower(i.stts_cd) = 'a'
+                  and l.bdrm_nb = 1
+                  and i.prc_ft2_qt > 0
+            )
+        ) as avg_list_price_ft2_1br,
+
+        percentile_cont(0.5)
+        within group (
+            order by i.prc_ft2_qt::double precision
+        )
+        filter (
+            where lower(i.stts_cd) = 'a'
+              and l.bdrm_nb = 1
+              and i.prc_ft2_qt > 0
+        ) as median_list_price_ft2_1br,
+
+        round(
+            avg(i.prc_ft2_qt)
+            filter (
+                where lower(i.stts_cd) = 'a'
+                  and l.bdrm_nb = 2
+                  and i.prc_ft2_qt > 0
+            )
+        ) as avg_list_price_ft2_2br,
+
+        percentile_cont(0.5)
+        within group (
+            order by i.prc_ft2_qt::double precision
+        )
+        filter (
+            where lower(i.stts_cd) = 'a'
+              and l.bdrm_nb = 2
+              and i.prc_ft2_qt > 0
+        ) as median_list_price_ft2_2br,
+
+        round(
+            avg(i.prc_ft2_qt)
+            filter (
+                where lower(i.stts_cd) = 'a'
+                  and l.bdrm_nb >= 3
+                  and i.prc_ft2_qt > 0
+            )
+        ) as avg_list_price_ft2_3br_plus,
+
+        percentile_cont(0.5)
+        within group (
+            order by i.prc_ft2_qt::double precision
+        )
+        filter (
+            where lower(i.stts_cd) = 'a'
+              and l.bdrm_nb >= 3
+              and i.prc_ft2_qt > 0
+        ) as median_list_price_ft2_3br_plus,
+
+        /* ====================================================
+           NEW — ACTIVE $/M² BY BEDROOM
+           ==================================================== */
+
+        round(
+            avg(i.prc_ft2_qt * 10.7639)
+            filter (
+                where lower(i.stts_cd) = 'a'
+                  and l.bdrm_nb = 0
+                  and i.prc_ft2_qt > 0
+            )
+        ) as avg_list_price_m2_0br,
+
+        percentile_cont(0.5)
+        within group (
+            order by
+                (i.prc_ft2_qt * 10.7639)::double precision
+        )
+        filter (
+            where lower(i.stts_cd) = 'a'
+              and l.bdrm_nb = 0
+              and i.prc_ft2_qt > 0
+        ) as median_list_price_m2_0br,
+
+        round(
+            avg(i.prc_ft2_qt * 10.7639)
+            filter (
+                where lower(i.stts_cd) = 'a'
+                  and l.bdrm_nb = 1
+                  and i.prc_ft2_qt > 0
+            )
+        ) as avg_list_price_m2_1br,
+
+        percentile_cont(0.5)
+        within group (
+            order by
+                (i.prc_ft2_qt * 10.7639)::double precision
+        )
+        filter (
+            where lower(i.stts_cd) = 'a'
+              and l.bdrm_nb = 1
+              and i.prc_ft2_qt > 0
+        ) as median_list_price_m2_1br,
+
+        round(
+            avg(i.prc_ft2_qt * 10.7639)
+            filter (
+                where lower(i.stts_cd) = 'a'
+                  and l.bdrm_nb = 2
+                  and i.prc_ft2_qt > 0
+            )
+        ) as avg_list_price_m2_2br,
+
+        percentile_cont(0.5)
+        within group (
+            order by
+                (i.prc_ft2_qt * 10.7639)::double precision
+        )
+        filter (
+            where lower(i.stts_cd) = 'a'
+              and l.bdrm_nb = 2
+              and i.prc_ft2_qt > 0
+        ) as median_list_price_m2_2br,
+
+        round(
+            avg(i.prc_ft2_qt * 10.7639)
+            filter (
+                where lower(i.stts_cd) = 'a'
+                  and l.bdrm_nb >= 3
+                  and i.prc_ft2_qt > 0
+            )
+        ) as avg_list_price_m2_3br_plus,
+
+        percentile_cont(0.5)
+        within group (
+            order by
+                (i.prc_ft2_qt * 10.7639)::double precision
+        )
+        filter (
+            where lower(i.stts_cd) = 'a'
+              and l.bdrm_nb >= 3
+              and i.prc_ft2_qt > 0
+        ) as median_list_price_m2_3br_plus,
+
+        round(
+            avg(i.dom_qt)
             filter (
                 where lower(i.stts_cd) = 'a'
                   and i.dom_qt >= 0
@@ -293,8 +507,7 @@ current_inventory as
         or coalesce(
             i.pre_cnstrctn_fl,
             false
-        ) =
-        ms.pre_cnstrctn_fl
+        ) = ms.pre_cnstrctn_fl
 
     join property_type_segments pts
       on
@@ -307,9 +520,7 @@ current_inventory as
         and p.area_ds is not null
         and p.cmnty_ds is not null
         and p.dvlpmnt_ds is not null
-        and trim(
-            both from p.dvlpmnt_ds
-        ) <> ''
+        and trim(both from p.dvlpmnt_ds) <> ''
 
     group by
         p.zone_ds,
@@ -365,42 +576,32 @@ sales_12mo as
         ) as sales_3br_plus_12mo,
 
         round(
-            avg(
-                cs.sold_prc_am
-            )
+            avg(cs.sold_prc_am)
         ) as avg_sold_price,
 
         round(
-            avg(
-                cs.sold_prc_am
-            )
+            avg(cs.sold_prc_am)
             filter (
                 where l.bdrm_nb = 0
             )
         ) as avg_sold_price_0br,
 
         round(
-            avg(
-                cs.sold_prc_am
-            )
+            avg(cs.sold_prc_am)
             filter (
                 where l.bdrm_nb = 1
             )
         ) as avg_sold_price_1br,
 
         round(
-            avg(
-                cs.sold_prc_am
-            )
+            avg(cs.sold_prc_am)
             filter (
                 where l.bdrm_nb = 2
             )
         ) as avg_sold_price_2br,
 
         round(
-            avg(
-                cs.sold_prc_am
-            )
+            avg(cs.sold_prc_am)
             filter (
                 where l.bdrm_nb >= 3
             )
@@ -408,14 +609,12 @@ sales_12mo as
 
         percentile_cont(0.5)
         within group (
-            order by
-                cs.sold_prc_am::double precision
+            order by cs.sold_prc_am::double precision
         ) as median_sold_price,
 
         percentile_cont(0.5)
         within group (
-            order by
-                cs.sold_prc_am::double precision
+            order by cs.sold_prc_am::double precision
         )
         filter (
             where l.bdrm_nb = 0
@@ -423,8 +622,7 @@ sales_12mo as
 
         percentile_cont(0.5)
         within group (
-            order by
-                cs.sold_prc_am::double precision
+            order by cs.sold_prc_am::double precision
         )
         filter (
             where l.bdrm_nb = 1
@@ -432,8 +630,7 @@ sales_12mo as
 
         percentile_cont(0.5)
         within group (
-            order by
-                cs.sold_prc_am::double precision
+            order by cs.sold_prc_am::double precision
         )
         filter (
             where l.bdrm_nb = 2
@@ -441,50 +638,39 @@ sales_12mo as
 
         percentile_cont(0.5)
         within group (
-            order by
-                cs.sold_prc_am::double precision
+            order by cs.sold_prc_am::double precision
         )
         filter (
             where l.bdrm_nb >= 3
         ) as median_sold_price_3br_plus,
 
         round(
-            avg(
-                cs.sold_prc_ft2_am
-            )
+            avg(cs.sold_prc_ft2_am)
         ) as avg_sold_price_ft2,
 
         round(
-            avg(
-                cs.sold_prc_ft2_am
-            )
+            avg(cs.sold_prc_ft2_am)
             filter (
                 where l.bdrm_nb = 0
             )
         ) as avg_sold_price_ft2_0br,
 
         round(
-            avg(
-                cs.sold_prc_ft2_am
-            )
+            avg(cs.sold_prc_ft2_am)
             filter (
                 where l.bdrm_nb = 1
             )
         ) as avg_sold_price_ft2_1br,
 
         round(
-            avg(
-                cs.sold_prc_ft2_am
-            )
+            avg(cs.sold_prc_ft2_am)
             filter (
                 where l.bdrm_nb = 2
             )
         ) as avg_sold_price_ft2_2br,
 
         round(
-            avg(
-                cs.sold_prc_ft2_am
-            )
+            avg(cs.sold_prc_ft2_am)
             filter (
                 where l.bdrm_nb >= 3
             )
@@ -492,14 +678,12 @@ sales_12mo as
 
         percentile_cont(0.5)
         within group (
-            order by
-                cs.sold_prc_ft2_am::double precision
+            order by cs.sold_prc_ft2_am::double precision
         ) as median_sold_price_ft2,
 
         percentile_cont(0.5)
         within group (
-            order by
-                cs.sold_prc_ft2_am::double precision
+            order by cs.sold_prc_ft2_am::double precision
         )
         filter (
             where l.bdrm_nb = 0
@@ -507,8 +691,7 @@ sales_12mo as
 
         percentile_cont(0.5)
         within group (
-            order by
-                cs.sold_prc_ft2_am::double precision
+            order by cs.sold_prc_ft2_am::double precision
         )
         filter (
             where l.bdrm_nb = 1
@@ -516,8 +699,7 @@ sales_12mo as
 
         percentile_cont(0.5)
         within group (
-            order by
-                cs.sold_prc_ft2_am::double precision
+            order by cs.sold_prc_ft2_am::double precision
         )
         filter (
             where l.bdrm_nb = 2
@@ -525,8 +707,7 @@ sales_12mo as
 
         percentile_cont(0.5)
         within group (
-            order by
-                cs.sold_prc_ft2_am::double precision
+            order by cs.sold_prc_ft2_am::double precision
         )
         filter (
             where l.bdrm_nb >= 3
@@ -637,9 +818,7 @@ sales_12mo as
         ) as median_sold_price_m2_3br_plus,
 
         round(
-            avg(
-                cs.dom_nb
-            )
+            avg(cs.dom_nb)
             filter (
                 where cs.dom_nb >= 0
                   and cs.dom_nb <= 5000
@@ -669,8 +848,7 @@ sales_12mo as
         or coalesce(
             cs.pre_cnstrctn_fl,
             false
-        ) =
-        ms.pre_cnstrctn_fl
+        ) = ms.pre_cnstrctn_fl
 
     join property_type_segments pts
       on
@@ -709,6 +887,9 @@ sales_12mo as
 
 /* ============================================================
    FINAL DEVELOPMENT SNAPSHOT
+
+   IMPORTANT:
+   Existing 74 output columns remain in exact live order.
    ============================================================ */
 
 select
@@ -867,42 +1048,36 @@ select
     ) as sales_3br_plus_12mo,
 
     s.avg_sold_price,
-
     s.avg_sold_price_0br,
     s.avg_sold_price_1br,
     s.avg_sold_price_2br,
     s.avg_sold_price_3br_plus,
 
     s.median_sold_price,
-
     s.median_sold_price_0br,
     s.median_sold_price_1br,
     s.median_sold_price_2br,
     s.median_sold_price_3br_plus,
 
     s.avg_sold_price_ft2,
-
     s.avg_sold_price_ft2_0br,
     s.avg_sold_price_ft2_1br,
     s.avg_sold_price_ft2_2br,
     s.avg_sold_price_ft2_3br_plus,
 
     s.median_sold_price_ft2,
-
     s.median_sold_price_ft2_0br,
     s.median_sold_price_ft2_1br,
     s.median_sold_price_ft2_2br,
     s.median_sold_price_ft2_3br_plus,
 
     s.avg_sold_price_m2,
-
     s.avg_sold_price_m2_0br,
     s.avg_sold_price_m2_1br,
     s.avg_sold_price_m2_2br,
     s.avg_sold_price_m2_3br_plus,
 
     s.median_sold_price_m2,
-
     s.median_sold_price_m2_0br,
     s.median_sold_price_m2_1br,
     s.median_sold_price_m2_2br,
@@ -1099,18 +1274,53 @@ select
         )
     ) as development_slug,
 
-    /*
-     * ========================================================
-     * NEW COLUMNS
-     *
-     * Appended instead of inserted into the existing output
-     * order to preserve dependent objects safely.
-     * ========================================================
-     */
+    /* ---------------------------------------------------------
+       EXISTING LIVE APPENDED COLUMNS 73-74
+       --------------------------------------------------------- */
 
     ci.median_list_price_ft2,
 
-    ci.median_list_price_m2
+    ci.median_list_price_m2,
+
+    /* ---------------------------------------------------------
+       NEW APPENDED BEDROOM-SPECIFIC ACTIVE PRICING
+       --------------------------------------------------------- */
+
+    ci.avg_list_price_0br,
+    ci.median_list_price_0br,
+
+    ci.avg_list_price_1br,
+    ci.median_list_price_1br,
+
+    ci.avg_list_price_2br,
+    ci.median_list_price_2br,
+
+    ci.avg_list_price_3br_plus,
+    ci.median_list_price_3br_plus,
+
+    ci.avg_list_price_ft2_0br,
+    ci.median_list_price_ft2_0br,
+
+    ci.avg_list_price_ft2_1br,
+    ci.median_list_price_ft2_1br,
+
+    ci.avg_list_price_ft2_2br,
+    ci.median_list_price_ft2_2br,
+
+    ci.avg_list_price_ft2_3br_plus,
+    ci.median_list_price_ft2_3br_plus,
+
+    ci.avg_list_price_m2_0br,
+    ci.median_list_price_m2_0br,
+
+    ci.avg_list_price_m2_1br,
+    ci.median_list_price_m2_1br,
+
+    ci.avg_list_price_m2_2br,
+    ci.median_list_price_m2_2br,
+
+    ci.avg_list_price_m2_3br_plus,
+    ci.median_list_price_m2_3br_plus
 
 from current_inventory ci
 
@@ -1177,10 +1387,10 @@ where
 
 
 /* ============================================================
-   PUBLIC DEVELOPMENT SNAPSHOT
+   PUBLIC.DEVELOPMENT_SNAPSHOT
 
-   Preserve every existing public column in its current order.
-   Append the two new fields at the end.
+   Preserve exact current 74-column order, then expose all
+   newly appended bedroom-specific fields.
    ============================================================ */
 
 create or replace view public.development_snapshot as
@@ -1198,72 +1408,135 @@ select
     property_count,
     condo_property_count,
     house_property_count,
+
     active_count,
     pending_count,
+
     active_0br,
     active_1br,
     active_2br,
     active_3br_plus,
+
     pending_0br,
     pending_1br,
     pending_2br,
     pending_3br_plus,
+
     avg_list_price,
     median_list_price,
+
     avg_list_price_ft2,
     avg_list_price_m2,
+
     current_avg_dom,
+
     sales_12mo,
+
     sales_0br_12mo,
     sales_1br_12mo,
     sales_2br_12mo,
     sales_3br_plus_12mo,
+
     avg_sold_price,
+
     avg_sold_price_0br,
     avg_sold_price_1br,
     avg_sold_price_2br,
     avg_sold_price_3br_plus,
+
     median_sold_price,
+
     median_sold_price_0br,
     median_sold_price_1br,
     median_sold_price_2br,
     median_sold_price_3br_plus,
+
     avg_sold_price_ft2,
+
     avg_sold_price_ft2_0br,
     avg_sold_price_ft2_1br,
     avg_sold_price_ft2_2br,
     avg_sold_price_ft2_3br_plus,
+
     median_sold_price_ft2,
+
     median_sold_price_ft2_0br,
     median_sold_price_ft2_1br,
     median_sold_price_ft2_2br,
     median_sold_price_ft2_3br_plus,
+
     avg_sold_price_m2,
+
     avg_sold_price_m2_0br,
     avg_sold_price_m2_1br,
     avg_sold_price_m2_2br,
     avg_sold_price_m2_3br_plus,
+
     median_sold_price_m2,
+
     median_sold_price_m2_0br,
     median_sold_price_m2_1br,
     median_sold_price_m2_2br,
     median_sold_price_m2_3br_plus,
+
     sold_avg_dom_12mo,
+
     months_inventory,
+
     months_inventory_0br,
     months_inventory_1br,
     months_inventory_2br,
     months_inventory_3br_plus,
+
     zone_slug,
     area_slug,
     community_slug,
     development_slug,
 
     /*
-     * New appended fields.
+     * Existing live appended fields.
      */
     median_list_price_ft2,
-    median_list_price_m2
+    median_list_price_m2,
+
+    /*
+     * New bedroom-specific active pricing.
+     */
+    avg_list_price_0br,
+    median_list_price_0br,
+
+    avg_list_price_1br,
+    median_list_price_1br,
+
+    avg_list_price_2br,
+    median_list_price_2br,
+
+    avg_list_price_3br_plus,
+    median_list_price_3br_plus,
+
+    avg_list_price_ft2_0br,
+    median_list_price_ft2_0br,
+
+    avg_list_price_ft2_1br,
+    median_list_price_ft2_1br,
+
+    avg_list_price_ft2_2br,
+    median_list_price_ft2_2br,
+
+    avg_list_price_ft2_3br_plus,
+    median_list_price_ft2_3br_plus,
+
+    avg_list_price_m2_0br,
+    median_list_price_m2_0br,
+
+    avg_list_price_m2_1br,
+    median_list_price_m2_1br,
+
+    avg_list_price_m2_2br,
+    median_list_price_m2_2br,
+
+    avg_list_price_m2_3br_plus,
+    median_list_price_m2_3br_plus
 
 from rpt.development_snapshot
 ;

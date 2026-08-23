@@ -6,22 +6,42 @@ import { useAtlasState } from "@/lib/atlas/state/AtlasState";
 function entityTypeLabel(entityType: string) {
   switch (entityType) {
     case "ZN":
+    case "zone":
       return "MLS Zone";
 
     case "AR":
+    case "area":
       return "MLS Area";
 
     case "CM":
+    case "community":
       return "MLS Community";
+
+    case "DV":
+    case "development":
+      return "Development";
 
     default:
       return "MLS Geography";
   }
 }
 
-type SummaryMode = "median" | "avg";
+function isDevelopmentEntityType(
+  entityType: string | null | undefined,
+) {
+  return (
+    entityType === "DV" ||
+    entityType === "development"
+  );
+}
 
-type AreaUnit = "ft2" | "m2";
+type SummaryMode =
+  | "median"
+  | "avg";
+
+type AreaUnit =
+  | "ft2"
+  | "m2";
 
 type MarketSnapshot = {
   snapshotDate: string | null;
@@ -39,24 +59,65 @@ type MarketSnapshot = {
   avgListPriceM2: number | null;
   medianListPriceM2: number | null;
 
+  bedroom?: string;
+
   boundaryCount?: number;
   boundaryKys?: number[];
 
   geometryType?: string;
   areaM2?: number | null;
+
+  sourceType?: string;
+
+  entityKy?: number;
+
+  developmentName?: string | null;
+
+  zoneName?: string | null;
+  areaName?: string | null;
+  communityName?: string | null;
+
+  longitude?: number | null;
+  latitude?: number | null;
+
+  propertyCount?: number;
+  condoPropertyCount?: number;
+  housePropertyCount?: number;
+
+  currentAvgDom?: number | null;
+
+  avgSoldPrice?: number | null;
+  medianSoldPrice?: number | null;
+
+  avgSoldPriceFt2?: number | null;
+  medianSoldPriceFt2?: number | null;
+
+  avgSoldPriceM2?: number | null;
+  medianSoldPriceM2?: number | null;
+
+  soldAvgDom12Mo?: number | null;
+
+  monthsInventory?: number | null;
 };
 
-function formatPrice(value: number | null) {
-  if (value === null) return "—";
+function formatPrice(
+  value: number | null,
+) {
+  if (value === null) {
+    return "—";
+  }
 
   if (value >= 1_000_000) {
     const millions =
       value / 1_000_000;
 
-    return `$${millions.toLocaleString("en-US", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    })}M`;
+    return `$${millions.toLocaleString(
+      "en-US",
+      {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      },
+    )}M`;
   }
 
   if (value >= 1_000) {
@@ -65,9 +126,9 @@ function formatPrice(value: number | null) {
     ).toLocaleString("en-US")}K`;
   }
 
-  return `$${Math.round(value).toLocaleString(
-    "en-US",
-  )}`;
+  return `$${Math.round(
+    value,
+  ).toLocaleString("en-US")}`;
 }
 
 function formatWholeNumber(
@@ -77,9 +138,9 @@ function formatWholeNumber(
     return "—";
   }
 
-  return Math.round(value).toLocaleString(
-    "en-US",
-  );
+  return Math.round(
+    value,
+  ).toLocaleString("en-US");
 }
 
 export default function AtlasBottomSheet() {
@@ -110,12 +171,14 @@ export default function AtlasBottomSheet() {
 
     propertyTypeFilter,
     marketTypeFilter,
+    bedroomFilter,
 
     sheetState,
     setSheetState,
 
     setPropertyTypeFilter,
     setMarketTypeFilter,
+    setBedroomFilter,
 
     selectGeography,
     resetAnalysisToContext,
@@ -142,7 +205,9 @@ export default function AtlasBottomSheet() {
   const hasFinishedDrawing =
     isDrawArea &&
     !customDrawActive &&
-    Boolean(customDrawnGeometry);
+    Boolean(
+      customDrawnGeometry,
+    );
 
   const [
     marketSnapshot,
@@ -155,7 +220,8 @@ export default function AtlasBottomSheet() {
   const [
     marketSnapshotLoading,
     setMarketSnapshotLoading,
-  ] = useState(false);
+  ] =
+    useState(false);
 
   /*
    * Atlas display preferences.
@@ -176,10 +242,6 @@ export default function AtlasBottomSheet() {
       "ft2",
     );
 
-  /*
-   * Related MLS geographies for the currently
-   * focused government polygon.
-   */
   const relatedChoices =
     relatedEntities.filter(
       (entity) =>
@@ -189,30 +251,50 @@ export default function AtlasBottomSheet() {
 
   /*
    * ==========================================================
+   * DEVELOPMENT CONTEXT
+   * ==========================================================
+   */
+
+  const isDevelopment =
+    Boolean(
+      !isCustomMarket &&
+        !popularAreaSelection &&
+        selectedEntity &&
+        isDevelopmentEntityType(
+          selectedEntity.entityType,
+        ),
+    );
+
+  /*
+   * ==========================================================
    * MARKET SNAPSHOT SOURCES
    * ==========================================================
-   *
-   * Atlas supports:
-   *
-   * 1. Popular Area footprint
-   * 2. MLS Community / Area
-   * 3. Government Local Area
-   * 4. Custom Market — Select Areas
-   * 5. Custom Market — Draw Area
    */
 
   const hasPopularAreaMarketContext =
     Boolean(
       !isCustomMarket &&
         popularAreaSelection &&
-        popularAreaSelection.boundaryKys.length >
-          0,
+        popularAreaSelection
+          .boundaryKys
+          .length > 0,
+    );
+
+  const hasDevelopmentMarketContext =
+    Boolean(
+      !isCustomMarket &&
+        !popularAreaSelection &&
+        selectedEntity &&
+        isDevelopmentEntityType(
+          selectedEntity.entityType,
+        ),
     );
 
   const hasMlsMarketContext =
     Boolean(
       !isCustomMarket &&
         !popularAreaSelection &&
+        !hasDevelopmentMarketContext &&
         selectedEntity &&
         ["CM", "AR"].includes(
           selectedEntity.entityType,
@@ -223,6 +305,7 @@ export default function AtlasBottomSheet() {
     Boolean(
       !isCustomMarket &&
         !popularAreaSelection &&
+        !hasDevelopmentMarketContext &&
         !hasMlsMarketContext &&
         selectedBoundary,
     );
@@ -230,7 +313,8 @@ export default function AtlasBottomSheet() {
   const hasSelectedAreaMarketContext =
     Boolean(
       isSelectAreas &&
-        customBoundaries.length > 0,
+        customBoundaries.length >
+          0,
     );
 
   const hasDrawnMarketContext =
@@ -241,6 +325,7 @@ export default function AtlasBottomSheet() {
 
   const hasMarketContext =
     hasPopularAreaMarketContext ||
+    hasDevelopmentMarketContext ||
     hasMlsMarketContext ||
     hasBoundaryMarketContext ||
     hasSelectedAreaMarketContext ||
@@ -253,12 +338,6 @@ export default function AtlasBottomSheet() {
    */
 
   useEffect(() => {
-    /*
-     * Draw Area:
-     *
-     * Never display stale statistics while a new polygon
-     * is being created.
-     */
     if (
       isDrawArea &&
       (
@@ -266,28 +345,43 @@ export default function AtlasBottomSheet() {
         !customDrawnGeometry
       )
     ) {
-      setMarketSnapshot(null);
-      setMarketSnapshotLoading(false);
+      setMarketSnapshot(
+        null,
+      );
+
+      setMarketSnapshotLoading(
+        false,
+      );
 
       return;
     }
 
-    /*
-     * Select Areas with zero polygons is a valid empty state.
-     */
     if (
       isSelectAreas &&
-      customBoundaries.length === 0
+      customBoundaries.length ===
+        0
     ) {
-      setMarketSnapshot(null);
-      setMarketSnapshotLoading(false);
+      setMarketSnapshot(
+        null,
+      );
+
+      setMarketSnapshotLoading(
+        false,
+      );
 
       return;
     }
 
-    if (!hasMarketContext) {
-      setMarketSnapshot(null);
-      setMarketSnapshotLoading(false);
+    if (
+      !hasMarketContext
+    ) {
+      setMarketSnapshot(
+        null,
+      );
+
+      setMarketSnapshotLoading(
+        false,
+      );
 
       return;
     }
@@ -300,7 +394,9 @@ export default function AtlasBottomSheet() {
         true,
       );
 
-      setMarketSnapshot(null);
+      setMarketSnapshot(
+        null,
+      );
 
       try {
         let response: Response;
@@ -343,6 +439,9 @@ export default function AtlasBottomSheet() {
 
                     marketType:
                       marketTypeFilter,
+
+                    bedroom:
+                      bedroomFilter,
                   }),
               },
             );
@@ -352,12 +451,6 @@ export default function AtlasBottomSheet() {
          * ------------------------------------------------------
          * POPULAR AREA
          * ------------------------------------------------------
-         *
-         * Popular Areas are exact saved Atlas footprints.
-         *
-         * Use the same spatial statistics engine as Custom
-         * Market so the highlighted geography and statistics
-         * describe exactly the same physical area.
          */
 
         else if (
@@ -373,7 +466,9 @@ export default function AtlasBottomSheet() {
           ) {
             params.append(
               "boundaryKy",
-              String(boundaryKy),
+              String(
+                boundaryKy,
+              ),
             );
           }
 
@@ -385,6 +480,11 @@ export default function AtlasBottomSheet() {
           params.set(
             "marketType",
             marketTypeFilter,
+          );
+
+          params.set(
+            "bedroom",
+            bedroomFilter,
           );
 
           response =
@@ -418,7 +518,6 @@ export default function AtlasBottomSheet() {
           ) {
             params.append(
               "boundaryKy",
-
               String(
                 boundary.boundaryKy,
               ),
@@ -435,9 +534,54 @@ export default function AtlasBottomSheet() {
             marketTypeFilter,
           );
 
+          params.set(
+            "bedroom",
+            bedroomFilter,
+          );
+
           response =
             await fetch(
               `/api/atlas/custom-market-snapshot?${params.toString()}`,
+              {
+                cache:
+                  "no-store",
+
+                signal:
+                  controller.signal,
+              },
+            );
+        }
+
+        /*
+         * ------------------------------------------------------
+         * DEVELOPMENT
+         * ------------------------------------------------------
+         */
+
+        else if (
+          hasDevelopmentMarketContext &&
+          selectedEntity
+        ) {
+          const params =
+            new URLSearchParams({
+              entityKy:
+                String(
+                  selectedEntity.entityKy,
+                ),
+
+              propertyType:
+                propertyTypeFilter,
+
+              marketType:
+                marketTypeFilter,
+
+              bedroom:
+                bedroomFilter,
+            });
+
+          response =
+            await fetch(
+              `/api/atlas/development-snapshot?${params.toString()}`,
               {
                 cache:
                   "no-store",
@@ -470,6 +614,9 @@ export default function AtlasBottomSheet() {
 
               marketType:
                 marketTypeFilter,
+
+              bedroom:
+                bedroomFilter,
             });
 
           response =
@@ -506,6 +653,9 @@ export default function AtlasBottomSheet() {
 
               marketType:
                 marketTypeFilter,
+
+              bedroom:
+                bedroomFilter,
             });
 
           response =
@@ -521,11 +671,10 @@ export default function AtlasBottomSheet() {
             );
         }
 
-        /*
-         * Defensive fallback.
-         */
         else {
-          setMarketSnapshot(null);
+          setMarketSnapshot(
+            null,
+          );
 
           setMarketSnapshotLoading(
             false,
@@ -534,7 +683,9 @@ export default function AtlasBottomSheet() {
           return;
         }
 
-        if (!response.ok) {
+        if (
+          !response.ok
+        ) {
           const errorData =
             await response
               .json()
@@ -554,9 +705,12 @@ export default function AtlasBottomSheet() {
         setMarketSnapshot(
           data,
         );
-      } catch (error) {
+      } catch (
+        error
+      ) {
         if (
-          error instanceof DOMException &&
+          error instanceof
+            DOMException &&
           error.name ===
             "AbortError"
         ) {
@@ -598,6 +752,7 @@ export default function AtlasBottomSheet() {
 
     hasMarketContext,
     hasPopularAreaMarketContext,
+    hasDevelopmentMarketContext,
     hasSelectedAreaMarketContext,
     hasDrawnMarketContext,
     hasMlsMarketContext,
@@ -609,6 +764,7 @@ export default function AtlasBottomSheet() {
 
     propertyTypeFilter,
     marketTypeFilter,
+    bedroomFilter,
   ]);
 
   /*
@@ -620,6 +776,7 @@ export default function AtlasBottomSheet() {
   const isAmapas =
     !isCustomMarket &&
     !popularAreaSelection &&
+    !isDevelopment &&
     selectedEntity
       ?.canonicalName
       ?.trim()
@@ -632,6 +789,21 @@ export default function AtlasBottomSheet() {
       : selectedEntity?.parentName
         ? `Explore ${selectedEntity.parentName}`
         : "Explore this part of Banderas Bay";
+
+  const developmentLocation =
+    [
+      marketSnapshot
+        ?.communityName,
+
+      marketSnapshot
+        ?.areaName,
+    ]
+      .filter(
+        Boolean,
+      )
+      .join(
+        " · ",
+      );
 
   /*
    * ==========================================================
@@ -687,6 +859,76 @@ export default function AtlasBottomSheet() {
         ? "m²"
         : "ft²"
     }`;
+
+  /*
+   * ==========================================================
+   * COMPACT FILTER STYLING
+   * ==========================================================
+   */
+
+  const filterLabelStyle = {
+    width: 62,
+    fontSize: 9,
+    fontWeight: 750,
+    letterSpacing:
+      "0.09em",
+    color:
+      "#94a3b8",
+    textTransform:
+      "uppercase" as const,
+    flexShrink: 0,
+  };
+
+  function filterButtonStyle(
+    active: boolean,
+  ) {
+    return {
+      border:
+        active
+          ? isCustomMarket
+            ? "1px solid #0f766e"
+            : "1px solid #a9792b"
+          : "1px solid #e2e8f0",
+
+      borderRadius:
+        999,
+
+      padding:
+        "4px 8px",
+
+      minHeight:
+        26,
+
+      background:
+        active
+          ? isCustomMarket
+            ? "#ecfdf5"
+            : "#fff8e8"
+          : "#ffffff",
+
+      color:
+        active
+          ? isCustomMarket
+            ? "#115e59"
+            : "#8a5a18"
+          : "#64748b",
+
+      fontSize:
+        10,
+
+      lineHeight:
+        1,
+
+      fontWeight:
+        700,
+
+      whiteSpace:
+        "nowrap" as const,
+
+      cursor:
+        "pointer",
+    };
+  }
 
   return (
     <section
@@ -797,64 +1039,419 @@ export default function AtlasBottomSheet() {
         }}
       >
         {/* =====================================================
-            CUSTOM MARKET
+            STICKY IDENTITY HEADER
+            ===================================================== */}
+
+        <div
+          style={{
+            position:
+              "sticky",
+
+            top: 0,
+
+            zIndex: 10,
+
+            margin:
+              "0 -6px",
+
+            padding:
+              "2px 6px 10px",
+
+            background:
+              "rgba(255,255,255,0.94)",
+
+            backdropFilter:
+              "blur(16px)",
+
+            WebkitBackdropFilter:
+              "blur(16px)",
+
+            borderBottom:
+              "1px solid rgba(226,232,240,0.65)",
+          }}
+        >
+          {isCustomMarket ? (
+            <>
+              <div
+                style={{
+                  fontSize:
+                    11,
+
+                  fontWeight:
+                    750,
+
+                  letterSpacing:
+                    "0.12em",
+
+                  color:
+                    "#0f766e",
+
+                  textTransform:
+                    "uppercase",
+                }}
+              >
+                Custom Market
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    2,
+
+                  fontSize:
+                    25,
+
+                  lineHeight:
+                    1.08,
+
+                  fontWeight:
+                    700,
+
+                  color:
+                    "#0f172a",
+                }}
+              >
+                Your Selected Area
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    4,
+
+                  fontSize:
+                    12,
+
+                  color:
+                    "#64748b",
+                }}
+              >
+                Build your own real estate market.
+              </div>
+            </>
+          ) : popularAreaSelection ? (
+            <>
+              <div
+                style={{
+                  fontSize:
+                    11,
+
+                  fontWeight:
+                    750,
+
+                  letterSpacing:
+                    "0.12em",
+
+                  color:
+                    "#a9792b",
+
+                  textTransform:
+                    "uppercase",
+                }}
+              >
+                Popular Area
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    2,
+
+                  fontSize:
+                    25,
+
+                  lineHeight:
+                    1.08,
+
+                  fontWeight:
+                    700,
+
+                  color:
+                    "#0f172a",
+                }}
+              >
+                {
+                  popularAreaSelection.displayName
+                }
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    4,
+
+                  fontSize:
+                    12,
+
+                  color:
+                    "#64748b",
+                }}
+              >
+                One of the area's most active resale markets.
+              </div>
+            </>
+          ) : selectedEntity ? (
+            <>
+              <div
+                style={{
+                  fontSize:
+                    11,
+
+                  fontWeight:
+                    750,
+
+                  letterSpacing:
+                    "0.12em",
+
+                  color:
+                    "#a9792b",
+
+                  textTransform:
+                    "uppercase",
+                }}
+              >
+                {entityTypeLabel(
+                  selectedEntity.entityType,
+                )}
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    2,
+
+                  fontSize:
+                    25,
+
+                  lineHeight:
+                    1.08,
+
+                  fontWeight:
+                    700,
+
+                  color:
+                    "#0f172a",
+                }}
+              >
+                {
+                  selectedEntity.displayName
+                }
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    4,
+
+                  fontSize:
+                    12,
+
+                  color:
+                    "#64748b",
+                }}
+              >
+                {isDevelopment
+                  ? marketSnapshotLoading
+                    ? "Loading development market…"
+                    : developmentLocation ||
+                      selectedEntity.parentName ||
+                      "Development"
+                  : communityTagline}
+              </div>
+
+              {!isDevelopment &&
+              contextEntity &&
+              analysisEntity &&
+              Number(
+                contextEntity.entityKy,
+              ) !==
+                Number(
+                  analysisEntity.entityKy,
+                ) ? (
+                <button
+                  type="button"
+                  onClick={
+                    resetAnalysisToContext
+                  }
+                  style={{
+                    marginTop:
+                      7,
+
+                    border:
+                      "1px solid #d6b56b",
+
+                    borderRadius:
+                      999,
+
+                    padding:
+                      "4px 9px",
+
+                    background:
+                      "#fffaf0",
+
+                    color:
+                      "#8a5a18",
+
+                    fontSize:
+                      10,
+
+                    fontWeight:
+                      700,
+
+                    cursor:
+                      "pointer",
+                  }}
+                >
+                  All{" "}
+                  {
+                    contextEntity.displayName
+                  }
+                </button>
+              ) : null}
+            </>
+          ) : selectedBoundary ? (
+            <>
+              <div
+                style={{
+                  fontSize:
+                    11,
+
+                  fontWeight:
+                    700,
+
+                  letterSpacing:
+                    "0.12em",
+
+                  color:
+                    "#94a3b8",
+
+                  textTransform:
+                    "uppercase",
+                }}
+              >
+                Local Area
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    2,
+
+                  fontSize:
+                    24,
+
+                  lineHeight:
+                    1.08,
+
+                  fontWeight:
+                    700,
+
+                  color:
+                    "#0f172a",
+                }}
+              >
+                {
+                  selectedBoundary.boundaryName
+                }
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    4,
+
+                  fontSize:
+                    12,
+
+                  color:
+                    "#64748b",
+                }}
+              >
+                {[
+                  selectedBoundary.boundaryType,
+                  selectedBoundary.districtName,
+                  selectedBoundary.municipalityName,
+                ]
+                  .filter(
+                    Boolean,
+                  )
+                  .join(
+                    " · ",
+                  )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div
+                style={{
+                  fontSize:
+                    11,
+
+                  fontWeight:
+                    700,
+
+                  letterSpacing:
+                    "0.12em",
+
+                  color:
+                    "#94a3b8",
+
+                  textTransform:
+                    "uppercase",
+                }}
+              >
+                Explore the Bay
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    2,
+
+                  fontSize:
+                    24,
+
+                  fontWeight:
+                    700,
+
+                  color:
+                    "#0f172a",
+                }}
+              >
+                Banderas Bay
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    4,
+
+                  fontSize:
+                    12,
+
+                  color:
+                    "#64748b",
+                }}
+              >
+                Search, tap the map, or choose a popular area.
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* =====================================================
+            CUSTOM MARKET CONTROLS
             ===================================================== */}
 
         {isCustomMarket ? (
           <>
             <div
               style={{
-                fontSize:
-                  11,
-
-                fontWeight:
-                  750,
-
-                letterSpacing:
-                  "0.12em",
-
-                color:
-                  "#0f766e",
-
-                textTransform:
-                  "uppercase",
-              }}
-            >
-              Custom Market
-            </div>
-
-            <div
-              style={{
-                marginTop:
-                  3,
-
-                fontSize:
-                  27,
-
-                lineHeight:
-                  1.08,
-
-                fontWeight:
-                  700,
-
-                color:
-                  "#0f172a",
-              }}
-            >
-              Your Selected Area
-            </div>
-
-            {/* ================================================
-                CUSTOM MARKET METHOD
-                ================================================ */}
-
-            <div
-              style={{
                 display:
                   "inline-flex",
 
                 marginTop:
-                  12,
+                  10,
 
                 overflow:
                   "hidden",
@@ -881,7 +1478,7 @@ export default function AtlasBottomSheet() {
                     0,
 
                   padding:
-                    "7px 13px",
+                    "6px 11px",
 
                   background:
                     isSelectAreas
@@ -894,7 +1491,7 @@ export default function AtlasBottomSheet() {
                       : "#475569",
 
                   fontSize:
-                    11,
+                    10,
 
                   fontWeight:
                     750,
@@ -921,7 +1518,7 @@ export default function AtlasBottomSheet() {
                     "1px solid #ccfbf1",
 
                   padding:
-                    "7px 13px",
+                    "6px 11px",
 
                   background:
                     isDrawArea
@@ -934,7 +1531,7 @@ export default function AtlasBottomSheet() {
                       : "#475569",
 
                   fontSize:
-                    11,
+                    10,
 
                   fontWeight:
                     750,
@@ -947,22 +1544,18 @@ export default function AtlasBottomSheet() {
               </button>
             </div>
 
-            {/* ================================================
-                SELECT AREAS MODE
-                ================================================ */}
-
             {isSelectAreas ? (
               <>
                 <div
                   style={{
                     marginTop:
-                      10,
+                      8,
 
                     fontSize:
-                      13,
+                      12,
 
                     lineHeight:
-                      1.45,
+                      1.4,
 
                     color:
                       "#64748b",
@@ -990,7 +1583,7 @@ export default function AtlasBottomSheet() {
                       gap: 6,
 
                       marginTop:
-                        10,
+                        8,
                     }}
                   >
                     {customBoundaries.map(
@@ -1022,7 +1615,7 @@ export default function AtlasBottomSheet() {
                               999,
 
                             padding:
-                              "5px 8px 5px 9px",
+                              "4px 7px 4px 8px",
 
                             background:
                               "#ecfdf5",
@@ -1062,10 +1655,10 @@ export default function AtlasBottomSheet() {
                                 "center",
 
                               width:
-                                16,
+                                15,
 
                               height:
-                                16,
+                                15,
 
                               borderRadius:
                                 999,
@@ -1074,7 +1667,7 @@ export default function AtlasBottomSheet() {
                                 "rgba(15,118,110,0.10)",
 
                               fontSize:
-                                13,
+                                12,
 
                               lineHeight:
                                 1,
@@ -1093,21 +1686,17 @@ export default function AtlasBottomSheet() {
               </>
             ) : null}
 
-            {/* ================================================
-                DRAW AREA MODE
-                ================================================ */}
-
             {isDrawArea ? (
               <div
                 style={{
                   marginTop:
-                    14,
+                    10,
 
                   padding:
-                    "14px 16px",
+                    "11px 13px",
 
                   borderRadius:
-                    16,
+                    14,
 
                   border:
                     hasFinishedDrawing
@@ -1124,7 +1713,7 @@ export default function AtlasBottomSheet() {
                 <div
                   style={{
                     fontSize:
-                      12,
+                      11,
 
                     fontWeight:
                       750,
@@ -1140,13 +1729,13 @@ export default function AtlasBottomSheet() {
                 <div
                   style={{
                     marginTop:
-                      5,
+                      4,
 
                     fontSize:
-                      12,
+                      11,
 
                     lineHeight:
-                      1.5,
+                      1.45,
 
                     color:
                       "#475569",
@@ -1167,10 +1756,6 @@ export default function AtlasBottomSheet() {
               </div>
             ) : null}
 
-            {/* ================================================
-                CUSTOM MARKET ACTIONS
-                ================================================ */}
-
             <div
               style={{
                 display:
@@ -1179,10 +1764,10 @@ export default function AtlasBottomSheet() {
                 flexWrap:
                   "wrap",
 
-                gap: 8,
+                gap: 7,
 
                 marginTop:
-                  12,
+                  9,
               }}
             >
               {isSelectAreas &&
@@ -1201,7 +1786,7 @@ export default function AtlasBottomSheet() {
                       999,
 
                     padding:
-                      "7px 11px",
+                      "5px 9px",
 
                     background:
                       "#ffffff",
@@ -1210,7 +1795,7 @@ export default function AtlasBottomSheet() {
                       "#475569",
 
                     fontSize:
-                      11,
+                      10,
 
                     fontWeight:
                       700,
@@ -1236,7 +1821,7 @@ export default function AtlasBottomSheet() {
                     999,
 
                   padding:
-                    "7px 11px",
+                    "5px 9px",
 
                   background:
                     "#ffffff",
@@ -1245,7 +1830,7 @@ export default function AtlasBottomSheet() {
                     "#475569",
 
                   fontSize:
-                    11,
+                    10,
 
                   fontWeight:
                     700,
@@ -1258,324 +1843,7 @@ export default function AtlasBottomSheet() {
               </button>
             </div>
           </>
-        ) : popularAreaSelection ? (
-          /* ===================================================
-             POPULAR AREA
-             =================================================== */
-          <>
-            <div>
-              <div
-                style={{
-                  fontSize:
-                    11,
-
-                  fontWeight:
-                    750,
-
-                  letterSpacing:
-                    "0.12em",
-
-                  color:
-                    "#a9792b",
-
-                  textTransform:
-                    "uppercase",
-                }}
-              >
-                Popular Area
-              </div>
-
-              <div
-                style={{
-                  marginTop:
-                    3,
-
-                  fontSize:
-                    27,
-
-                  lineHeight:
-                    1.08,
-
-                  fontWeight:
-                    700,
-
-                  color:
-                    "#0f172a",
-                }}
-              >
-                {
-                  popularAreaSelection.displayName
-                }
-              </div>
-
-              <div
-                style={{
-                  marginTop:
-                    5,
-
-                  fontSize:
-                    13,
-
-                  color:
-                    "#64748b",
-                }}
-              >
-                One of the area's most active
-                resale markets based on recent
-                condo and house sales.
-              </div>
-            </div>
-          </>
-        ) : selectedEntity ? (
-          /* ===================================================
-             MLS / SEARCHPV GEOGRAPHY
-             =================================================== */
-          <>
-            <div>
-              <div
-                style={{
-                  fontSize:
-                    11,
-
-                  fontWeight:
-                    750,
-
-                  letterSpacing:
-                    "0.12em",
-
-                  color:
-                    "#a9792b",
-
-                  textTransform:
-                    "uppercase",
-                }}
-              >
-                {entityTypeLabel(
-                  selectedEntity.entityType,
-                )}
-              </div>
-
-              <div
-                style={{
-                  marginTop:
-                    3,
-
-                  fontSize:
-                    27,
-
-                  lineHeight:
-                    1.08,
-
-                  fontWeight:
-                    700,
-
-                  color:
-                    "#0f172a",
-                }}
-              >
-                {
-                  selectedEntity.displayName
-                }
-              </div>
-
-              <div
-                style={{
-                  marginTop:
-                    5,
-
-                  fontSize:
-                    14,
-
-                  color:
-                    "#64748b",
-                }}
-              >
-                {communityTagline}
-              </div>
-
-              {contextEntity &&
-              analysisEntity &&
-              Number(
-                contextEntity.entityKy,
-              ) !==
-                Number(
-                  analysisEntity.entityKy,
-                ) ? (
-                <button
-                  type="button"
-                  onClick={
-                    resetAnalysisToContext
-                  }
-                  style={{
-                    marginTop:
-                      8,
-
-                    border:
-                      "1px solid #d6b56b",
-
-                    borderRadius:
-                      999,
-
-                    padding:
-                      "6px 10px",
-
-                    background:
-                      "#fffaf0",
-
-                    color:
-                      "#8a5a18",
-
-                    fontSize:
-                      11,
-
-                    fontWeight:
-                      700,
-
-                    cursor:
-                      "pointer",
-                  }}
-                >
-                  All{" "}
-                  {
-                    contextEntity.displayName
-                  }
-                </button>
-              ) : null}
-            </div>
-          </>
-        ) : selectedBoundary ? (
-          /* ===================================================
-             GOVERNMENT LOCAL AREA
-             =================================================== */
-          <>
-            <div
-              style={{
-                fontSize:
-                  11,
-
-                fontWeight:
-                  700,
-
-                letterSpacing:
-                  "0.12em",
-
-                color:
-                  "#94a3b8",
-
-                textTransform:
-                  "uppercase",
-              }}
-            >
-              Local Area
-            </div>
-
-            <div
-              style={{
-                marginTop:
-                  3,
-
-                fontSize:
-                  25,
-
-                fontWeight:
-                  700,
-
-                color:
-                  "#0f172a",
-              }}
-            >
-              {
-                selectedBoundary.boundaryName
-              }
-            </div>
-
-            <div
-              style={{
-                marginTop:
-                  5,
-
-                fontSize:
-                  13,
-
-                color:
-                  "#64748b",
-              }}
-            >
-              {[
-                selectedBoundary.boundaryType,
-                selectedBoundary.districtName,
-                selectedBoundary.municipalityName,
-              ]
-                .filter(
-                  Boolean,
-                )
-                .join(
-                  " · ",
-                )}
-            </div>
-          </>
-        ) : (
-          /* ===================================================
-             NOTHING SELECTED
-             =================================================== */
-          <>
-            <div
-              style={{
-                fontSize:
-                  11,
-
-                fontWeight:
-                  700,
-
-                letterSpacing:
-                  "0.12em",
-
-                color:
-                  "#94a3b8",
-
-                textTransform:
-                  "uppercase",
-              }}
-            >
-              Explore the Bay
-            </div>
-
-            <div
-              style={{
-                marginTop:
-                  3,
-
-                fontSize:
-                  25,
-
-                fontWeight:
-                  700,
-
-                color:
-                  "#0f172a",
-              }}
-            >
-              Banderas Bay
-            </div>
-
-            <div
-              style={{
-                marginTop:
-                  5,
-
-                fontSize:
-                  13,
-
-                color:
-                  "#64748b",
-              }}
-            >
-              Search for a neighborhood, tap the
-              map, or choose a popular area above
-              to start exploring.
-            </div>
-          </>
-        )}
+        ) : null}
 
         {/* =====================================================
             MARKET FILTERS
@@ -1585,16 +1853,16 @@ export default function AtlasBottomSheet() {
           <div
             style={{
               marginTop:
-                16,
+                12,
 
               paddingTop:
-                13,
+                10,
 
               borderTop:
                 "1px solid #e2e8f0",
             }}
           >
-            {/* PROPERTY TYPE */}
+            {/* PROPERTY */}
 
             <div
               style={{
@@ -1604,35 +1872,13 @@ export default function AtlasBottomSheet() {
                 alignItems:
                   "center",
 
-                justifyContent:
-                  "flex-start",
-
-                gap: 8,
+                gap: 6,
               }}
             >
               <div
-                style={{
-                  width:
-                    78,
-
-                  fontSize:
-                    10,
-
-                  fontWeight:
-                    750,
-
-                  letterSpacing:
-                    "0.10em",
-
-                  color:
-                    "#94a3b8",
-
-                  textTransform:
-                    "uppercase",
-
-                  flexShrink:
-                    0,
-                }}
+                style={
+                  filterLabelStyle
+                }
               >
                 Property:
               </div>
@@ -1642,7 +1888,10 @@ export default function AtlasBottomSheet() {
                   display:
                     "flex",
 
-                  gap: 5,
+                  gap: 4,
+
+                  flexWrap:
+                    "wrap",
                 }}
               >
                 {[
@@ -1691,43 +1940,11 @@ export default function AtlasBottomSheet() {
                               | "house",
                           )
                         }
-                        style={{
-                          border:
-                            active
-                              ? isCustomMarket
-                                ? "1px solid #0f766e"
-                                : "1px solid #a9792b"
-                              : "1px solid #e2e8f0",
-
-                          borderRadius:
-                            999,
-
-                          padding:
-                            "6px 11px",
-
-                          background:
-                            active
-                              ? isCustomMarket
-                                ? "#ecfdf5"
-                                : "#fff8e8"
-                              : "#ffffff",
-
-                          color:
-                            active
-                              ? isCustomMarket
-                                ? "#115e59"
-                                : "#8a5a18"
-                              : "#64748b",
-
-                          fontSize:
-                            11,
-
-                          fontWeight:
-                            700,
-
-                          cursor:
-                            "pointer",
-                        }}
+                        style={
+                          filterButtonStyle(
+                            active,
+                          )
+                        }
                       >
                         {
                           option.label
@@ -1739,7 +1956,7 @@ export default function AtlasBottomSheet() {
               </div>
             </div>
 
-            {/* MARKET TYPE */}
+            {/* MARKET */}
 
             <div
               style={{
@@ -1749,38 +1966,16 @@ export default function AtlasBottomSheet() {
                 alignItems:
                   "center",
 
-                justifyContent:
-                  "flex-start",
-
-                gap: 8,
+                gap: 6,
 
                 marginTop:
-                  8,
+                  5,
               }}
             >
               <div
-                style={{
-                  width:
-                    78,
-
-                  fontSize:
-                    10,
-
-                  fontWeight:
-                    750,
-
-                  letterSpacing:
-                    "0.10em",
-
-                  color:
-                    "#94a3b8",
-
-                  textTransform:
-                    "uppercase",
-
-                  flexShrink:
-                    0,
-                }}
+                style={
+                  filterLabelStyle
+                }
               >
                 Market:
               </div>
@@ -1790,7 +1985,10 @@ export default function AtlasBottomSheet() {
                   display:
                     "flex",
 
-                  gap: 5,
+                  gap: 4,
+
+                  flexWrap:
+                    "wrap",
                 }}
               >
                 {[
@@ -1839,43 +2037,126 @@ export default function AtlasBottomSheet() {
                               | "precon",
                           )
                         }
-                        style={{
-                          border:
-                            active
-                              ? isCustomMarket
-                                ? "1px solid #0f766e"
-                                : "1px solid #a9792b"
-                              : "1px solid #e2e8f0",
+                        style={
+                          filterButtonStyle(
+                            active,
+                          )
+                        }
+                      >
+                        {
+                          option.label
+                        }
+                      </button>
+                    );
+                  },
+                )}
+              </div>
+            </div>
 
-                          borderRadius:
-                            999,
+            {/* BEDROOM */}
 
-                          padding:
-                            "6px 11px",
+            <div
+              style={{
+                display:
+                  "flex",
 
-                          background:
-                            active
-                              ? isCustomMarket
-                                ? "#ecfdf5"
-                                : "#fff8e8"
-                              : "#ffffff",
+                alignItems:
+                  "center",
 
-                          color:
-                            active
-                              ? isCustomMarket
-                                ? "#115e59"
-                                : "#8a5a18"
-                              : "#64748b",
+                gap: 6,
 
-                          fontSize:
-                            11,
+                marginTop:
+                  5,
+              }}
+            >
+              <div
+                style={
+                  filterLabelStyle
+                }
+              >
+                BR:
+              </div>
 
-                          fontWeight:
-                            700,
+              <div
+                style={{
+                  display:
+                    "flex",
 
-                          cursor:
-                            "pointer",
-                        }}
+                  gap: 4,
+
+                  flexWrap:
+                    "wrap",
+                }}
+              >
+                {[
+                  {
+                    value:
+                      "all",
+
+                    label:
+                      "All",
+                  },
+
+                  {
+                    value:
+                      "0br",
+
+                    label:
+                      "Studio",
+                  },
+
+                  {
+                    value:
+                      "1br",
+
+                    label:
+                      "1BR",
+                  },
+
+                  {
+                    value:
+                      "2br",
+
+                    label:
+                      "2BR",
+                  },
+
+                  {
+                    value:
+                      "3br_plus",
+
+                    label:
+                      "3BR+",
+                  },
+                ].map(
+                  (
+                    option,
+                  ) => {
+                    const active =
+                      bedroomFilter ===
+                      option.value;
+
+                    return (
+                      <button
+                        key={
+                          option.value
+                        }
+                        type="button"
+                        onClick={() =>
+                          setBedroomFilter(
+                            option.value as
+                              | "all"
+                              | "0br"
+                              | "1br"
+                              | "2br"
+                              | "3br_plus",
+                          )
+                        }
+                        style={
+                          filterButtonStyle(
+                            active,
+                          )
+                        }
                       >
                         {
                           option.label
@@ -1899,13 +2180,13 @@ export default function AtlasBottomSheet() {
           <div
             style={{
               marginTop:
-                18,
+                14,
 
               padding:
-                "18px 16px",
+                "14px",
 
               borderRadius:
-                16,
+                14,
 
               border:
                 "1px dashed #99f6e4",
@@ -1917,19 +2198,18 @@ export default function AtlasBottomSheet() {
                 "#115e59",
 
               fontSize:
-                13,
+                12,
 
               lineHeight:
-                1.5,
+                1.45,
 
               textAlign:
                 "center",
             }}
           >
-            Tap one or more government areas on
-            the map. Atlas will combine them into
-            one Custom Market and calculate the
-            statistics automatically.
+            Tap one or more government areas on the map. Atlas
+            will combine them into one Custom Market and
+            calculate the statistics automatically.
           </div>
         ) : null}
 
@@ -1952,209 +2232,111 @@ export default function AtlasBottomSheet() {
                 gap: 8,
 
                 marginTop:
-                  16,
+                  13,
               }}
             >
-              <button
-                type="button"
-                aria-label="View active listings"
-                style={{
-                  border:
-                    "1px solid #e2e8f0",
+              {[
+                {
+                  label:
+                    "Active",
 
-                  padding:
-                    "11px 12px",
+                  value:
+                    marketSnapshot
+                      ?.activeCount,
+                },
 
-                  borderRadius:
-                    14,
+                {
+                  label:
+                    "Pending",
 
-                  background:
-                    "#f8fafc",
+                  value:
+                    marketSnapshot
+                      ?.pendingCount,
+                },
 
-                  textAlign:
-                    "left",
+                {
+                  label:
+                    "Sold 12 Mo",
 
-                  cursor:
-                    "pointer",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize:
-                      10,
+                  value:
+                    marketSnapshot
+                      ?.sales12Mo,
+                },
+              ].map(
+                (
+                  metric,
+                ) => (
+                  <button
+                    key={
+                      metric.label
+                    }
+                    type="button"
+                    style={{
+                      border:
+                        "1px solid #e2e8f0",
 
-                    fontWeight:
-                      700,
+                      padding:
+                        "9px 10px",
 
-                    letterSpacing:
-                      "0.08em",
+                      borderRadius:
+                        14,
 
-                    textTransform:
-                      "uppercase",
+                      background:
+                        "#f8fafc",
 
-                    color:
-                      "#94a3b8",
-                  }}
-                >
-                  Active
-                </div>
+                      textAlign:
+                        "left",
 
-                <div
-                  style={{
-                    marginTop:
-                      3,
+                      cursor:
+                        "pointer",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize:
+                          9,
 
-                    fontSize:
-                      20,
+                        fontWeight:
+                          700,
 
-                    fontWeight:
-                      750,
+                        letterSpacing:
+                          "0.08em",
 
-                    color:
-                      "#0f172a",
-                  }}
-                >
-                  {marketSnapshotLoading
-                    ? "…"
-                    : marketSnapshot
-                        ?.activeCount ??
-                      "—"}
-                </div>
-              </button>
+                        textTransform:
+                          "uppercase",
 
-              <button
-                type="button"
-                aria-label="View pending listings"
-                style={{
-                  border:
-                    "1px solid #e2e8f0",
+                        color:
+                          "#94a3b8",
+                      }}
+                    >
+                      {
+                        metric.label
+                      }
+                    </div>
 
-                  padding:
-                    "11px 12px",
+                    <div
+                      style={{
+                        marginTop:
+                          3,
 
-                  borderRadius:
-                    14,
+                        fontSize:
+                          19,
 
-                  background:
-                    "#f8fafc",
+                        fontWeight:
+                          750,
 
-                  textAlign:
-                    "left",
-
-                  cursor:
-                    "pointer",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize:
-                      10,
-
-                    fontWeight:
-                      700,
-
-                    letterSpacing:
-                      "0.08em",
-
-                    textTransform:
-                      "uppercase",
-
-                    color:
-                      "#94a3b8",
-                  }}
-                >
-                  Pending
-                </div>
-
-                <div
-                  style={{
-                    marginTop:
-                      3,
-
-                    fontSize:
-                      20,
-
-                    fontWeight:
-                      750,
-
-                    color:
-                      "#0f172a",
-                  }}
-                >
-                  {marketSnapshotLoading
-                    ? "…"
-                    : marketSnapshot
-                        ?.pendingCount ??
-                      "—"}
-                </div>
-              </button>
-
-              <button
-                type="button"
-                aria-label="View sold listings from the last 12 months"
-                style={{
-                  border:
-                    "1px solid #e2e8f0",
-
-                  padding:
-                    "11px 12px",
-
-                  borderRadius:
-                    14,
-
-                  background:
-                    "#f8fafc",
-
-                  textAlign:
-                    "left",
-
-                  cursor:
-                    "pointer",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize:
-                      10,
-
-                    fontWeight:
-                      700,
-
-                    letterSpacing:
-                      "0.08em",
-
-                    textTransform:
-                      "uppercase",
-
-                    color:
-                      "#94a3b8",
-                  }}
-                >
-                  Sold 12 Mo
-                </div>
-
-                <div
-                  style={{
-                    marginTop:
-                      3,
-
-                    fontSize:
-                      20,
-
-                    fontWeight:
-                      750,
-
-                    color:
-                      "#0f172a",
-                  }}
-                >
-                  {marketSnapshotLoading
-                    ? "…"
-                    : marketSnapshot
-                        ?.sales12Mo ??
-                      "—"}
-                </div>
-              </button>
+                        color:
+                          "#0f172a",
+                      }}
+                    >
+                      {marketSnapshotLoading
+                        ? "…"
+                        : metric.value ??
+                          "—"}
+                    </div>
+                  </button>
+                ),
+              )}
             </div>
 
             {/* PRICING ROW */}
@@ -2178,7 +2360,7 @@ export default function AtlasBottomSheet() {
               <div
                 style={{
                   padding:
-                    "10px 12px 11px",
+                    "9px 10px 10px",
 
                   borderRadius:
                     14,
@@ -2202,7 +2384,7 @@ export default function AtlasBottomSheet() {
                       "1px solid #e2e8f0",
 
                     marginBottom:
-                      10,
+                      8,
                   }}
                 >
                   {[
@@ -2211,7 +2393,7 @@ export default function AtlasBottomSheet() {
                         "median",
 
                       label:
-                        "Median",
+                        "Med",
                     },
 
                     {
@@ -2245,7 +2427,7 @@ export default function AtlasBottomSheet() {
                               0,
 
                             padding:
-                              "5px 9px",
+                              "4px 8px",
 
                             background:
                               active
@@ -2279,7 +2461,7 @@ export default function AtlasBottomSheet() {
                 <div
                   style={{
                     fontSize:
-                      10,
+                      9,
 
                     fontWeight:
                       700,
@@ -2305,7 +2487,7 @@ export default function AtlasBottomSheet() {
                       3,
 
                     fontSize:
-                      20,
+                      19,
 
                     fontWeight:
                       750,
@@ -2327,7 +2509,7 @@ export default function AtlasBottomSheet() {
               <div
                 style={{
                   padding:
-                    "10px 12px 11px",
+                    "9px 10px 10px",
 
                   borderRadius:
                     14,
@@ -2344,13 +2526,13 @@ export default function AtlasBottomSheet() {
                     alignItems:
                       "center",
 
-                    justifyContent:
-                      "flex-start",
-
-                    gap: 7,
+                    gap: 5,
 
                     marginBottom:
-                      10,
+                      8,
+
+                    flexWrap:
+                      "wrap",
                   }}
                 >
                   <div
@@ -2374,7 +2556,7 @@ export default function AtlasBottomSheet() {
                           "median",
 
                         label:
-                          "Median",
+                          "Med",
                       },
 
                       {
@@ -2408,7 +2590,7 @@ export default function AtlasBottomSheet() {
                                 0,
 
                               padding:
-                                "5px 9px",
+                                "4px 8px",
 
                               background:
                                 active
@@ -2494,7 +2676,7 @@ export default function AtlasBottomSheet() {
                                 0,
 
                               padding:
-                                "5px 9px",
+                                "4px 8px",
 
                               background:
                                 active
@@ -2529,7 +2711,7 @@ export default function AtlasBottomSheet() {
                 <div
                   style={{
                     fontSize:
-                      10,
+                      9,
 
                     fontWeight:
                       700,
@@ -2555,7 +2737,7 @@ export default function AtlasBottomSheet() {
                       3,
 
                     fontSize:
-                      20,
+                      19,
 
                     fontWeight:
                       750,
@@ -2575,6 +2757,152 @@ export default function AtlasBottomSheet() {
                 </div>
               </div>
             </div>
+
+            {/* =================================================
+                DEVELOPMENT MARKET DETAILS
+                ================================================= */}
+
+            {isDevelopment &&
+            marketSnapshot ? (
+              <div
+                style={{
+                  display:
+                    "grid",
+
+                  gridTemplateColumns:
+                    "repeat(2, minmax(0, 1fr))",
+
+                  gap: 8,
+
+                  marginTop:
+                    8,
+                }}
+              >
+                <div
+                  style={{
+                    padding:
+                      "9px 10px",
+
+                    borderRadius:
+                      14,
+
+                    background:
+                      "#f8fafc",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize:
+                        9,
+
+                      fontWeight:
+                        700,
+
+                      letterSpacing:
+                        "0.08em",
+
+                      textTransform:
+                        "uppercase",
+
+                      color:
+                        "#94a3b8",
+                    }}
+                  >
+                    Avg DOM
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop:
+                        3,
+
+                      fontSize:
+                        17,
+
+                      fontWeight:
+                        750,
+
+                      color:
+                        "#0f172a",
+                    }}
+                  >
+                    {marketSnapshot.currentAvgDom !==
+                      null &&
+                    marketSnapshot.currentAvgDom !==
+                      undefined
+                      ? formatWholeNumber(
+                          marketSnapshot.currentAvgDom,
+                        )
+                      : "—"}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding:
+                      "9px 10px",
+
+                    borderRadius:
+                      14,
+
+                    background:
+                      "#f8fafc",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize:
+                        9,
+
+                      fontWeight:
+                        700,
+
+                      letterSpacing:
+                        "0.08em",
+
+                      textTransform:
+                        "uppercase",
+
+                      color:
+                        "#94a3b8",
+                    }}
+                  >
+                    Months Inventory
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop:
+                        3,
+
+                      fontSize:
+                        17,
+
+                      fontWeight:
+                        750,
+
+                      color:
+                        "#0f172a",
+                    }}
+                  >
+                    {marketSnapshot.monthsInventory !==
+                      null &&
+                    marketSnapshot.monthsInventory !==
+                      undefined
+                      ? Number(
+                          marketSnapshot.monthsInventory,
+                        ).toLocaleString(
+                          "en-US",
+                          {
+                            maximumFractionDigits:
+                              1,
+                          },
+                        )
+                      : "—"}
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </>
         ) : null}
 
@@ -2587,7 +2915,7 @@ export default function AtlasBottomSheet() {
             <div
               style={{
                 marginTop:
-                  15,
+                  13,
 
                 fontSize:
                   13,
@@ -2599,11 +2927,10 @@ export default function AtlasBottomSheet() {
                   "#475569",
               }}
             >
-              Amapas climbs the hills just south of
-              Zona Romántica, with a mix of
-              established condos, newer developments
-              and elevated homes known for views
-              across Banderas Bay.
+              Amapas climbs the hills just south of Zona
+              Romántica, with a mix of established condos,
+              newer developments and elevated homes known for
+              views across Banderas Bay.
             </div>
 
             <div
@@ -2617,7 +2944,7 @@ export default function AtlasBottomSheet() {
                 gap: 7,
 
                 marginTop:
-                  12,
+                  10,
               }}
             >
               {[
@@ -2638,7 +2965,7 @@ export default function AtlasBottomSheet() {
                         999,
 
                       padding:
-                        "6px 10px",
+                        "5px 9px",
 
                       background:
                         "#f1f5f9",
@@ -2647,7 +2974,7 @@ export default function AtlasBottomSheet() {
                         "#475569",
 
                       fontSize:
-                        11,
+                        10,
 
                       fontWeight:
                         650,
@@ -2678,7 +3005,7 @@ export default function AtlasBottomSheet() {
               gap: 8,
 
               marginTop:
-                16,
+                13,
             }}
           >
             <button
@@ -2691,7 +3018,7 @@ export default function AtlasBottomSheet() {
                   14,
 
                 padding:
-                  "11px 8px",
+                  "9px 8px",
 
                 background:
                   "#ffffff",
@@ -2700,7 +3027,7 @@ export default function AtlasBottomSheet() {
                   "#334155",
 
                 fontSize:
-                  12,
+                  11,
 
                 fontWeight:
                   700,
@@ -2722,7 +3049,7 @@ export default function AtlasBottomSheet() {
                   14,
 
                 padding:
-                  "11px 8px",
+                  "9px 8px",
 
                 background:
                   "#ffffff",
@@ -2731,7 +3058,7 @@ export default function AtlasBottomSheet() {
                   "#334155",
 
                 fontSize:
-                  12,
+                  11,
 
                 fontWeight:
                   700,
@@ -2750,15 +3077,16 @@ export default function AtlasBottomSheet() {
             ===================================================== */}
 
         {!isCustomMarket &&
+        !isDevelopment &&
         selectedEntity &&
         selectedBoundary ? (
           <div
             style={{
               marginTop:
-                16,
+                14,
 
               paddingTop:
-                12,
+                10,
 
               borderTop:
                 "1px solid #e2e8f0",
@@ -2767,7 +3095,7 @@ export default function AtlasBottomSheet() {
             <div
               style={{
                 fontSize:
-                  10,
+                  9,
 
                 fontWeight:
                   750,
@@ -2837,16 +3165,17 @@ export default function AtlasBottomSheet() {
             ===================================================== */}
 
         {!isCustomMarket &&
+        !isDevelopment &&
         selectedBoundary &&
         relatedChoices.length >
           0 ? (
           <div
             style={{
               marginTop:
-                13,
+                12,
 
               paddingTop:
-                12,
+                10,
 
               borderTop:
                 "1px solid #e2e8f0",
@@ -2855,7 +3184,7 @@ export default function AtlasBottomSheet() {
             <div
               style={{
                 fontSize:
-                  10,
+                  9,
 
                 fontWeight:
                   750,
@@ -2887,14 +3216,14 @@ export default function AtlasBottomSheet() {
                     4,
 
                   fontSize:
-                    12,
+                    11,
 
                   color:
                     "#64748b",
                 }}
               >
-                This local area overlaps more than one
-                real estate community.
+                This local area overlaps more than one real
+                estate community.
               </div>
             ) : null}
 
@@ -2906,10 +3235,10 @@ export default function AtlasBottomSheet() {
                 flexWrap:
                   "wrap",
 
-                gap: 8,
+                gap: 7,
 
                 marginTop:
-                  8,
+                  7,
               }}
             >
               {relatedChoices.map(
@@ -2935,7 +3264,7 @@ export default function AtlasBottomSheet() {
                         999,
 
                       padding:
-                        "7px 12px",
+                        "6px 10px",
 
                       background:
                         "#ffffff",
@@ -2944,7 +3273,7 @@ export default function AtlasBottomSheet() {
                         "#334155",
 
                       fontSize:
-                        12,
+                        11,
 
                       fontWeight:
                         650,
