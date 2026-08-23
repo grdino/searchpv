@@ -26,6 +26,8 @@ export default function AtlasMap() {
     selectedBoundary,
     selectBoundary,
 
+    popularAreaSelection,
+
     mode,
 
     customMarketMethod,
@@ -317,6 +319,75 @@ export default function AtlasMap() {
       });
 
       // ========================================================
+      // DEVELOPMENT POINT
+      // ========================================================
+      //
+      // Developments do not have polygon footprints in Atlas.
+      // The canonical longitude / latitude stored on geo.entity
+      // is used as the development's map location.
+      // ========================================================
+
+      map.addSource(
+        "atlas-development-selection",
+        {
+          type: "geojson",
+
+          data: {
+            type: "FeatureCollection",
+            features: [],
+          },
+        },
+      );
+
+      /*
+       * Soft outer halo.
+       */
+      map.addLayer({
+        id: "atlas-development-selection-halo",
+
+        type: "circle",
+
+        source: "atlas-development-selection",
+
+        slot: "top",
+
+        paint: {
+          "circle-radius": 13,
+
+          "circle-color": "#ffffff",
+
+          "circle-opacity": 0.9,
+
+          "circle-stroke-color": "#925f17",
+
+          "circle-stroke-width": 2,
+        },
+      });
+
+      /*
+       * Gold center point.
+       */
+      map.addLayer({
+        id: "atlas-development-selection-point",
+
+        type: "circle",
+
+        source: "atlas-development-selection",
+
+        slot: "top",
+
+        paint: {
+          "circle-radius": 7,
+
+          "circle-color": "#c58b2a",
+
+          "circle-stroke-color": "#713f12",
+
+          "circle-stroke-width": 1.5,
+        },
+      });
+
+      // ========================================================
       // 3. FOCUSED GOVERNMENT BOUNDARY
       // ========================================================
 
@@ -378,7 +449,81 @@ export default function AtlasMap() {
       });
 
       // ========================================================
-      // 4. CUSTOM MARKET — SELECT AREAS
+      // 4. POPULAR AREA FOOTPRINT
+      // ========================================================
+      //
+      // Popular Areas are exact Atlas geographic footprints.
+      //
+      // Examples:
+      //
+      // Emiliano Zapata -> [437]
+      // Nuevo Nayarit   -> [626]
+      // Las Glorias     -> [365, 366, 370]
+      //
+      // Keep this separate from MLS entity geometry so the
+      // displayed name, highlighted geography and statistics all
+      // describe the same physical footprint.
+      // ========================================================
+
+      map.addSource(
+        "atlas-popular-area-selection",
+        {
+          type: "geojson",
+
+          data: {
+            type:
+              "FeatureCollection",
+
+            features: [],
+          },
+        },
+      );
+
+      map.addLayer({
+        id:
+          "atlas-popular-area-selection-fill",
+
+        type: "fill",
+
+        source:
+          "atlas-popular-area-selection",
+
+        slot: "top",
+
+        paint: {
+          "fill-color":
+            "#c58b2a",
+
+          "fill-opacity":
+            0.22,
+        },
+      });
+
+      map.addLayer({
+        id:
+          "atlas-popular-area-selection-line",
+
+        type: "line",
+
+        source:
+          "atlas-popular-area-selection",
+
+        slot: "top",
+
+        paint: {
+          "line-color":
+            "#925f17",
+
+          "line-width":
+            2.5,
+
+          "line-opacity":
+            0.95,
+        },
+      });
+
+      // ========================================================
+      // 5. CUSTOM MARKET — SELECT AREAS
       // ========================================================
 
       map.addSource(
@@ -439,7 +584,7 @@ export default function AtlasMap() {
       });
 
       // ========================================================
-      // 5. CUSTOM MARKET — DRAW AREA
+      // 6. CUSTOM MARKET — DRAW AREA
       // ========================================================
       //
       // One GeoJSON source contains:
@@ -597,7 +742,7 @@ export default function AtlasMap() {
       });
 
       // ========================================================
-      // 6. ALL GOVERNMENT BOUNDARIES
+      // 7. ALL GOVERNMENT BOUNDARIES
       // ========================================================
 
       fetch(
@@ -1397,6 +1542,226 @@ export default function AtlasMap() {
   ]);
 
   // ============================================================
+  // POPULAR AREA FOOTPRINT
+  // ============================================================
+  //
+  // Popular Area shortcuts are based on exact government
+  // boundary footprints rather than MLS entity identity.
+  //
+  // The complete boundary geometry is already loaded into
+  // fullBoundaryFeaturesRef, so no additional geometry request
+  // is necessary.
+  // ============================================================
+
+  useEffect(() => {
+    const map =
+      mapRef.current;
+
+    if (!map) {
+      return;
+    }
+
+    const popularAreaSource =
+      map.getSource(
+        "atlas-popular-area-selection",
+      ) as
+        | mapboxgl.GeoJSONSource
+        | undefined;
+
+    if (!popularAreaSource) {
+      return;
+    }
+
+    /*
+    * ----------------------------------------------------------
+    * CLEAR POPULAR AREA
+    * ----------------------------------------------------------
+    */
+
+    if (
+      !popularAreaSelection
+    ) {
+      popularAreaSource.setData({
+        type:
+          "FeatureCollection",
+
+        features: [],
+      });
+
+      return;
+    }
+
+    /*
+    * ----------------------------------------------------------
+    * GET EXACT GOVERNMENT POLYGONS
+    * ----------------------------------------------------------
+    */
+
+    const features =
+      popularAreaSelection
+        .boundaryKys
+        .map(
+          (
+            boundaryKy,
+          ) =>
+            fullBoundaryFeaturesRef.current.get(
+              Number(
+                boundaryKy,
+              ),
+            ),
+        )
+        .filter(Boolean);
+
+    if (
+      features.length === 0
+    ) {
+      /*
+      * The government-boundary request may still be finishing
+      * when the selection first changes.
+      *
+      * The Popular Area buttons won't normally be available
+      * until after page load, but don't display stale geometry
+      * if this ever occurs.
+      */
+      popularAreaSource.setData({
+        type:
+          "FeatureCollection",
+
+        features: [],
+      });
+
+      return;
+    }
+
+    /*
+    * ----------------------------------------------------------
+    * HIGHLIGHT EXACT FOOTPRINT
+    * ----------------------------------------------------------
+    */
+
+    popularAreaSource.setData({
+      type:
+        "FeatureCollection",
+
+      features,
+    });
+
+    /*
+    * ----------------------------------------------------------
+    * CALCULATE COMBINED BOUNDS
+    * ----------------------------------------------------------
+    *
+    * We intentionally calculate this from the actual polygon
+    * coordinates rather than from an MLS entity.
+    * ----------------------------------------------------------
+    */
+
+    const bounds =
+      new mapboxgl.LngLatBounds();
+
+    function extendCoordinates(
+      coordinates: any,
+    ) {
+      if (
+        !Array.isArray(
+          coordinates,
+        )
+      ) {
+        return;
+      }
+
+      /*
+      * Coordinate pair:
+      *
+      * [longitude, latitude]
+      */
+      if (
+        coordinates.length >=
+          2 &&
+        typeof coordinates[0] ===
+          "number" &&
+        typeof coordinates[1] ===
+          "number"
+      ) {
+        bounds.extend([
+          coordinates[0],
+          coordinates[1],
+        ]);
+
+        return;
+      }
+
+      /*
+      * Polygon / MultiPolygon nesting.
+      */
+      for (
+        const child of
+        coordinates
+      ) {
+        extendCoordinates(
+          child,
+        );
+      }
+    }
+
+    for (
+      const feature of
+      features
+    ) {
+      extendCoordinates(
+        feature?.geometry
+          ?.coordinates,
+      );
+    }
+
+    if (
+      bounds.isEmpty()
+    ) {
+      return;
+    }
+
+    /*
+    * ----------------------------------------------------------
+    * FIT MAP TO COMPLETE FOOTPRINT
+    * ----------------------------------------------------------
+    *
+    * Match the same visual treatment used when Atlas navigates
+    * to an MLS entity.
+    * ----------------------------------------------------------
+    */
+
+    map.fitBounds(
+      bounds,
+
+      {
+        padding: {
+          top: 110,
+
+          right: 40,
+
+          bottom:
+            Math.round(
+              window.innerHeight *
+                0.46,
+            ),
+
+          left: 40,
+        },
+
+        pitch: 45,
+
+        duration:
+          1800,
+
+        essential:
+          true,
+      },
+    );
+  }, [
+    popularAreaSelection,
+  ]);
+
+  // ============================================================
   // BROADER SEARCHPV CONTEXT
   // ============================================================
 
@@ -1408,20 +1773,37 @@ export default function AtlasMap() {
       return;
     }
 
+    const entitySource =
+      map.getSource(
+        "atlas-entity-selection",
+      ) as
+        | mapboxgl.GeoJSONSource
+        | undefined;
+
+    const developmentSource =
+      map.getSource(
+        "atlas-development-selection",
+      ) as
+        | mapboxgl.GeoJSONSource
+        | undefined;
+
     /*
-     * No broader context.
+     * ----------------------------------------------------------
+     * NO CONTEXT
+     * ----------------------------------------------------------
      */
+
     if (
       !contextEntity
     ) {
-      const entitySource =
-        map.getSource(
-          "atlas-entity-selection",
-        ) as
-          | mapboxgl.GeoJSONSource
-          | undefined;
-
       entitySource?.setData({
+        type:
+          "FeatureCollection",
+
+        features: [],
+      });
+
+      developmentSource?.setData({
         type:
           "FeatureCollection",
 
@@ -1473,14 +1855,27 @@ export default function AtlasMap() {
         return;
       }
 
-      const entitySource =
+      const currentEntitySource =
         currentMap.getSource(
           "atlas-entity-selection",
         ) as
           | mapboxgl.GeoJSONSource
           | undefined;
 
-      if (!entitySource) {
+      const currentDevelopmentSource =
+        currentMap.getSource(
+          "atlas-development-selection",
+        ) as
+          | mapboxgl.GeoJSONSource
+          | undefined;
+
+      /*
+       * Map sources may not quite exist yet during initial load.
+       */
+      if (
+        !currentEntitySource ||
+        !currentDevelopmentSource
+      ) {
         currentMap.once(
           "load",
           showContextEntity,
@@ -1490,30 +1885,132 @@ export default function AtlasMap() {
       }
 
       /*
-       * Clear only previous CONTEXT geometry.
+       * Always clear previous context geometry and previous
+       * development marker before showing the new selection.
        */
-      entitySource.setData({
+      currentEntitySource.setData({
         type:
           "FeatureCollection",
 
         features: [],
       });
 
-      currentMap.setPaintProperty(
-        "atlas-entity-selection-fill",
+      currentDevelopmentSource.setData({
+        type:
+          "FeatureCollection",
 
-        "fill-opacity",
+        features: [],
+      });
 
-        0,
-      );
+      if (
+        currentMap.getLayer(
+          "atlas-entity-selection-fill",
+        )
+      ) {
+        currentMap.setPaintProperty(
+          "atlas-entity-selection-fill",
 
-      currentMap.setPaintProperty(
-        "atlas-entity-selection-line",
+          "fill-opacity",
 
-        "line-opacity",
+          0,
+        );
+      }
 
-        0,
-      );
+      if (
+        currentMap.getLayer(
+          "atlas-entity-selection-line",
+        )
+      ) {
+        currentMap.setPaintProperty(
+          "atlas-entity-selection-line",
+
+          "line-opacity",
+
+          0,
+        );
+      }
+
+      // ========================================================
+      // DEVELOPMENT
+      // ========================================================
+      //
+      // Development entities are represented by their canonical
+      // Atlas point rather than a polygon footprint.
+      //
+      // Do this BEFORE attempting entity-geometry.
+      // ========================================================
+
+      if (
+        entity.entityType ===
+          "DV" &&
+        Number.isFinite(
+          entity.longitude,
+        ) &&
+        Number.isFinite(
+          entity.latitude,
+        )
+      ) {
+        const longitude =
+          entity.longitude as number;
+
+        const latitude =
+          entity.latitude as number;
+
+        currentDevelopmentSource.setData({
+          type:
+            "FeatureCollection",
+
+          features: [
+            {
+              type:
+                "Feature",
+
+              properties: {
+                entityKy:
+                  entity.entityKy,
+
+                entityName:
+                  entity.displayName ??
+                  entity.canonicalName,
+
+                entityType:
+                  entity.entityType,
+              },
+
+              geometry: {
+                type:
+                  "Point",
+
+                coordinates: [
+                  longitude,
+                  latitude,
+                ],
+              },
+            },
+          ],
+        });
+
+        currentMap.flyTo({
+          center: [
+            longitude,
+            latitude,
+          ],
+
+          zoom: 16,
+
+          pitch: 45,
+
+          duration: 1800,
+
+          essential: true,
+        });
+
+        return;
+      }
+
+      // ========================================================
+      // GEOGRAPHIC ENTITY
+      // ========================================================
 
       if (
         entity.entityKy
@@ -1574,7 +2071,7 @@ export default function AtlasMap() {
                 entityGeometry.geometry,
             };
 
-            entitySource.setData(
+            currentEntitySource.setData(
               {
                 type:
                   "FeatureCollection",
@@ -1611,6 +2108,7 @@ export default function AtlasMap() {
               {
                 padding: {
                   top: 110,
+
                   right: 40,
 
                   bottom:
@@ -1677,9 +2175,14 @@ export default function AtlasMap() {
         }
       }
 
-      /*
-       * Development / Building / Point fallback.
-       */
+      // ========================================================
+      // GENERIC POINT FALLBACK
+      // ========================================================
+      //
+      // Keep the existing fallback for any other Atlas entity
+      // that has coordinates but no usable polygon geometry.
+      // ========================================================
+
       if (
         Number.isFinite(
           entity.longitude,
@@ -1695,6 +2198,7 @@ export default function AtlasMap() {
           ],
 
           zoom: 15,
+
           pitch: 45,
 
           duration: 1800,

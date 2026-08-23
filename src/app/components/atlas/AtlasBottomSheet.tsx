@@ -91,6 +91,8 @@ export default function AtlasBottomSheet() {
     selectedBoundary,
     relatedEntities,
 
+    popularAreaSelection,
+
     mode,
 
     customMarketMethod,
@@ -157,13 +159,6 @@ export default function AtlasBottomSheet() {
 
   /*
    * Atlas display preferences.
-   *
-   * These apply consistently to:
-   *
-   * - MLS Areas / Communities
-   * - Government Local Areas
-   * - Custom Market Select Areas
-   * - Custom Market Draw Area
    */
   const [
     summaryMode,
@@ -194,20 +189,30 @@ export default function AtlasBottomSheet() {
 
   /*
    * ==========================================================
-   * MARKET SNAPSHOT SOURCE
+   * MARKET SNAPSHOT SOURCES
    * ==========================================================
    *
-   * Atlas supports four sources:
+   * Atlas supports:
    *
-   * 1. MLS Community / Area
-   * 2. Government Local Area
-   * 3. Custom Market — Select Areas
-   * 4. Custom Market — Draw Area
+   * 1. Popular Area footprint
+   * 2. MLS Community / Area
+   * 3. Government Local Area
+   * 4. Custom Market — Select Areas
+   * 5. Custom Market — Draw Area
    */
+
+  const hasPopularAreaMarketContext =
+    Boolean(
+      !isCustomMarket &&
+        popularAreaSelection &&
+        popularAreaSelection.boundaryKys.length >
+          0,
+    );
 
   const hasMlsMarketContext =
     Boolean(
       !isCustomMarket &&
+        !popularAreaSelection &&
         selectedEntity &&
         ["CM", "AR"].includes(
           selectedEntity.entityType,
@@ -217,6 +222,7 @@ export default function AtlasBottomSheet() {
   const hasBoundaryMarketContext =
     Boolean(
       !isCustomMarket &&
+        !popularAreaSelection &&
         !hasMlsMarketContext &&
         selectedBoundary,
     );
@@ -234,6 +240,7 @@ export default function AtlasBottomSheet() {
     );
 
   const hasMarketContext =
+    hasPopularAreaMarketContext ||
     hasMlsMarketContext ||
     hasBoundaryMarketContext ||
     hasSelectedAreaMarketContext ||
@@ -249,8 +256,8 @@ export default function AtlasBottomSheet() {
     /*
      * Draw Area:
      *
-     * Never display stale Select Areas / old Draw Area
-     * statistics while a new polygon is being created.
+     * Never display stale statistics while a new polygon
+     * is being created.
      */
     if (
       isDrawArea &&
@@ -266,8 +273,7 @@ export default function AtlasBottomSheet() {
     }
 
     /*
-     * Select Areas with zero polygons is a valid empty
-     * state, but there is no market yet.
+     * Select Areas with zero polygons is a valid empty state.
      */
     if (
       isSelectAreas &&
@@ -303,9 +309,6 @@ export default function AtlasBottomSheet() {
          * ------------------------------------------------------
          * CUSTOM MARKET — DRAW AREA
          * ------------------------------------------------------
-         *
-         * Geometry is sent in the POST body rather than a query
-         * string.
          */
 
         if (
@@ -341,6 +344,58 @@ export default function AtlasBottomSheet() {
                     marketType:
                       marketTypeFilter,
                   }),
+              },
+            );
+        }
+
+        /*
+         * ------------------------------------------------------
+         * POPULAR AREA
+         * ------------------------------------------------------
+         *
+         * Popular Areas are exact saved Atlas footprints.
+         *
+         * Use the same spatial statistics engine as Custom
+         * Market so the highlighted geography and statistics
+         * describe exactly the same physical area.
+         */
+
+        else if (
+          hasPopularAreaMarketContext &&
+          popularAreaSelection
+        ) {
+          const params =
+            new URLSearchParams();
+
+          for (
+            const boundaryKy of
+              popularAreaSelection.boundaryKys
+          ) {
+            params.append(
+              "boundaryKy",
+              String(boundaryKy),
+            );
+          }
+
+          params.set(
+            "propertyType",
+            propertyTypeFilter,
+          );
+
+          params.set(
+            "marketType",
+            marketTypeFilter,
+          );
+
+          response =
+            await fetch(
+              `/api/atlas/custom-market-snapshot?${params.toString()}`,
+              {
+                cache:
+                  "no-store",
+
+                signal:
+                  controller.signal,
               },
             );
         }
@@ -469,9 +524,9 @@ export default function AtlasBottomSheet() {
         /*
          * Defensive fallback.
          */
-
         else {
           setMarketSnapshot(null);
+
           setMarketSnapshotLoading(
             false,
           );
@@ -542,9 +597,12 @@ export default function AtlasBottomSheet() {
     customDrawActive,
 
     hasMarketContext,
+    hasPopularAreaMarketContext,
     hasSelectedAreaMarketContext,
     hasDrawnMarketContext,
     hasMlsMarketContext,
+
+    popularAreaSelection,
 
     selectedEntity,
     selectedBoundary,
@@ -561,6 +619,7 @@ export default function AtlasBottomSheet() {
 
   const isAmapas =
     !isCustomMarket &&
+    !popularAreaSelection &&
     selectedEntity
       ?.canonicalName
       ?.trim()
@@ -578,8 +637,6 @@ export default function AtlasBottomSheet() {
    * ==========================================================
    * ACTIVE PRICING DISPLAY
    * ==========================================================
-   *
-   * Pricing represents ACTIVE inventory only.
    */
 
   const displayedListPrice =
@@ -1201,6 +1258,74 @@ export default function AtlasBottomSheet() {
               </button>
             </div>
           </>
+        ) : popularAreaSelection ? (
+          /* ===================================================
+             POPULAR AREA
+             =================================================== */
+          <>
+            <div>
+              <div
+                style={{
+                  fontSize:
+                    11,
+
+                  fontWeight:
+                    750,
+
+                  letterSpacing:
+                    "0.12em",
+
+                  color:
+                    "#a9792b",
+
+                  textTransform:
+                    "uppercase",
+                }}
+              >
+                Popular Area
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    3,
+
+                  fontSize:
+                    27,
+
+                  lineHeight:
+                    1.08,
+
+                  fontWeight:
+                    700,
+
+                  color:
+                    "#0f172a",
+                }}
+              >
+                {
+                  popularAreaSelection.displayName
+                }
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    5,
+
+                  fontSize:
+                    13,
+
+                  color:
+                    "#64748b",
+                }}
+              >
+                One of the area's most active
+                resale markets based on recent
+                condo and house sales.
+              </div>
+            </div>
+          </>
         ) : selectedEntity ? (
           /* ===================================================
              MLS / SEARCHPV GEOGRAPHY
@@ -1445,7 +1570,8 @@ export default function AtlasBottomSheet() {
                   "#64748b",
               }}
             >
-              Tap the map or search for a place
+              Search for a neighborhood, tap the
+              map, or choose a popular area above
               to start exploring.
             </div>
           </>
@@ -1453,11 +1579,7 @@ export default function AtlasBottomSheet() {
 
         {/* =====================================================
             MARKET FILTERS
-            =====================================================
-            
-            These now apply to every completed market,
-            including a finished Draw Area.
-        */}
+            ===================================================== */}
 
         {hasMarketContext ? (
           <div
@@ -1833,8 +1955,6 @@ export default function AtlasBottomSheet() {
                   16,
               }}
             >
-              {/* ACTIVE */}
-
               <button
                 type="button"
                 aria-label="View active listings"
@@ -1902,8 +2022,6 @@ export default function AtlasBottomSheet() {
                 </div>
               </button>
 
-              {/* PENDING */}
-
               <button
                 type="button"
                 aria-label="View pending listings"
@@ -1970,8 +2088,6 @@ export default function AtlasBottomSheet() {
                       "—"}
                 </div>
               </button>
-
-              {/* SOLD */}
 
               <button
                 type="button"
@@ -2041,9 +2157,7 @@ export default function AtlasBottomSheet() {
               </button>
             </div>
 
-            {/* ================================================
-                PRICING ROW
-                ================================================ */}
+            {/* PRICING ROW */}
 
             <div
               style={{
@@ -2239,8 +2353,6 @@ export default function AtlasBottomSheet() {
                       10,
                   }}
                 >
-                  {/* MEDIAN / AVG */}
-
                   <div
                     style={{
                       display:
@@ -2326,8 +2438,6 @@ export default function AtlasBottomSheet() {
                       },
                     )}
                   </div>
-
-                  {/* FT² / M² */}
 
                   <div
                     style={{

@@ -36,6 +36,29 @@ export type AtlasBoundary = {
   districtName?: string;
 };
 
+/*
+ * A Popular Area is an exact Atlas geographic footprint.
+ *
+ * It is deliberately NOT an MLS entity.
+ *
+ * Examples:
+ *
+ * Emiliano Zapata
+ *   -> [437]
+ *
+ * Nuevo Nayarit
+ *   -> [626]
+ *
+ * Las Glorias
+ *   -> [365, 366, 370]
+ */
+export type AtlasPopularArea = {
+  footprintKey: string;
+  displayName: string;
+  boundaryKys: number[];
+  salesCount?: number;
+};
+
 export type AtlasPropertyTypeFilter =
   | "all"
   | "condo"
@@ -118,6 +141,16 @@ type AtlasStateContextValue = {
   focusedBoundary: AtlasBoundary | null;
 
   /*
+   * Exact footprint selected from the Popular Areas
+   * discovery shortcuts.
+   *
+   * This remains separate from MLS entity selection so the
+   * displayed name, highlighted geography and statistics can
+   * all describe the same physical footprint.
+   */
+  popularAreaSelection: AtlasPopularArea | null;
+
+  /*
    * Backward-compatible names.
    */
   selectedEntity: AtlasEntity | null;
@@ -192,6 +225,18 @@ type AtlasStateContextValue = {
   ) => void;
 
   resetAnalysisToContext: () => void;
+
+  /*
+   * ==========================================================
+   * POPULAR AREA ACTIONS
+   * ==========================================================
+   */
+
+  selectPopularArea: (
+    area: AtlasPopularArea,
+  ) => void;
+
+  clearPopularArea: () => void;
 
   /*
    * ==========================================================
@@ -345,6 +390,18 @@ export function AtlasStateProvider({
       null,
     );
 
+  /*
+   * Popular Area footprint selected from the discovery
+   * shortcuts underneath Atlas Search.
+   */
+  const [
+    popularAreaSelection,
+    setPopularAreaSelection,
+  ] =
+    useState<AtlasPopularArea | null>(
+      null,
+    );
+
   const [
     focusMatchesContext,
     setFocusMatchesContext,
@@ -463,6 +520,14 @@ export function AtlasStateProvider({
   function selectEntity(
     entity: AtlasEntity,
   ) {
+    /*
+     * A direct MLS geography selection replaces any Popular
+     * Area footprint selection.
+     */
+    setPopularAreaSelection(
+      null,
+    );
+
     setContextEntity(entity);
     setAnalysisEntity(entity);
 
@@ -475,6 +540,61 @@ export function AtlasStateProvider({
 
   /*
    * ==========================================================
+   * POPULAR AREA SELECTION
+   * ==========================================================
+   */
+
+  function selectPopularArea(
+    area: AtlasPopularArea,
+  ) {
+    /*
+     * Popular Areas are standalone geographic footprints.
+     *
+     * Do not assign an arbitrary MLS entity as the context or
+     * analysis entity. AtlasMap will use boundaryKys to
+     * highlight and fit the exact footprint, while the
+     * BottomSheet can use the same boundaryKys for statistics.
+     */
+    setPopularAreaSelection(
+      area,
+    );
+
+    setContextEntity(null);
+    setAnalysisEntity(null);
+
+    setFocusedBoundary(null);
+    setRelatedEntities([]);
+
+    setFocusMatchesContext(
+      true,
+    );
+
+    /*
+     * Popular Area discovery is normal Explore behavior.
+     */
+    setMode("explore");
+
+    setSheetState("half");
+  }
+
+  function clearPopularArea() {
+    setPopularAreaSelection(
+      null,
+    );
+
+    if (
+      !contextEntity &&
+      !analysisEntity &&
+      !focusedBoundary
+    ) {
+      setSheetState(
+        "collapsed",
+      );
+    }
+  }
+
+  /*
+   * ==========================================================
    * GOVERNMENT POLYGON CLICK
    * ==========================================================
    */
@@ -483,6 +603,15 @@ export function AtlasStateProvider({
     boundary: AtlasBoundary,
     entities: AtlasEntity[] = [],
   ) {
+    /*
+     * Clicking an individual map polygon exits the Popular
+     * Area footprint selection and resumes ordinary Explore
+     * behavior.
+     */
+    setPopularAreaSelection(
+      null,
+    );
+
     setFocusedBoundary(boundary);
     setRelatedEntities(entities);
 
@@ -566,6 +695,10 @@ export function AtlasStateProvider({
     entity: AtlasEntity,
     boundary: AtlasBoundary,
   ) {
+    setPopularAreaSelection(
+      null,
+    );
+
     if (
       contextEntity &&
       focusMatchesContext
@@ -609,6 +742,10 @@ export function AtlasStateProvider({
       return;
     }
 
+    setPopularAreaSelection(
+      null,
+    );
+
     setAnalysisEntity(
       contextEntity,
     );
@@ -628,6 +765,13 @@ export function AtlasStateProvider({
    */
 
   function startCustomMarket() {
+    /*
+     * Custom Market is a separate analysis mode.
+     */
+    setPopularAreaSelection(
+      null,
+    );
+
     /*
      * Every new Custom Market begins with Select Areas.
      */
@@ -854,7 +998,10 @@ export function AtlasStateProvider({
       false,
     );
 
-    if (!focusedBoundary) {
+    if (
+      !focusedBoundary &&
+      !popularAreaSelection
+    ) {
       setSheetState(
         "collapsed",
       );
@@ -880,9 +1027,11 @@ export function AtlasStateProvider({
         false,
       );
 
-      setSheetState(
-        "collapsed",
-      );
+      if (!popularAreaSelection) {
+        setSheetState(
+          "collapsed",
+        );
+      }
     }
   }
 
@@ -892,6 +1041,10 @@ export function AtlasStateProvider({
 
     setFocusedBoundary(null);
     setRelatedEntities([]);
+
+    setPopularAreaSelection(
+      null,
+    );
 
     setFocusMatchesContext(true);
 
@@ -906,6 +1059,8 @@ export function AtlasStateProvider({
         contextEntity,
         analysisEntity,
         focusedBoundary,
+
+        popularAreaSelection,
 
         selectedEntity,
         selectedBoundary,
@@ -931,6 +1086,9 @@ export function AtlasStateProvider({
         selectBoundary,
         selectGeography,
         resetAnalysisToContext,
+
+        selectPopularArea,
+        clearPopularArea,
 
         startCustomMarket,
         setCustomMarketMethod,
