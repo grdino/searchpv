@@ -17,6 +17,9 @@ export default function AtlasMap() {
   const mapRef =
     useRef<mapboxgl.Map | null>(null);
 
+  const listingMarkerRef =
+    useRef<mapboxgl.Marker | null>(null);
+
   /*
    * Keep the complete government-boundary features available
    * outside the one-time Mapbox load callback.
@@ -1228,6 +1231,343 @@ export default function AtlasMap() {
   }, []);
 
   // ============================================================
+  // IDX PROPERTY DEEP-LINK MARKER
+  // ============================================================
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    let listingFocusTimer:
+      number | null = null;
+
+    if (!map) {
+      return;
+    }
+
+    const params = new URLSearchParams(
+      window.location.search,
+    );
+
+    const latitude = Number(
+      params.get("listingLat"),
+    );
+
+    const longitude = Number(
+      params.get("listingLng"),
+    );
+
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180
+    ) {
+      return;
+    }
+
+    const listingTitle =
+      params.get("listingTitle")?.trim() ||
+      "SearchPV property";
+
+    const listingMls =
+      params.get("listingMls")?.trim() || "";
+
+    const developmentName =
+      params.get("development")?.trim() || "";
+
+    function validatedListingUrl() {
+      const rawUrl =
+        params.get("listingUrl")?.trim();
+
+      if (!rawUrl) {
+        return "";
+      }
+
+      try {
+        const parsedUrl = new URL(rawUrl);
+
+        if (
+          parsedUrl.protocol !== "https:" ||
+          parsedUrl.hostname.toLowerCase() !==
+            "idx.searchpv.com"
+        ) {
+          return "";
+        }
+
+        return parsedUrl.toString();
+      } catch {
+        return "";
+      }
+    }
+
+    function buildDevelopmentUrl() {
+      if (!developmentName) {
+        return "";
+      }
+
+      const developmentUrl = new URL(
+        "/atlas",
+        window.location.origin,
+      );
+
+      developmentUrl.searchParams.set(
+        "development",
+        developmentName,
+      );
+
+      for (const key of [
+        "mlsZone",
+        "mlsArea",
+        "mlsCommunity",
+      ]) {
+        const value = params.get(key)?.trim();
+
+        if (value) {
+          developmentUrl.searchParams.set(
+            key,
+            value,
+          );
+        }
+      }
+
+      return developmentUrl.toString();
+    }
+
+    function createActionLink(
+      label: string,
+      href: string,
+      primary = false,
+    ) {
+      const link = document.createElement("a");
+
+      link.href = href;
+      link.textContent = label;
+
+      Object.assign(link.style, {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "36px",
+        padding: "8px 12px",
+        borderRadius: "999px",
+        border: primary
+          ? "1px solid #0f172a"
+          : "1px solid #cbd5e1",
+        background: primary
+          ? "#0f172a"
+          : "#ffffff",
+        color: primary
+          ? "#ffffff"
+          : "#0f172a",
+        fontSize: "12px",
+        fontWeight: "800",
+        lineHeight: "1.1",
+        textDecoration: "none",
+        whiteSpace: "nowrap",
+      });
+
+      return link;
+    }
+
+    function addListingMarker() {
+      if (
+        listingMarkerRef.current ||
+        mapRef.current !== map
+      ) {
+        return;
+      }
+
+      const markerElement =
+        document.createElement("button");
+
+      markerElement.type = "button";
+      markerElement.setAttribute(
+        "aria-label",
+        `Open ${listingTitle}`,
+      );
+
+      Object.assign(markerElement.style, {
+        width: "34px",
+        height: "34px",
+        padding: "0",
+        border: "4px solid #ffffff",
+        borderRadius: "50% 50% 50% 0",
+        background:
+          "linear-gradient(135deg, #0f172a 0%, #078a83 100%)",
+        boxShadow:
+          "0 6px 18px rgba(15, 23, 42, 0.35)",
+        cursor: "pointer",
+        transform: "rotate(-45deg)",
+      });
+
+      const markerCenter =
+        document.createElement("span");
+
+      Object.assign(markerCenter.style, {
+        position: "absolute",
+        inset: "7px",
+        borderRadius: "50%",
+        background: "#ffffff",
+      });
+
+      markerElement.appendChild(markerCenter);
+
+      const popupContent =
+        document.createElement("div");
+
+      Object.assign(popupContent.style, {
+        minWidth: "230px",
+        maxWidth: "290px",
+        padding: "5px 3px 3px",
+        color: "#0f172a",
+        fontFamily: "inherit",
+      });
+
+      const eyebrow = document.createElement("div");
+
+      eyebrow.textContent = listingMls
+        ? `SEARCHPV PROPERTY · MLS ${listingMls}`
+        : "SEARCHPV PROPERTY";
+
+      Object.assign(eyebrow.style, {
+        marginBottom: "5px",
+        color: "#078a83",
+        fontSize: "10px",
+        fontWeight: "900",
+        letterSpacing: "0.08em",
+      });
+
+      const title = document.createElement("div");
+
+      title.textContent = listingTitle;
+
+      Object.assign(title.style, {
+        fontSize: "15px",
+        fontWeight: "900",
+        lineHeight: "1.25",
+      });
+
+      popupContent.appendChild(eyebrow);
+      popupContent.appendChild(title);
+
+      if (developmentName) {
+        const development =
+          document.createElement("div");
+
+        development.textContent = developmentName;
+
+        Object.assign(development.style, {
+          marginTop: "4px",
+          color: "#64748b",
+          fontSize: "12px",
+          fontWeight: "700",
+        });
+
+        popupContent.appendChild(development);
+      }
+
+      const actions = document.createElement("div");
+
+      Object.assign(actions.style, {
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "7px",
+        marginTop: "12px",
+      });
+
+      const listingUrl = validatedListingUrl();
+      const developmentUrl = buildDevelopmentUrl();
+
+      if (listingUrl) {
+        actions.appendChild(
+          createActionLink(
+            "View IDX Listing",
+            listingUrl,
+            true,
+          ),
+        );
+      }
+
+      if (developmentUrl) {
+        actions.appendChild(
+          createActionLink(
+            "Development Stats",
+            developmentUrl,
+          ),
+        );
+      }
+
+      if (actions.childElementCount > 0) {
+        popupContent.appendChild(actions);
+      }
+
+      const popup = new mapboxgl.Popup({
+        offset: 26,
+        closeButton: true,
+        closeOnClick: false,
+        maxWidth: "310px",
+      }).setDOMContent(popupContent);
+
+      listingMarkerRef.current =
+        new mapboxgl.Marker({
+          element: markerElement,
+          anchor: "bottom",
+        })
+          .setLngLat([
+            longitude,
+            latitude,
+          ])
+          .setPopup(popup)
+          .addTo(map);
+
+      /*
+       * Entity and Atlas Area deep-link resolution is asynchronous
+       * and may adjust the viewport after the Mapbox load event.
+       * Give that contextual selection time to finish, then make
+       * the exact IDX property the final visual focus.
+       */
+      listingFocusTimer =
+        window.setTimeout(() => {
+          if (mapRef.current !== map) {
+            return;
+          }
+
+          map.flyTo({
+            center: [
+              longitude,
+              latitude,
+            ],
+            zoom: 15.5,
+            pitch: 45,
+            duration: 1600,
+            essential: true,
+          });
+        }, 2200);
+    }
+
+    if (map.loaded()) {
+      addListingMarker();
+    } else {
+      map.once("load", addListingMarker);
+    }
+
+    return () => {
+      map.off("load", addListingMarker);
+
+      if (listingFocusTimer !== null) {
+        window.clearTimeout(
+          listingFocusTimer,
+        );
+      }
+
+      listingMarkerRef.current?.remove();
+      listingMarkerRef.current = null;
+    };
+  }, []);
+
+  // ============================================================
   // CUSTOM MARKET — SELECT AREAS DISPLAY
   // ============================================================
 
@@ -2388,6 +2728,78 @@ export default function AtlasMap() {
   }, [
     analysisEntity,
     contextEntity,
+  ]);
+
+  // ============================================================
+  // IDX PROPERTY — FINAL VIEWPORT PRIORITY
+  // ============================================================
+  //
+  // Deep-link geography can finish after the property marker is
+  // created and move the map to a broad Zone, Area or Community.
+  // Whenever that context changes, return the viewport to the
+  // exact listing while leaving the contextual bottom sheet open.
+  // ============================================================
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map) {
+      return;
+    }
+
+    const params = new URLSearchParams(
+      window.location.search,
+    );
+
+    const latitude = Number(
+      params.get("listingLat"),
+    );
+
+    const longitude = Number(
+      params.get("listingLng"),
+    );
+
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180
+    ) {
+      return;
+    }
+
+    const focusTimer = window.setTimeout(
+      () => {
+        if (mapRef.current !== map) {
+          return;
+        }
+
+        map.flyTo({
+          center: [
+            longitude,
+            latitude,
+          ],
+          zoom: 15.5,
+          pitch: 45,
+          duration: 1400,
+          essential: true,
+        });
+      },
+      350,
+    );
+
+    return () => {
+      window.clearTimeout(
+        focusTimer,
+      );
+    };
+  }, [
+    analysisEntity,
+    contextEntity,
+    popularAreaSelection,
+    boundaryDataVersion,
   ]);
 
   // ============================================================

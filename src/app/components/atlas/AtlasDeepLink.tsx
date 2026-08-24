@@ -74,6 +74,7 @@ type AtlasEntityDetail = {
 };
 
 type GeographyLevel =
+  | "development"
   | "community"
   | "area"
   | "zone";
@@ -332,7 +333,13 @@ export default function AtlasDeepLink() {
         .get("mlsCommunity")
         ?.trim() ?? "";
 
+    const developmentName =
+      params
+        .get("development")
+        ?.trim() ?? "";
+
     if (
+      !developmentName &&
       !zoneName &&
       !areaName &&
       !communityName
@@ -344,56 +351,56 @@ export default function AtlasDeepLink() {
 
     async function resolveDeepLink() {
       /*
-       * First resolve the MLS geography to a mapped Atlas Area.
-       *
-       * Atlas Areas are spatial footprints and are intentionally
-       * distinct from MLS Communities.
+       * A requested Development takes priority over its broader
+       * Atlas Area. Without a Development, first try to match the
+       * MLS Community or Area to an exact mapped Atlas Area.
        */
-      try {
-        const popularAreas =
-          await loadPopularAreas();
+      if (!developmentName) {
+        try {
+          const popularAreas =
+            await loadPopularAreas();
 
-        const atlasAreaNames = [
-          communityName,
-          areaName,
-        ].filter(Boolean);
+          const atlasAreaNames = [
+            communityName,
+            areaName,
+          ].filter(Boolean);
 
-        for (
-          const atlasAreaName of
-            atlasAreaNames
-        ) {
-          const atlasArea =
-            popularAreas.find(
-              (area) =>
-                namesMatch(
-                  area.displayName,
-                  atlasAreaName,
-                ),
-            );
+          for (
+            const atlasAreaName of
+              atlasAreaNames
+          ) {
+            const atlasArea =
+              popularAreas.find(
+                (area) =>
+                  namesMatch(
+                    area.displayName,
+                    atlasAreaName,
+                  ),
+              );
 
-          if (atlasArea) {
-            selectPopularArea(
-              atlasArea,
-            );
-
-            return;
+            if (atlasArea) {
+              selectPopularArea(atlasArea);
+              return;
+            }
           }
+        } catch (error) {
+          console.error(
+            "Atlas Area deep-link resolution failed:",
+            error,
+          );
         }
-      } catch (error) {
-        console.error(
-          "Atlas Area deep-link resolution failed:",
-          error,
-        );
       }
 
-      /*
-       * If there is no matching Atlas Area, fall back through
-       * the MLS geography hierarchy:
-       *
-       * Community → Area → Zone
-       */
       const requests: GeographyRequest[] =
         [];
+
+      if (developmentName) {
+        requests.push({
+          level: "development",
+          name: developmentName,
+          expectedEntityType: "DV",
+        });
+      }
 
       if (communityName) {
         requests.push({
@@ -465,9 +472,7 @@ export default function AtlasDeepLink() {
                 communityName,
               );
 
-            if (
-              candidateScore < 100
-            ) {
+            if (candidateScore < 100) {
               continue;
             }
 
@@ -480,14 +485,19 @@ export default function AtlasDeepLink() {
               index ===
               requests.length - 1;
 
+            const allowPointOnlyEntity =
+              request.level ===
+                "development" ||
+              isLastFallback;
+
             /*
-             * Prefer an entity with a mapped footprint.
-             * On the final fallback, allow a point-only entity
-             * so Atlas can still center on the geography.
+             * Developments commonly use a mapped point instead
+             * of a boundary. Other hierarchy levels prefer an
+             * actual footprint until the final fallback.
              */
             if (
               !detail.boundary &&
-              !isLastFallback
+              !allowPointOnlyEntity
             ) {
               continue;
             }
@@ -512,6 +522,7 @@ export default function AtlasDeepLink() {
       console.warn(
         "Atlas could not resolve the IDX geography.",
         {
+          developmentName,
           zoneName,
           areaName,
           communityName,
