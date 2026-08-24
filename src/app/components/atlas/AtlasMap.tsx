@@ -1510,18 +1510,24 @@ export default function AtlasMap() {
         maxWidth: "310px",
       }).setDOMContent(popupContent);
 
-      listingMarkerRef.current =
-        new mapboxgl.Marker({
-          element: markerElement,
-          anchor: "bottom",
-        })
-          .setLngLat([
-            longitude,
-            latitude,
-          ])
-          .setPopup(popup)
-          .addTo(map);
+      const currentMap = map;
 
+        if (!currentMap) {
+          return;
+        }
+
+        listingMarkerRef.current =
+          new mapboxgl.Marker({
+            element: markerElement,
+            anchor: "bottom",
+          })
+            .setLngLat([
+              longitude,
+              latitude,
+            ])
+            .setPopup(popup)
+            .addTo(currentMap);
+            
       /*
        * Entity and Atlas Area deep-link resolution is asynchronous
        * and may adjust the viewport after the Mapbox load event.
