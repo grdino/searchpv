@@ -20,12 +20,12 @@ export default function AtlasMap() {
   const listingMarkerRef =
     useRef<mapboxgl.Marker | null>(null);
 
-  function hasListingDeepLink() {
+  function getListingDeepLinkCoordinates() {
     if (
       typeof window ===
       "undefined"
     ) {
-      return false;
+      return null;
     }
 
     const params =
@@ -33,32 +33,60 @@ export default function AtlasMap() {
         window.location.search,
       );
 
+    const latitudeRaw =
+      params.get(
+        "listingLat",
+      );
+
+    const longitudeRaw =
+      params.get(
+        "listingLng",
+      );
+
+    /*
+    * IMPORTANT:
+    *
+    * Number(null) === 0
+    *
+    * So test for missing/blank URL parameters BEFORE converting
+    * them to numbers.
+    */
+    if (
+      !latitudeRaw?.trim() ||
+      !longitudeRaw?.trim()
+    ) {
+      return null;
+    }
+
     const latitude =
       Number(
-        params.get(
-          "listingLat",
-        ),
+        latitudeRaw,
       );
 
     const longitude =
       Number(
-        params.get(
-          "listingLng",
-        ),
+        longitudeRaw,
       );
 
-    return (
-      Number.isFinite(
+    if (
+      !Number.isFinite(
         latitude,
-      ) &&
-      Number.isFinite(
+      ) ||
+      !Number.isFinite(
         longitude,
-      ) &&
-      latitude >= -90 &&
-      latitude <= 90 &&
-      longitude >= -180 &&
-      longitude <= 180
-    );
+      ) ||
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180
+    ) {
+      return null;
+    }
+
+    return {
+      latitude,
+      longitude,
+    };
   }
 
   /*
@@ -1291,28 +1319,25 @@ export default function AtlasMap() {
       return;
     }
 
-    const params = new URLSearchParams(
-      window.location.search,
-    );
+    const params =
+      new URLSearchParams(
+        window.location.search,
+      );
 
-    const latitude = Number(
-      params.get("listingLat"),
-    );
-
-    const longitude = Number(
-      params.get("listingLng"),
-    );
+    const listingCoordinates =
+      getListingDeepLinkCoordinates();
 
     if (
-      !Number.isFinite(latitude) ||
-      !Number.isFinite(longitude) ||
-      latitude < -90 ||
-      latitude > 90 ||
-      longitude < -180 ||
-      longitude > 180
+      !listingCoordinates
     ) {
       return;
     }
+
+    const {
+      latitude,
+      longitude,
+    } =
+      listingCoordinates;
 
     const listingTitle =
       params.get("listingTitle")?.trim() ||
@@ -1461,34 +1486,6 @@ export default function AtlasMap() {
 
       markerElement.appendChild(markerCenter);
 
-      /*
-      * ----------------------------------------------------------
-      * KEEP PROPERTY MARKER CLICKS OUT OF ATLAS MAP SELECTION
-      * ----------------------------------------------------------
-      *
-      * The IDX property marker sits above the government-boundary
-      * hit layer. A click/tap on the property should open its
-      * popup only — it must not also behave like a map/boundary
-      * click underneath.
-      */
-      markerElement.addEventListener(
-        "click",
-        (
-          event,
-        ) => {
-          event.stopPropagation();
-        },
-      );
-
-      markerElement.addEventListener(
-        "pointerdown",
-        (
-          event,
-        ) => {
-          event.stopPropagation();
-        },
-      );
-
       const popupContent =
         document.createElement("div");
 
@@ -1602,6 +1599,20 @@ export default function AtlasMap() {
             ])
             .setPopup(popup)
             .addTo(currentMap);
+
+        /*
+        * A real IDX property deep link owns the camera.
+        */
+        currentMap.flyTo({
+          center: [
+            longitude,
+            latitude,
+          ],
+          zoom: 15.5,
+          pitch: 45,
+          duration: 1400,
+          essential: true,
+        });
     }
 
     if (map.loaded()) {
@@ -2402,7 +2413,7 @@ export default function AtlasMap() {
         });
 
         if (
-          !hasListingDeepLink()
+          !getListingDeepLinkCoordinates()
         ) {
           currentMap.flyTo({
             center: [
@@ -2508,7 +2519,7 @@ export default function AtlasMap() {
               );
 
             if (
-              !hasListingDeepLink()
+              !getListingDeepLinkCoordinates()
             ) {
               currentMap.fitBounds(
                 [
@@ -2546,7 +2557,8 @@ export default function AtlasMap() {
                   essential:
                     true,
                 },
-              );}
+              );
+            }
             
 
             window.setTimeout(
@@ -2603,7 +2615,7 @@ export default function AtlasMap() {
       // ========================================================
 
       if (
-        !hasListingDeepLink() &&
+        !getListingDeepLinkCoordinates() &&
         Number.isFinite(
           entity.longitude,
         ) &&
