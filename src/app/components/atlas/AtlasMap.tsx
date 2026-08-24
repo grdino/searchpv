@@ -20,6 +20,47 @@ export default function AtlasMap() {
   const listingMarkerRef =
     useRef<mapboxgl.Marker | null>(null);
 
+  function hasListingDeepLink() {
+    if (
+      typeof window ===
+      "undefined"
+    ) {
+      return false;
+    }
+
+    const params =
+      new URLSearchParams(
+        window.location.search,
+      );
+
+    const latitude =
+      Number(
+        params.get(
+          "listingLat",
+        ),
+      );
+
+    const longitude =
+      Number(
+        params.get(
+          "listingLng",
+        ),
+      );
+
+    return (
+      Number.isFinite(
+        latitude,
+      ) &&
+      Number.isFinite(
+        longitude,
+      ) &&
+      latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180
+    );
+  }
+
   /*
    * Keep the complete government-boundary features available
    * outside the one-time Mapbox load callback.
@@ -1430,6 +1471,23 @@ export default function AtlasMap() {
       * popup only — it must not also behave like a map/boundary
       * click underneath.
       */
+      markerElement.addEventListener(
+        "click",
+        (
+          event,
+        ) => {
+          event.stopPropagation();
+        },
+      );
+
+      markerElement.addEventListener(
+        "pointerdown",
+        (
+          event,
+        ) => {
+          event.stopPropagation();
+        },
+      );
 
       const popupContent =
         document.createElement("div");
@@ -2343,20 +2401,24 @@ export default function AtlasMap() {
           ],
         });
 
-        currentMap.flyTo({
-          center: [
-            longitude,
-            latitude,
-          ],
+        if (
+          !hasListingDeepLink()
+        ) {
+          currentMap.flyTo({
+            center: [
+              longitude,
+              latitude,
+            ],
 
-          zoom: 16,
+            zoom: 16,
 
-          pitch: 45,
+            pitch: 45,
 
-          duration: 1800,
+            duration: 1800,
 
-          essential: true,
-        });
+            essential: true,
+          });
+        }
 
         return;
       }
@@ -2445,43 +2507,47 @@ export default function AtlasMap() {
                 Number,
               );
 
-            currentMap.fitBounds(
-              [
+            if (
+              !hasListingDeepLink()
+            ) {
+              currentMap.fitBounds(
                 [
-                  west,
-                  south,
+                  [
+                    west,
+                    south,
+                  ],
+
+                  [
+                    east,
+                    north,
+                  ],
                 ],
 
-                [
-                  east,
-                  north,
-                ],
-              ],
+                {
+                  padding: {
+                    top: 110,
 
-              {
-                padding: {
-                  top: 110,
+                    right: 40,
 
-                  right: 40,
+                    bottom:
+                      Math.round(
+                        window.innerHeight *
+                          0.46,
+                      ),
 
-                  bottom:
-                    Math.round(
-                      window.innerHeight *
-                        0.46,
-                    ),
+                    left: 40,
+                  },
 
-                  left: 40,
+                  pitch: 45,
+
+                  duration:
+                    1800,
+
+                  essential:
+                    true,
                 },
-
-                pitch: 45,
-
-                duration:
-                  1800,
-
-                essential:
-                  true,
-              },
-            );
+              );}
+            
 
             window.setTimeout(
               () => {
@@ -2537,6 +2603,7 @@ export default function AtlasMap() {
       // ========================================================
 
       if (
+        !hasListingDeepLink() &&
         Number.isFinite(
           entity.longitude,
         ) &&
@@ -2721,78 +2788,6 @@ export default function AtlasMap() {
   }, [
     analysisEntity,
     contextEntity,
-  ]);
-
-  // ============================================================
-  // IDX PROPERTY — FINAL VIEWPORT PRIORITY
-  // ============================================================
-  //
-  // Deep-link geography can finish after the property marker is
-  // created and move the map to a broad Zone, Area or Community.
-  // Whenever that context changes, return the viewport to the
-  // exact listing while leaving the contextual bottom sheet open.
-  // ============================================================
-
-  useEffect(() => {
-    const map = mapRef.current;
-
-    if (!map) {
-      return;
-    }
-
-    const params = new URLSearchParams(
-      window.location.search,
-    );
-
-    const latitude = Number(
-      params.get("listingLat"),
-    );
-
-    const longitude = Number(
-      params.get("listingLng"),
-    );
-
-    if (
-      !Number.isFinite(latitude) ||
-      !Number.isFinite(longitude) ||
-      latitude < -90 ||
-      latitude > 90 ||
-      longitude < -180 ||
-      longitude > 180
-    ) {
-      return;
-    }
-
-    const focusTimer = window.setTimeout(
-      () => {
-        if (mapRef.current !== map) {
-          return;
-        }
-
-        map.flyTo({
-          center: [
-            longitude,
-            latitude,
-          ],
-          zoom: 15.5,
-          pitch: 45,
-          duration: 1400,
-          essential: true,
-        });
-      },
-      350,
-    );
-
-    return () => {
-      window.clearTimeout(
-        focusTimer,
-      );
-    };
-  }, [
-    analysisEntity,
-    contextEntity,
-    popularAreaSelection,
-    boundaryDataVersion,
   ]);
 
   // ============================================================
