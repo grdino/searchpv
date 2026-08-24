@@ -1237,9 +1237,6 @@ export default function AtlasMap() {
   useEffect(() => {
     const map = mapRef.current;
 
-    let listingFocusTimer:
-      number | null = null;
-
     if (!map) {
       return;
     }
@@ -1414,6 +1411,40 @@ export default function AtlasMap() {
 
       markerElement.appendChild(markerCenter);
 
+      /*
+      * ----------------------------------------------------------
+      * KEEP PROPERTY MARKER CLICKS OUT OF ATLAS MAP SELECTION
+      * ----------------------------------------------------------
+      *
+      * The IDX property marker sits above the government-boundary
+      * hit layer. A click/tap on the property should open its
+      * popup only — it must not also behave like a map/boundary
+      * click underneath.
+      */
+      const stopMarkerPropagation = (
+        event: Event,
+      ) => {
+        event.stopPropagation();
+      };
+
+      markerElement.addEventListener(
+        "click",
+        stopMarkerPropagation,
+      );
+
+      markerElement.addEventListener(
+        "pointerdown",
+        stopMarkerPropagation,
+      );
+
+      markerElement.addEventListener(
+        "touchstart",
+        stopMarkerPropagation,
+        {
+          passive: true,
+        },
+      );
+
       const popupContent =
         document.createElement("div");
 
@@ -1527,30 +1558,6 @@ export default function AtlasMap() {
             ])
             .setPopup(popup)
             .addTo(currentMap);
-            
-      /*
-       * Entity and Atlas Area deep-link resolution is asynchronous
-       * and may adjust the viewport after the Mapbox load event.
-       * Give that contextual selection time to finish, then make
-       * the exact IDX property the final visual focus.
-       */
-      listingFocusTimer =
-        window.setTimeout(() => {
-          if (mapRef.current !== map) {
-            return;
-          }
-
-          map.flyTo({
-            center: [
-              longitude,
-              latitude,
-            ],
-            zoom: 15.5,
-            pitch: 45,
-            duration: 1600,
-            essential: true,
-          });
-        }, 2200);
     }
 
     if (map.loaded()) {
@@ -1561,12 +1568,6 @@ export default function AtlasMap() {
 
     return () => {
       map.off("load", addListingMarker);
-
-      if (listingFocusTimer !== null) {
-        window.clearTimeout(
-          listingFocusTimer,
-        );
-      }
 
       listingMarkerRef.current?.remove();
       listingMarkerRef.current = null;
