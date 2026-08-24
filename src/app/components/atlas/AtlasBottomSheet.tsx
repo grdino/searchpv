@@ -1149,7 +1149,7 @@ export default function AtlasBottomSheet() {
                     "uppercase",
                 }}
               >
-                Popular Area
+                Atlas Area
               </div>
 
               <div

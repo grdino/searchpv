@@ -228,33 +228,45 @@ async function getFilteredSnapshot(
 async function getPropertySearchSelectorData(
   filters: PropertySearchFilters
 ): Promise<PropertySearchSelectorData> {
-  let query = supabase
-    .from("current_search_listing")
-    .select(
-      "zone_name, area_name, community_name, development_name"
-    );
+  const pageSize = 1000;
+  const rows: CurrentListingGeographyRow[] = [];
 
-  if (filters.market !== "all") {
-    query = query.eq("market_segment", filters.market);
+  for (let from = 0; ; from += pageSize) {
+    let query = supabase
+      .from("current_search_listing")
+      .select(
+        "zone_name, area_name, community_name, development_name"
+      )
+      .range(from, from + pageSize - 1);
+
+    if (filters.market !== "all") {
+      query = query.eq("market_segment", filters.market);
+    }
+
+    if (filters.propertyType !== "all") {
+      query = query.eq(
+        "property_type_segment",
+        filters.propertyType
+      );
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(
+        `Unable to load property-search selector options: ${error.message}`
+      );
+    }
+
+    const pageRows =
+      (data ?? []) as CurrentListingGeographyRow[];
+
+    rows.push(...pageRows);
+
+    if (pageRows.length < pageSize) {
+      break;
+    }
   }
-
-  if (filters.propertyType !== "all") {
-    query = query.eq(
-      "property_type_segment",
-      filters.propertyType
-    );
-  }
-
-  const { data, error } = await query;
-
-
-  if (error) {
-    throw new Error(
-      `Unable to load property-search selector options: ${error.message}`
-    );
-  }
-
-  const rows = (data ?? []) as CurrentListingGeographyRow[];
 
   const zones = uniqueGeographyOptions(
     rows

@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -19,6 +23,16 @@ export default function AtlasMap() {
    */
   const fullBoundaryFeaturesRef =
     useRef<Map<number, any>>(new Map());
+
+  /*
+   * Incremented after government-boundary geometry finishes
+   * loading. This lets an early URL selection retry once the
+   * exact Atlas Area polygons are available.
+   */
+   const [
+     boundaryDataVersion,
+     setBoundaryDataVersion,
+   ] = useState(0);
 
   const {
     contextEntity,
@@ -811,6 +825,11 @@ export default function AtlasMap() {
 
             fullBoundaryFeaturesRef.current =
               fullBoundaryFeatures;
+
+            setBoundaryDataVersion(
+              (currentVersion) =>
+                currentVersion + 1,
+            );
 
             map.addSource(
               "atlas-boundaries",
@@ -1759,6 +1778,7 @@ export default function AtlasMap() {
     );
   }, [
     popularAreaSelection,
+    boundaryDataVersion,
   ]);
 
   // ============================================================

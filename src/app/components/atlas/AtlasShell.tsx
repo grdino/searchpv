@@ -2,7 +2,11 @@ import AtlasViewport from "./AtlasViewport";
 import AtlasOverlay from "./AtlasOverlay";
 import AtlasSearch from "./AtlasSearch";
 import AtlasBottomSheet from "./AtlasBottomSheet";
-import { AtlasStateProvider } from "@/lib/atlas/state/AtlasState";
+import AtlasDeepLink from "./AtlasDeepLink";
+
+import {
+  AtlasStateProvider,
+} from "@/lib/atlas/state/AtlasState";
 
 export default function AtlasShell() {
   return (
@@ -15,6 +19,8 @@ export default function AtlasShell() {
       }}
     >
       <AtlasStateProvider>
+        <AtlasDeepLink />
+
         <AtlasViewport />
 
         <AtlasOverlay>
