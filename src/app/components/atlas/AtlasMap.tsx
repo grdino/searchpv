@@ -1374,37 +1374,63 @@ export default function AtlasMap() {
       }
     }
 
-    function buildDevelopmentUrl() {
+    function buildMarketIntelligenceUrl(
+      status:
+        | "active"
+        | "pending",
+    ) {
       if (!developmentName) {
         return "";
       }
 
-      const developmentUrl = new URL(
-        "/atlas",
+      const basePath =
+        status === "active"
+          ? "/market-intelligence/active-listings"
+          : "/market-intelligence/pending-sales";
+
+      const marketUrl = new URL(
+        basePath,
         window.location.origin,
       );
 
-      developmentUrl.searchParams.set(
+      const zone =
+        params.get("mlsZone")?.trim();
+
+      const area =
+        params.get("mlsArea")?.trim();
+
+      const community =
+        params.get(
+          "mlsCommunity",
+        )?.trim();
+
+      if (zone) {
+        marketUrl.searchParams.set(
+          "zone",
+          zone,
+        );
+      }
+
+      if (area) {
+        marketUrl.searchParams.set(
+          "area",
+          area,
+        );
+      }
+
+      if (community) {
+        marketUrl.searchParams.set(
+          "community",
+          community,
+        );
+      }
+
+      marketUrl.searchParams.set(
         "development",
         developmentName,
       );
 
-      for (const key of [
-        "mlsZone",
-        "mlsArea",
-        "mlsCommunity",
-      ]) {
-        const value = params.get(key)?.trim();
-
-        if (value) {
-          developmentUrl.searchParams.set(
-            key,
-            value,
-          );
-        }
-      }
-
-      return developmentUrl.toString();
+      return marketUrl.toString();
     }
 
     function createActionLink(
@@ -1549,8 +1575,18 @@ export default function AtlasMap() {
         marginTop: "12px",
       });
 
-      const listingUrl = validatedListingUrl();
-      const developmentUrl = buildDevelopmentUrl();
+      const listingUrl =
+        validatedListingUrl();
+
+      const activeListingsUrl =
+        buildMarketIntelligenceUrl(
+          "active",
+        );
+
+const pendingListingsUrl =
+  buildMarketIntelligenceUrl(
+    "pending",
+  );
 
       if (listingUrl) {
         actions.appendChild(
@@ -1562,12 +1598,86 @@ export default function AtlasMap() {
         );
       }
 
-      if (developmentUrl) {
+      if (
+        developmentName &&
+        (
+          activeListingsUrl ||
+          pendingListingsUrl
+        )
+      ) {
+        const marketSection =
+          document.createElement(
+            "div",
+          );
+
+        Object.assign(
+          marketSection.style,
+          {
+            width: "100%",
+            marginTop: "4px",
+          },
+        );
+
+        const marketHeading =
+          document.createElement(
+            "div",
+          );
+
+        marketHeading.textContent =
+          `Explore ${developmentName}`;
+
+        Object.assign(
+          marketHeading.style,
+          {
+            marginBottom: "7px",
+            color: "#475569",
+            fontSize: "11px",
+            fontWeight: "800",
+          },
+        );
+
+        marketSection.appendChild(
+          marketHeading,
+        );
+
+        const marketActions =
+          document.createElement(
+            "div",
+          );
+
+        Object.assign(
+          marketActions.style,
+          {
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "7px",
+          },
+        );
+
+        if (activeListingsUrl) {
+          marketActions.appendChild(
+            createActionLink(
+              "Active Listings",
+              activeListingsUrl,
+            ),
+          );
+        }
+
+        if (pendingListingsUrl) {
+          marketActions.appendChild(
+            createActionLink(
+              "Pending Sales",
+              pendingListingsUrl,
+            ),
+          );
+        }
+
+        marketSection.appendChild(
+          marketActions,
+        );
+
         actions.appendChild(
-          createActionLink(
-            "Development Stats",
-            developmentUrl,
-          ),
+          marketSection,
         );
       }
 
