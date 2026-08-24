@@ -915,15 +915,24 @@ export default function AtlasMap() {
 
             map.on(
               "click",
-
               "atlas-boundaries-hit",
+              async (event) => {
+                const originalTarget =
+                  event.originalEvent
+                    ?.target as
+                    | HTMLElement
+                    | null;
 
-              async (
-                event,
-              ) => {
+                if (
+                  originalTarget?.closest(
+                    ".mapboxgl-marker, .mapboxgl-popup",
+                  )
+                ) {
+                  return;
+                }
+
                 const clickedFeature =
-                  event
-                    .features?.[0] as any;
+                  event.features?.[0] as any;
 
                 if (
                   !clickedFeature
@@ -1421,29 +1430,6 @@ export default function AtlasMap() {
       * popup only — it must not also behave like a map/boundary
       * click underneath.
       */
-      const stopMarkerPropagation = (
-        event: Event,
-      ) => {
-        event.stopPropagation();
-      };
-
-      markerElement.addEventListener(
-        "click",
-        stopMarkerPropagation,
-      );
-
-      markerElement.addEventListener(
-        "pointerdown",
-        stopMarkerPropagation,
-      );
-
-      markerElement.addEventListener(
-        "touchstart",
-        stopMarkerPropagation,
-        {
-          passive: true,
-        },
-      );
 
       const popupContent =
         document.createElement("div");
