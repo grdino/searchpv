@@ -1404,7 +1404,17 @@ export default function AtlasMap() {
           "mlsCommunity",
         )?.trim();
 
-      if (zone) {
+      /*
+      * Puerto Vallarta is the default zone on the
+      * Market Intelligence pages, so its zone
+      * parameter is intentionally omitted.
+      *
+      * All other zones remain explicit in the URL.
+      */
+      if (
+        zone &&
+        zone !== "Puerto Vallarta"
+      ) {
         marketUrl.searchParams.set(
           "zone",
           zone,
