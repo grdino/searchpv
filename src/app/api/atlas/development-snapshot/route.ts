@@ -210,6 +210,41 @@ type DevelopmentSnapshotRow = {
   development_slug: string;
 };
 
+type DevelopmentNearbyRollup = {
+  walkability_score: number | null;
+  walkability_label: string | null;
+  walkability_summary: string | null;
+  lifestyle_summary: string | null;
+
+  restaurant_count: number | null;
+  cafe_count: number | null;
+  bar_count: number | null;
+  grocery_count: number | null;
+  pharmacy_count: number | null;
+  gallery_count: number | null;
+  gym_count: number | null;
+  park_count: number | null;
+
+  nearest_beach_m: number | null;
+  nearest_grocery_m: number | null;
+  nearest_pharmacy_m: number | null;
+  nearest_hospital_urgent_care_m: number | null;
+};
+
+type DevelopmentNearbyPlace = {
+  place_ky: number;
+  place_category: string;
+  place_name: string;
+
+  distance_m: number | null;
+  walk_minutes: number | null;
+
+  display_order: number | null;
+  is_highlight: boolean | null;
+
+  why_it_matters: string | null;
+};
+
 /*
  * ============================================================
  * ENTITY IDENTIFIER → DEVELOPMENT HIERARCHY
@@ -284,6 +319,23 @@ function parseDevelopmentIdentifier(
         developmentPart,
       ),
   };
+}
+
+function parseListingIds(
+  value: string | null | undefined,
+): number[] {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map((id) =>
+      Number(id.trim()),
+    )
+    .filter((id) =>
+      Number.isFinite(id),
+    );
 }
 
 export async function GET(
@@ -520,6 +572,148 @@ export async function GET(
   }
 
   /*
+ * ==========================================================
+ * DEVELOPMENT NEARBY
+ * ==========================================================
+ *
+ * Nearby information describes the physical development
+ * location, so it does not depend on Property / Market /
+ * Bedroom filters.
+ */
+
+const {
+  data: nearbyRollupData,
+  error: nearbyRollupError,
+} = await supabase
+  .from(
+    "development_nearby_rollup",
+  )
+  .select(
+    `
+      walkability_score,
+      walkability_label,
+      walkability_summary,
+      lifestyle_summary,
+
+      restaurant_count,
+      cafe_count,
+      bar_count,
+      grocery_count,
+      pharmacy_count,
+      gallery_count,
+      gym_count,
+      park_count,
+
+      nearest_beach_m,
+      nearest_grocery_m,
+      nearest_pharmacy_m,
+      nearest_hospital_urgent_care_m
+    `,
+  )
+  .eq(
+    "zone_slug",
+    hierarchy.zoneSlug,
+  )
+  .eq(
+    "area_slug",
+    hierarchy.areaSlug,
+  )
+  .eq(
+    "community_slug",
+    hierarchy.communitySlug,
+  )
+  .eq(
+    "development_slug",
+    hierarchy.developmentSlug,
+  )
+  .maybeSingle();
+
+if (nearbyRollupError) {
+  console.error(
+    "Unable to load development nearby rollup:",
+    {
+      entityKy,
+      hierarchy,
+      error:
+        nearbyRollupError,
+    },
+  );
+}
+
+const {
+  data: nearbyPlacesData,
+  error: nearbyPlacesError,
+} = await supabase
+  .from(
+    "development_nearby",
+  )
+  .select(
+    `
+      place_ky,
+      place_category,
+      place_name,
+
+      distance_m,
+      walk_minutes,
+
+      is_highlight,
+      why_it_matters
+
+    `,
+  )
+  .eq(
+    "zone_slug",
+    hierarchy.zoneSlug,
+  )
+  .eq(
+    "area_slug",
+    hierarchy.areaSlug,
+  )
+  .eq(
+    "community_slug",
+    hierarchy.communitySlug,
+  )
+  .eq(
+    "development_slug",
+    hierarchy.developmentSlug,
+  )
+  .order(
+    "display_order",
+    {
+      ascending: true,
+    },
+  )
+  .order(
+    "distance_m",
+    {
+      ascending: true,
+    },
+  );
+
+if (nearbyPlacesError) {
+  console.error(
+    "Unable to load development nearby places:",
+    {
+      entityKy,
+      hierarchy,
+      error:
+        nearbyPlacesError,
+    },
+  );
+}
+
+const nearbyRollup =
+  nearbyRollupData as
+    | DevelopmentNearbyRollup
+    | null;
+
+const nearbyPlaces =
+  (
+    nearbyPlacesData ??
+    []
+  ) as DevelopmentNearbyPlace[];
+
+  /*
    * ==========================================================
    * MAP ATLAS FILTER VALUES
    * ==========================================================
@@ -539,6 +733,131 @@ export async function GET(
     "precon"
       ? "pre_construction"
       : marketType;
+
+  /*
+ * ==========================================================
+ * DEVELOPMENT LISTING POPULATIONS
+ * ==========================================================
+ *
+ * These are the exact MLS populations behind the Active,
+ * Pending, and Sold 12 Mo development metrics.
+ */
+
+const {
+  data: drilldownData,
+  error: drilldownError,
+} = await supabase
+  .from(
+    "development_listing_drilldown",
+  )
+  .select(
+    `
+      metric_group,
+      listing_count,
+      listing_ids
+    `,
+  )
+  .eq(
+    "zone_slug",
+    hierarchy.zoneSlug,
+  )
+  .eq(
+    "area_slug",
+    hierarchy.areaSlug,
+  )
+  .eq(
+    "community_slug",
+    hierarchy.communitySlug,
+  )
+  .eq(
+    "development_slug",
+    hierarchy.developmentSlug,
+  )
+  .eq(
+    "property_type_segment",
+    propertyTypeSegment,
+  )
+  .eq(
+    "market_segment",
+    marketSegment,
+  )
+  .eq(
+    "bedroom_segment",
+    bedroom,
+  )
+  .in(
+    "metric_group",
+    [
+      "active",
+      "pending",
+      "sold_12mo",
+    ],
+  );
+
+if (drilldownError) {
+  console.error(
+    "Unable to load Atlas development listing populations:",
+    {
+      entityKy,
+      identifier,
+      hierarchy,
+      propertyTypeSegment,
+      marketSegment,
+      bedroom,
+      error:
+        drilldownError,
+    },
+  );
+
+  return NextResponse.json(
+    {
+      error:
+        drilldownError.message,
+    },
+    {
+      status: 500,
+    },
+  );
+}
+
+const activeDrilldown =
+  drilldownData?.find(
+    (item) =>
+      item.metric_group ===
+      "active",
+  );
+
+const pendingDrilldown =
+  drilldownData?.find(
+    (item) =>
+      item.metric_group ===
+      "pending",
+  );
+
+const soldDrilldown =
+  drilldownData?.find(
+    (item) =>
+      item.metric_group ===
+      "sold_12mo",
+  );
+
+const activeMls =
+  parseListingIds(
+    activeDrilldown
+      ?.listing_ids,
+  );
+
+const pendingMls =
+  parseListingIds(
+    pendingDrilldown
+      ?.listing_ids,
+  );
+
+const closedMls =
+  parseListingIds(
+    soldDrilldown
+      ?.listing_ids,
+  );
 
   /*
    * ==========================================================
@@ -910,10 +1229,13 @@ export async function GET(
       * Valid empty-market result.
       */
       activeCount: 0,
+      activeMls: [],
 
       pendingCount: 0,
+      pendingMls: [],
 
       sales12Mo: 0,
+      closedMls: [],
 
       avgListPrice: null,
 
@@ -944,6 +1266,13 @@ export async function GET(
       soldAvgDom12Mo: null,
 
       monthsInventory: null,
+      nearby: {
+        rollup:
+          nearbyRollup,
+
+        places:
+          nearbyPlaces,
+      },
     });
   }
 
@@ -1308,17 +1637,23 @@ export async function GET(
           0,
       ),
 
+    activeMls,
+
     pendingCount:
       Number(
         pendingCount ??
           0,
       ),
 
+    pendingMls,
+
     sales12Mo:
       Number(
         sales12Mo ??
           0,
       ),
+
+    closedMls,
 
     avgListPrice,
 
@@ -1349,5 +1684,12 @@ export async function GET(
     soldAvgDom12Mo,
 
     monthsInventory,
+    nearby: {
+      rollup:
+        nearbyRollup,
+
+      places:
+        nearbyPlaces,
+    },
   });
 }

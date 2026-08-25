@@ -272,7 +272,7 @@ export default function AtlasSearch() {
         right: 16,
 
         pointerEvents:
-          "auto",
+          "none",
       }}
     >
       <div
@@ -285,6 +285,9 @@ export default function AtlasSearch() {
 
           position:
             "relative",
+
+          pointerEvents:
+            "auto",
         }}
       >
         {/* =====================================================

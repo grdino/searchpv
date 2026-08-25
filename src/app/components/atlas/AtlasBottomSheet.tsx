@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAtlasState } from "@/lib/atlas/state/AtlasState";
+import { buildIdxUrl } from "@/lib/idx";
 
 function entityTypeLabel(entityType: string) {
   switch (entityType) {
@@ -49,6 +50,10 @@ type MarketSnapshot = {
   activeCount: number;
   pendingCount: number;
   sales12Mo: number;
+
+  activeMls?: number[];
+  pendingMls?: number[];
+  closedMls?: number[];
 
   avgListPrice: number | null;
   medianListPrice: number | null;
@@ -98,6 +103,41 @@ type MarketSnapshot = {
   soldAvgDom12Mo?: number | null;
 
   monthsInventory?: number | null;
+
+  nearby?: {
+    rollup: {
+      walkability_score: number | null;
+      walkability_label: string | null;
+      walkability_summary: string | null;
+      lifestyle_summary: string | null;
+
+      restaurant_count: number | null;
+      cafe_count: number | null;
+      bar_count: number | null;
+      grocery_count: number | null;
+      pharmacy_count: number | null;
+      gallery_count: number | null;
+      gym_count: number | null;
+      park_count: number | null;
+
+      nearest_beach_m: number | null;
+      nearest_grocery_m: number | null;
+      nearest_pharmacy_m: number | null;
+      nearest_hospital_urgent_care_m: number | null;
+    } | null;
+
+    places: Array<{
+      place_ky: number;
+      place_category: string;
+      place_name: string;
+
+      distance_m: number | null;
+      walk_minutes: number | null;
+
+      is_highlight: boolean | null;
+      why_it_matters: string | null;
+    }>;
+  };
 };
 
 function formatPrice(
@@ -241,6 +281,18 @@ export default function AtlasBottomSheet() {
     useState<AreaUnit>(
       "ft2",
     );
+
+  const [
+    showMarketStats,
+    setShowMarketStats,
+  ] =
+    useState(false);
+
+  const [
+    showNearby,
+    setShowNearby,
+  ] =
+    useState(false);
 
   const relatedChoices =
     relatedEntities.filter(
@@ -768,6 +820,39 @@ export default function AtlasBottomSheet() {
   ]);
 
   /*
+    * ==========================================================
+    * RESET EXPANDED MARKET STATS
+    * ==========================================================
+    *
+    * A new geography starts in the compact BottomSheet state.
+    *
+    * Changing Property / Market / Bedroom filters does NOT close
+    * Market Stats. The expanded statistics simply refresh for
+    * the new filtered population.
+    */
+
+    useEffect(() => {
+    setShowMarketStats(
+      false,
+    );
+
+    setShowNearby(
+      false,
+    );
+  }, [
+    mode,
+
+    selectedEntity
+      ?.entityKy,
+
+    selectedBoundary
+      ?.boundaryKy,
+
+    popularAreaSelection
+      ?.footprintKey,
+  ]);
+
+  /*
    * ==========================================================
    * TEMPORARY CURATED COMMUNITY CONTENT
    * ==========================================================
@@ -928,6 +1013,58 @@ export default function AtlasBottomSheet() {
       cursor:
         "pointer",
     };
+  }
+
+  function buildActivityUrl(
+    type:
+      | "active"
+      | "pending"
+      | "closed",
+  ) {
+    if (!marketSnapshot) {
+      return null;
+    }
+
+    if (type === "active") {
+      const ids =
+        marketSnapshot.activeMls ?? [];
+
+      if (ids.length === 0) {
+        return null;
+      }
+
+      return buildIdxUrl(
+        ids.join(","),
+      );
+    }
+
+    if (type === "pending") {
+      const ids =
+        marketSnapshot.pendingMls ?? [];
+
+      if (ids.length === 0) {
+        return null;
+      }
+
+      return buildIdxUrl(
+        ids.join(","),
+      );
+    }
+
+    const ids =
+      marketSnapshot.closedMls ?? [];
+
+    if (ids.length === 0) {
+      return null;
+    }
+
+    return (
+      "/market-intelligence/" +
+      "closed-sales/search-results" +
+      `?mls=${encodeURIComponent(
+        ids.join(","),
+      )}`
+    );
   }
 
   return (
@@ -2237,105 +2374,201 @@ export default function AtlasBottomSheet() {
             >
               {[
                 {
+                  key:
+                    "active" as const,
+
                   label:
                     "Active",
 
                   value:
                     marketSnapshot
                       ?.activeCount,
+
+                  href:
+                    buildActivityUrl(
+                      "active",
+                    ),
                 },
 
                 {
+                  key:
+                    "pending" as const,
+
                   label:
                     "Pending",
 
                   value:
                     marketSnapshot
                       ?.pendingCount,
+
+                  href:
+                    buildActivityUrl(
+                      "pending",
+                    ),
                 },
 
                 {
+                  key:
+                    "closed" as const,
+
                   label:
                     "Sold 12 Mo",
 
                   value:
                     marketSnapshot
                       ?.sales12Mo,
+
+                  href:
+                    buildActivityUrl(
+                      "closed",
+                    ),
                 },
               ].map(
                 (
                   metric,
-                ) => (
-                  <button
-                    key={
-                      metric.label
-                    }
-                    type="button"
-                    style={{
-                      border:
-                        "1px solid #e2e8f0",
+                ) => {
+                  const clickable =
+                    Boolean(
+                      metric.href,
+                    ) &&
+                    !marketSnapshotLoading;
 
-                      padding:
-                        "9px 10px",
-
-                      borderRadius:
-                        14,
-
-                      background:
-                        "#f8fafc",
-
-                      textAlign:
-                        "left",
-
-                      cursor:
-                        "pointer",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize:
-                          9,
-
-                        fontWeight:
-                          700,
-
-                        letterSpacing:
-                          "0.08em",
-
-                        textTransform:
-                          "uppercase",
-
-                        color:
-                          "#94a3b8",
-                      }}
-                    >
-                      {
-                        metric.label
+                  return (
+                    <button
+                      key={
+                        metric.key
                       }
-                    </div>
+                      type="button"
+                      disabled={
+                        !clickable
+                      }
+                      onClick={() => {
+                        if (
+                          !metric.href
+                        ) {
+                          return;
+                        }
 
-                    <div
+                        window.location.href =
+                          metric.href;
+                      }}
+                      title={
+                        clickable
+                          ? metric.key ===
+                              "closed"
+                            ? "View sold properties"
+                            : `View ${metric.label.toLowerCase()} listings`
+                          : undefined
+                      }
                       style={{
-                        marginTop:
-                          3,
+                        border:
+                          "1px solid #e2e8f0",
 
-                        fontSize:
-                          19,
+                        padding:
+                          "9px 10px",
 
-                        fontWeight:
-                          750,
+                        borderRadius:
+                          14,
 
-                        color:
-                          "#0f172a",
+                        background:
+                          "#f8fafc",
+
+                        textAlign:
+                          "left",
+
+                        cursor:
+                          clickable
+                            ? "pointer"
+                            : "default",
+
+                        opacity:
+                          metric.value ===
+                            0
+                            ? 0.65
+                            : 1,
                       }}
                     >
-                      {marketSnapshotLoading
-                        ? "…"
-                        : metric.value ??
-                          "—"}
-                    </div>
-                  </button>
-                ),
+                      <div
+                        style={{
+                          display:
+                            "flex",
+
+                          alignItems:
+                            "center",
+
+                          justifyContent:
+                            "space-between",
+
+                          gap: 4,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize:
+                              9,
+
+                            fontWeight:
+                              700,
+
+                            letterSpacing:
+                              "0.08em",
+
+                            textTransform:
+                              "uppercase",
+
+                            color:
+                              "#94a3b8",
+                          }}
+                        >
+                          {
+                            metric.label
+                          }
+                        </div>
+
+                        {clickable ? (
+                          <span
+                            aria-hidden="true"
+                            style={{
+                              color:
+                                "#94a3b8",
+
+                              fontSize:
+                                11,
+
+                              fontWeight:
+                                700,
+                            }}
+                          >
+                            ›
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop:
+                            3,
+
+                          fontSize:
+                            19,
+
+                          fontWeight:
+                            750,
+
+                          color:
+                            clickable
+                              ? "#0f766e"
+                              : "#0f172a",
+                        }}
+                      >
+                        {marketSnapshotLoading
+                          ? "…"
+                          : metric.value ??
+                            "—"}
+                      </div>
+                    </button>
+                  );
+                },
               )}
             </div>
 
@@ -2992,15 +3225,17 @@ export default function AtlasBottomSheet() {
             PRIMARY ACTIONS
             ===================================================== */}
 
-        {!isCustomMarket &&
-        hasMarketContext ? (
+        {hasMarketContext ? (
           <div
             style={{
               display:
                 "grid",
 
               gridTemplateColumns:
-                "repeat(2, minmax(0, 1fr))",
+                isCustomMarket ||
+                !isDevelopment
+                  ? "1fr"
+                  : "repeat(2, minmax(0, 1fr))",
 
               gap: 8,
 
@@ -3010,9 +3245,35 @@ export default function AtlasBottomSheet() {
           >
             <button
               type="button"
+              onClick={() => {
+                const nextState =
+                  !showMarketStats;
+
+                setShowMarketStats(
+                  nextState,
+                );
+
+                /*
+                * Market Stats and Nearby are intentionally
+                * mutually exclusive.
+                */
+                if (nextState) {
+                  setShowNearby(
+                    false,
+                  );
+
+                  setSheetState(
+                    "focused",
+                  );
+                }
+              }}
               style={{
                 border:
-                  "1px solid #e2e8f0",
+                  showMarketStats
+                    ? isCustomMarket
+                      ? "1px solid #0f766e"
+                      : "1px solid #a9792b"
+                    : "1px solid #e2e8f0",
 
                 borderRadius:
                   14,
@@ -3021,10 +3282,18 @@ export default function AtlasBottomSheet() {
                   "9px 8px",
 
                 background:
-                  "#ffffff",
+                  showMarketStats
+                    ? isCustomMarket
+                      ? "#f0fdfa"
+                      : "#fffaf0"
+                    : "#ffffff",
 
                 color:
-                  "#334155",
+                  showMarketStats
+                    ? isCustomMarket
+                      ? "#115e59"
+                      : "#8a5a18"
+                    : "#334155",
 
                 fontSize:
                   11,
@@ -3036,39 +3305,481 @@ export default function AtlasBottomSheet() {
                   "pointer",
               }}
             >
-              Market Stats
+              {showMarketStats
+                ? "Hide Market Stats"
+                : "Market Stats"}
             </button>
 
-            <button
-              type="button"
+            {isDevelopment &&
+            marketSnapshot?.nearby ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const nextState =
+                    !showNearby;
+
+                  setShowNearby(
+                    nextState,
+                  );
+
+                  if (nextState) {
+                    setShowMarketStats(
+                      false,
+                    );
+
+                    setSheetState(
+                      "focused",
+                    );
+                  }
+                }}
+                style={{
+                  border:
+                    showNearby
+                      ? "1px solid #0f766e"
+                      : "1px solid #e2e8f0",
+
+                  borderRadius:
+                    14,
+
+                  padding:
+                    "9px 8px",
+
+                  background:
+                    showNearby
+                      ? "#f0fdfa"
+                      : "#ffffff",
+
+                  color:
+                    showNearby
+                      ? "#115e59"
+                      : "#334155",
+
+                  fontSize:
+                    11,
+
+                  fontWeight:
+                    700,
+
+                  cursor:
+                    "pointer",
+                }}
+              >
+                {showNearby
+                  ? "Hide Nearby"
+                  : "Nearby"}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* =====================================================
+            EXPANDED MARKET STATS
+            ===================================================== */}
+
+        {showMarketStats &&
+        marketSnapshot ? (
+          <div
+            style={{
+              marginTop:
+                14,
+
+              paddingTop:
+                14,
+
+              borderTop:
+                "1px solid #e2e8f0",
+            }}
+          >
+            {/* HEADER */}
+
+            <div
               style={{
-                border:
-                  "1px solid #e2e8f0",
+                display:
+                  "flex",
 
-                borderRadius:
-                  14,
+                alignItems:
+                  "center",
 
-                padding:
-                  "9px 8px",
+                justifyContent:
+                  "space-between",
 
-                background:
-                  "#ffffff",
+                gap: 10,
 
-                color:
-                  "#334155",
-
-                fontSize:
-                  11,
-
-                fontWeight:
-                  700,
-
-                cursor:
-                  "pointer",
+                marginBottom:
+                  12,
               }}
             >
-              Nearby
-            </button>
+              <div
+                style={{
+                  fontSize:
+                    11,
+
+                  fontWeight:
+                    800,
+
+                  letterSpacing:
+                    "0.09em",
+
+                  textTransform:
+                    "uppercase",
+
+                  color:
+                    isCustomMarket
+                      ? "#0f766e"
+                      : "#64748b",
+                }}
+              >
+                Market Stats
+              </div>
+
+              {marketSnapshot.snapshotDate ? (
+                <div
+                  style={{
+                    fontSize:
+                      10,
+
+                    color:
+                      "#94a3b8",
+                  }}
+                >
+                  As of{" "}
+                  {
+                    marketSnapshot.snapshotDate
+                  }
+                </div>
+              ) : null}
+            </div>
+
+            {/* MARKET TEMPO */}
+
+            <div>
+              <div
+                style={{
+                  marginBottom:
+                    6,
+
+                  fontSize:
+                    9,
+
+                  fontWeight:
+                    800,
+
+                  letterSpacing:
+                    "0.09em",
+
+                  textTransform:
+                    "uppercase",
+
+                  color:
+                    "#94a3b8",
+                }}
+              >
+                Market Tempo
+              </div>
+
+              <div
+                style={{
+                  display:
+                    "grid",
+
+                  gridTemplateColumns:
+                    "repeat(3, minmax(0, 1fr))",
+
+                  gap: 8,
+                }}
+              >
+                <MarketStat
+                  label="Months Inventory"
+                  value={
+                    marketSnapshot.monthsInventory !==
+                      null &&
+                    marketSnapshot.monthsInventory !==
+                      undefined
+                      ? Number(
+                          marketSnapshot.monthsInventory,
+                        ).toLocaleString(
+                          "en-US",
+                          {
+                            maximumFractionDigits:
+                              1,
+                          },
+                        )
+                      : "—"
+                  }
+                />
+
+                <MarketStat
+                  label="Active Avg DOM"
+                  value={
+                    marketSnapshot.currentAvgDom !==
+                      null &&
+                    marketSnapshot.currentAvgDom !==
+                      undefined
+                      ? formatWholeNumber(
+                          marketSnapshot.currentAvgDom,
+                        )
+                      : "—"
+                  }
+                />
+
+                <MarketStat
+                  label="Sold Avg DOM"
+                  value={
+                    marketSnapshot.soldAvgDom12Mo !==
+                      null &&
+                    marketSnapshot.soldAvgDom12Mo !==
+                      undefined
+                      ? formatWholeNumber(
+                          marketSnapshot.soldAvgDom12Mo,
+                        )
+                      : "—"
+                  }
+                />
+              </div>
+            </div>
+
+            {/* LIST PRICE */}
+
+            <div
+              style={{
+                marginTop:
+                  14,
+              }}
+            >
+              <div
+                style={{
+                  marginBottom:
+                    6,
+
+                  fontSize:
+                    9,
+
+                  fontWeight:
+                    800,
+
+                  letterSpacing:
+                    "0.09em",
+
+                  textTransform:
+                    "uppercase",
+
+                  color:
+                    "#94a3b8",
+                }}
+              >
+                List Price
+              </div>
+
+              <div
+                style={{
+                  display:
+                    "grid",
+
+                  gridTemplateColumns:
+                    "repeat(2, minmax(0, 1fr))",
+
+                  gap: 8,
+                }}
+              >
+                <MarketStat
+                  label="Median"
+                  value={
+                    formatMarketCurrency(
+                      marketSnapshot.medianListPrice,
+                    )
+                  }
+                />
+
+                <MarketStat
+                  label="Average"
+                  value={
+                    formatMarketCurrency(
+                      marketSnapshot.avgListPrice,
+                    )
+                  }
+                />
+              </div>
+            </div>
+
+            {/* SOLD PRICE */}
+
+            <div
+              style={{
+                marginTop:
+                  14,
+              }}
+            >
+              <div
+                style={{
+                  marginBottom:
+                    6,
+
+                  fontSize:
+                    9,
+
+                  fontWeight:
+                    800,
+
+                  letterSpacing:
+                    "0.09em",
+
+                  textTransform:
+                    "uppercase",
+
+                  color:
+                    "#94a3b8",
+                }}
+              >
+                Sold Price · 12 Months
+              </div>
+
+              <div
+                style={{
+                  display:
+                    "grid",
+
+                  gridTemplateColumns:
+                    "repeat(2, minmax(0, 1fr))",
+
+                  gap: 8,
+                }}
+              >
+                <MarketStat
+                  label="Median"
+                  value={
+                    formatMarketCurrency(
+                      marketSnapshot.medianSoldPrice,
+                    )
+                  }
+                />
+
+                <MarketStat
+                  label="Average"
+                  value={
+                    formatMarketCurrency(
+                      marketSnapshot.avgSoldPrice,
+                    )
+                  }
+                />
+              </div>
+            </div>
+
+            {/* PRICE PER AREA */}
+
+            <div
+              style={{
+                marginTop:
+                  14,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: 6,
+                  marginBottom: 6,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 800,
+                    letterSpacing: "0.09em",
+                    textTransform: "uppercase",
+                    color: "#94a3b8",
+                  }}
+                >
+                  Price / Area
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 800,
+                    color: isCustomMarket
+                      ? "#0f766e"
+                      : "#64748b",
+                  }}
+                >
+                  (per ft²)
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display:
+                    "grid",
+
+                  gridTemplateColumns:
+                    "repeat(2, minmax(0, 1fr))",
+
+                  gap: 8,
+                }}
+              >
+                <MarketStat
+                  label="Median List"
+                  value={
+                    formatMarketCurrency(
+                      marketSnapshot.medianListPriceFt2,
+                    )
+                  }
+                />
+
+                <MarketStat
+                  label="Median Sold"
+                  value={
+                    formatMarketCurrency(
+                      marketSnapshot.medianSoldPriceFt2,
+                    )
+                  }
+                />
+
+                <MarketStat
+                  label="Average List"
+                  value={
+                    formatMarketCurrency(
+                      marketSnapshot.avgListPriceFt2,
+                    )
+                  }
+                />
+
+                <MarketStat
+                  label="Average Sold"
+                  value={
+                    formatMarketCurrency(
+                      marketSnapshot.avgSoldPriceFt2,
+                    )
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* =====================================================
+            EXPANDED NEARBY
+            ===================================================== */}
+
+        {showNearby &&
+        isDevelopment &&
+        marketSnapshot?.nearby ? (
+          <div
+            style={{
+              marginTop:
+                14,
+
+              paddingTop:
+                14,
+
+              borderTop:
+                "1px solid #e2e8f0",
+            }}
+          >
+            <NearbyDevelopmentPanel
+              nearby={
+                marketSnapshot.nearby
+              }
+            />
           </div>
         ) : null}
 
@@ -3298,4 +4009,502 @@ export default function AtlasBottomSheet() {
       </div>
     </section>
   );
+  function formatMarketCurrency(
+    value:
+      | number
+      | null
+      | undefined,
+  ) {
+    if (
+      value === null ||
+      value === undefined ||
+      !Number.isFinite(
+        Number(value),
+      )
+    ) {
+      return "—";
+    }
+
+    return Number(
+      value,
+    ).toLocaleString(
+      "en-US",
+      {
+        style:
+          "currency",
+
+        currency:
+          "USD",
+
+        maximumFractionDigits:
+          0,
+      },
+    );
+  }
+
+  function MarketStat({
+    label,
+    value,
+  }: {
+    label: string;
+    value: string;
+  }) {
+    return (
+      <div
+        style={{
+          minWidth:
+            0,
+
+          padding:
+            "9px 10px",
+
+          border:
+            "1px solid #e2e8f0",
+
+          borderRadius:
+            12,
+
+          background:
+            "#f8fafc",
+        }}
+      >
+        <div
+          style={{
+            fontSize:
+              9,
+
+            fontWeight:
+              700,
+
+            lineHeight:
+              1.25,
+
+            color:
+              "#94a3b8",
+          }}
+        >
+          {label}
+        </div>
+
+        <div
+          style={{
+            marginTop:
+              4,
+
+            overflow:
+              "hidden",
+
+            textOverflow:
+              "ellipsis",
+
+            fontSize:
+              15,
+
+            fontWeight:
+              750,
+
+            color:
+              "#0f172a",
+          }}
+        >
+          {value}
+        </div>
+      </div>
+    );
+  }
+  function NearbyDevelopmentPanel({
+    nearby,
+  }: {
+    nearby: NonNullable<
+      MarketSnapshot["nearby"]
+    >;
+  }) {
+    const rollup =
+      nearby.rollup;
+
+    const highlights =
+      nearby.places.filter(
+        (place) =>
+          place.is_highlight,
+      );
+
+    const everyday =
+      highlights.filter(
+        (place) =>
+          [
+            "grocery",
+            "pharmacy",
+            "hospital_urgent_care",
+          ].includes(
+            place.place_category,
+          ),
+      );
+
+    const foodAndDrink =
+      highlights.filter(
+        (place) =>
+          [
+            "restaurant",
+            "cafe",
+            "bar",
+          ].includes(
+            place.place_category,
+          ),
+      );
+
+    const neighborhood =
+      highlights.filter(
+        (place) =>
+          [
+            "park",
+            "public_transit",
+            "beach",
+            "gym",
+            "gallery",
+          ].includes(
+            place.place_category,
+          ),
+      );
+
+    return (
+      <>
+        <div
+          style={{
+            display:
+              "flex",
+
+            alignItems:
+              "baseline",
+
+            gap: 8,
+          }}
+        >
+          <div
+            style={{
+              fontSize:
+                11,
+
+              fontWeight:
+                800,
+
+              letterSpacing:
+                "0.09em",
+
+              textTransform:
+                "uppercase",
+
+              color:
+                "#0f766e",
+            }}
+          >
+            Nearby
+          </div>
+
+          {rollup?.walkability_score !==
+            null &&
+          rollup?.walkability_score !==
+            undefined ? (
+            <div
+              style={{
+                fontSize:
+                  14,
+
+                fontWeight:
+                  800,
+
+                color:
+                  "#0f172a",
+              }}
+            >
+              {
+                rollup.walkability_score
+              }
+              /100
+              {rollup.walkability_label
+                ? ` · ${rollup.walkability_label}`
+                : ""}
+            </div>
+          ) : null}
+        </div>
+
+        {rollup?.lifestyle_summary ? (
+          <div
+            style={{
+              marginTop:
+                6,
+
+              fontSize:
+                12,
+
+              lineHeight:
+                1.5,
+
+              color:
+                "#64748b",
+            }}
+          >
+            {
+              rollup.lifestyle_summary
+            }
+          </div>
+        ) : null}
+
+        <NearbyGroup
+          title="Everyday"
+          places={
+            everyday
+          }
+        />
+
+        <NearbyGroup
+          title="Food & Drink"
+          places={
+            foodAndDrink
+          }
+        />
+
+        <NearbyGroup
+          title="Around the Neighborhood"
+          places={
+            neighborhood
+          }
+        />
+      </>
+    );
+  }
+
+  function NearbyGroup({
+    title,
+    places,
+  }: {
+    title: string;
+
+    places: Array<{
+      place_ky: number;
+      place_category: string;
+      place_name: string;
+      distance_m: number | null;
+      walk_minutes: number | null;
+    }>;
+  }) {
+    if (
+      places.length ===
+      0
+    ) {
+      return null;
+    }
+
+    return (
+      <div
+        style={{
+          marginTop:
+            14,
+        }}
+      >
+        <div
+          style={{
+            marginBottom:
+              6,
+
+            fontSize:
+              9,
+
+            fontWeight:
+              800,
+
+            letterSpacing:
+              "0.09em",
+
+            textTransform:
+              "uppercase",
+
+            color:
+              "#94a3b8",
+          }}
+        >
+          {title}
+        </div>
+
+        <div
+          style={{
+            display:
+              "grid",
+
+            gap: 6,
+          }}
+        >
+          {places.map(
+            (place) => (
+              <NearbyPlaceRow
+                key={
+                  place.place_ky
+                }
+                place={
+                  place
+                }
+              />
+            ),
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function NearbyPlaceRow({
+    place,
+  }: {
+    place: {
+      place_category: string;
+      place_name: string;
+      distance_m: number | null;
+      walk_minutes: number | null;
+    };
+  }) {
+    const icon =
+      nearbyCategoryIcon(
+        place.place_category,
+      );
+
+    return (
+      <div
+        style={{
+          display:
+            "grid",
+
+          gridTemplateColumns:
+            "24px minmax(0, 1fr) auto",
+
+          alignItems:
+            "center",
+
+          gap: 8,
+
+          padding:
+            "8px 10px",
+
+          border:
+            "1px solid #e2e8f0",
+
+          borderRadius:
+            12,
+
+          background:
+            "#f8fafc",
+        }}
+      >
+        <div
+          aria-hidden="true"
+          style={{
+            fontSize:
+              16,
+
+            textAlign:
+              "center",
+          }}
+        >
+          {icon}
+        </div>
+
+        <div
+          style={{
+            minWidth:
+              0,
+
+            overflow:
+              "hidden",
+
+            textOverflow:
+              "ellipsis",
+
+            whiteSpace:
+              "nowrap",
+
+            fontSize:
+              12,
+
+            fontWeight:
+              700,
+
+            color:
+              "#334155",
+          }}
+        >
+          {
+            place.place_name
+          }
+        </div>
+
+        <div
+          style={{
+            flexShrink:
+              0,
+
+            fontSize:
+              10,
+
+            fontWeight:
+              700,
+
+            whiteSpace:
+              "nowrap",
+
+            color:
+              "#64748b",
+          }}
+        >
+          {place.distance_m !==
+            null
+            ? `${place.distance_m} m`
+            : "—"}
+
+          {place.walk_minutes !==
+            null
+            ? ` · ${place.walk_minutes} min`
+            : ""}
+        </div>
+      </div>
+    );
+  }
+
+  function nearbyCategoryIcon(
+    category: string,
+  ) {
+    switch (category) {
+      case "grocery":
+        return "🛒";
+
+      case "pharmacy":
+        return "💊";
+
+      case "hospital_urgent_care":
+        return "🏥";
+
+      case "restaurant":
+        return "🍽️";
+
+      case "cafe":
+        return "☕";
+
+      case "bar":
+        return "🍺";
+
+      case "park":
+        return "🌳";
+
+      case "public_transit":
+        return "🚌";
+
+      case "beach":
+        return "🏖️";
+
+      case "gym":
+        return "🏋️";
+
+      case "gallery":
+        return "🎨";
+
+      default:
+        return "📍";
+    }
+  }
 }
