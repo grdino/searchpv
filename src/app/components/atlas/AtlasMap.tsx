@@ -1437,7 +1437,7 @@ export default function AtlasMap() {
 
       marketUrl.searchParams.set(
         "development",
-        developmentName,
+        developmentName.toUpperCase(),
       );
 
       return marketUrl.toString();
