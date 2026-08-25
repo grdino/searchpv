@@ -1440,6 +1440,13 @@ export default function AtlasMap() {
         developmentName.toUpperCase(),
       );
 
+      /*
+      * Skip the large filter header when arriving from Atlas
+      * and land directly on the Market Intelligence summary.
+      */
+      marketUrl.hash =
+        "active-listing-summary";
+
       return marketUrl.toString();
     }
 
