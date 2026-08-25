@@ -1445,7 +1445,9 @@ export default function AtlasMap() {
       * and land directly on the Market Intelligence summary.
       */
       marketUrl.hash =
-        "active-listing-summary";
+        status === "active"
+          ? "active-listing-history"
+          : "pending-listing-history";
 
       return marketUrl.toString();
     }

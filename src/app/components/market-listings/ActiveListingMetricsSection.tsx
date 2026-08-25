@@ -94,13 +94,16 @@ export default function ActiveListingMetricsSection({
 
   return (
     <>
-      <div className="mx-auto max-w-4xl">
+      <div
+        id={`${listingStatusLabel.toLowerCase()}-listing-history`}
+        className="scroll-mt-24 mx-auto max-w-4xl"
+      >
         <MarketListingHistoryChart
-        rows={historyRows}
-        listingStatusLabel={listingStatusLabel}
-        selectedMetric={selectedMetric}
-        onMetricChange={setSelectedMetric}
-      />
+          rows={historyRows}
+          listingStatusLabel={listingStatusLabel}
+          selectedMetric={selectedMetric}
+          onMetricChange={setSelectedMetric}
+        />
       </div>
 
       <div
