@@ -267,7 +267,7 @@ export default function AtlasSearch() {
         position:
           "absolute",
 
-        top: 16,
+        top: "var(--atlas-search-top, 16px)",
         left: 16,
         right: 16,
 

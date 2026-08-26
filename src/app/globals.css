@@ -103,3 +103,22 @@ body {
     transform: none;
   }
 }
+/* ============================================================
+   ATLAS RESPONSIVE HEADER / SEARCH POSITIONING
+   ============================================================ */
+
+:root {
+  --atlas-search-top: 16px;
+}
+
+/*
+ * Mobile Atlas
+ *
+ * Search sits below the SearchPV branding/header rather than
+ * competing with it for the top row.
+ */
+@media (max-width: 767px) {
+  :root {
+    --atlas-search-top: 82px;
+  }
+}
