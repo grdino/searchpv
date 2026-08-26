@@ -1555,7 +1555,7 @@ export default function AtlasBottomSheet() {
                     "#0f172a",
                 }}
               >
-                Banderas Bay
+                Find you place
               </div>
 
               <div
@@ -1570,7 +1570,7 @@ export default function AtlasBottomSheet() {
                     "#64748b",
                 }}
               >
-                Search, tap the map, or choose a popular area.
+                Beach towns, city neighborhoods, jungle retreats, and everything in between.
               </div>
             </>
           )}
