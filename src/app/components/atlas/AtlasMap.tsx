@@ -246,13 +246,15 @@ export default function AtlasMap() {
     mapRef.current =
       map;
 
-    map.addControl(
-      new mapboxgl.NavigationControl({
-        showCompass: true,
-        showZoom: true,
-      }),
-      "top-right",
-    );
+    if (window.innerWidth >= 768) {
+      map.addControl(
+        new mapboxgl.NavigationControl({
+          showCompass: true,
+          showZoom: true,
+        }),
+        "top-right",
+      );
+    }
 
     map.addControl(
       new mapboxgl.AttributionControl({

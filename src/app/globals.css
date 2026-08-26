@@ -119,6 +119,21 @@ body {
  */
 @media (max-width: 767px) {
   :root {
-    --atlas-search-top: 82px;
+    --atlas-search-top: 76px;
+  }
+}
+
+/* ============================================================
+   ATLAS — MAPBOX NAVIGATION POSITION
+   ============================================================ */
+
+/*
+ * SearchPV owns the upper-right corner of Atlas.
+ * Move Mapbox navigation below the hamburger menu.
+ */
+@media (min-width: 768px) {
+  .mapboxgl-ctrl-top-right {
+    top: 58px !important;
+    right: 8px !important;
   }
 }
