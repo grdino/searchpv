@@ -3,6 +3,7 @@ import AtlasOverlay from "./AtlasOverlay";
 import AtlasSearch from "./AtlasSearch";
 import AtlasBottomSheet from "./AtlasBottomSheet";
 import AtlasDeepLink from "./AtlasDeepLink";
+import AtlasBranding from "./AtlasBranding";
 
 import {
   AtlasStateProvider,
@@ -24,6 +25,7 @@ export default function AtlasShell() {
         <AtlasViewport />
 
         <AtlasOverlay>
+          <AtlasBranding />
           <AtlasSearch />
           <AtlasBottomSheet />
         </AtlasOverlay>
