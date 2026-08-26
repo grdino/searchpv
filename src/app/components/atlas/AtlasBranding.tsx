@@ -71,11 +71,16 @@ export default function AtlasBranding() {
       <div
         style={{
           position: "absolute",
-          top: 14,
+          top: 16,
           right: 18,
           zIndex: 50,
 
           pointerEvents: "auto",
+
+          transform: "scale(0.82)",
+          transformOrigin: "top right",
+
+          opacity: 0.92,
         }}
       >
         <HamburgerMenu />
