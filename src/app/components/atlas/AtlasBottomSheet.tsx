@@ -2753,19 +2753,11 @@ export default function AtlasBottomSheet() {
               >
                 <div
                   style={{
-                    display:
-                      "flex",
-
-                    alignItems:
-                      "center",
-
+                    display: "flex",
+                    alignItems: "center",
                     gap: 5,
-
-                    marginBottom:
-                      8,
-
-                    flexWrap:
-                      "wrap",
+                    marginBottom: 8,
+                    flexWrap: "nowrap",
                   }}
                 >
                   <div
@@ -2823,7 +2815,7 @@ export default function AtlasBottomSheet() {
                                 0,
 
                               padding:
-                                "4px 8px",
+                                "4px 7px",
 
                               background:
                                 active
@@ -2909,7 +2901,7 @@ export default function AtlasBottomSheet() {
                                 0,
 
                               padding:
-                                "4px 8px",
+                                "4px 7px",
 
                               background:
                                 active
@@ -2922,7 +2914,7 @@ export default function AtlasBottomSheet() {
                                   : "#64748b",
 
                               fontSize:
-                                10,
+                                9.5,
 
                               fontWeight:
                                 700,
