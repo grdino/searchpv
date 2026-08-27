@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAtlasState } from "@/lib/atlas/state/AtlasState";
 import { buildIdxUrl } from "@/lib/idx";
+import { getAtlasDiscoverScene } from "./AtlasDiscoverConfig";
 
 function entityTypeLabel(entityType: string) {
   switch (entityType) {
@@ -300,9 +301,14 @@ export default function AtlasBottomSheet() {
    * content only fades in during the final approach.
    */
 
+  const discoverScene =
+    getAtlasDiscoverScene(
+      popularAreaSelection?.footprintKey,
+    );
+
   const isOpeningDiscover =
-    popularAreaSelection?.footprintKey ===
-    "lifestyle-emiliano-zapata-zr";
+    discoverScene?.id ===
+    "zona-romantica";
 
   const [
     openingSheetPhase,
@@ -316,8 +322,31 @@ export default function AtlasBottomSheet() {
     setOpeningSheetVisible,
   ] = useState(true);
 
+  /*
+   * AtlasDiscoverScene sends this before leaving any stop.
+   * Keeping the signal outside AtlasState prevents this purely
+   * cinematic concern from changing normal Atlas behavior.
+   */
   useEffect(() => {
-    if (!isOpeningDiscover) {
+    const hideForNextStop = () => {
+      setOpeningSheetVisible(false);
+    };
+
+    window.addEventListener(
+      "atlas-discover-hide-sheet",
+      hideForNextStop,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "atlas-discover-hide-sheet",
+        hideForNextStop,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!discoverScene) {
       setOpeningSheetPhase(
         "destination",
       );
@@ -327,6 +356,34 @@ export default function AtlasBottomSheet() {
       );
 
       return;
+    }
+
+    if (!isOpeningDiscover) {
+      setOpeningSheetPhase(
+        "destination",
+      );
+
+      // The destination changes while its artwork covers the map.
+      // Reveal the live sheet during the final approach.
+      setOpeningSheetVisible(
+        false,
+      );
+
+      const destinationTimer =
+        window.setTimeout(
+          () => {
+            setOpeningSheetVisible(
+              true,
+            );
+          },
+          discoverScene.timing.sheetRevealDelay,
+        );
+
+      return () => {
+        window.clearTimeout(
+          destinationTimer,
+        );
+      };
     }
 
     // Hold the opening message while the flight gets underway.
@@ -384,7 +441,7 @@ export default function AtlasBottomSheet() {
             },
           );
         },
-        3850,
+        discoverScene.timing.sheetRevealDelay,
       );
 
     return () => {
@@ -400,7 +457,10 @@ export default function AtlasBottomSheet() {
         destinationTimer,
       );
     };
-  }, [isOpeningDiscover]);
+  }, [
+    discoverScene,
+    isOpeningDiscover,
+  ]);
 
   const [
     showNearby,

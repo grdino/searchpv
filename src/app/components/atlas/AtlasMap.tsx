@@ -10,6 +10,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 import { useAtlasState } from "@/lib/atlas/state/AtlasState";
 import { buildIdxUrl } from "@/lib/idx";
+import { getAtlasDiscoverScene } from "./AtlasDiscoverConfig";
 
 export default function AtlasMap() {
   const mapContainerRef =
@@ -3242,12 +3243,12 @@ const pendingListingsUrl =
     * ----------------------------------------------------------
     */
 
-    const isLifestyleTransition =
-      popularAreaSelection
-        .footprintKey ===
-      "lifestyle-emiliano-zapata-zr";
+    const discoverScene =
+      getAtlasDiscoverScene(
+        popularAreaSelection.footprintKey,
+      );
 
-        if (isLifestyleTransition) {
+        if (discoverScene) {
           const center =
             bounds.getCenter();
 
@@ -3280,23 +3281,28 @@ const pendingListingsUrl =
             * The highlighted footprint should remain comfortably
             * visible above the BottomSheet.
             */
-            zoom: 13.5,
+            zoom:
+              discoverScene.camera.zoom,
 
-            pitch: 30,
+            pitch:
+              discoverScene.camera.pitch,
 
             /*
             * A little more rotation makes the coastline appear to
             * sweep through the viewport during the flight.
             */
-            bearing: -8,
+            bearing:
+              discoverScene.camera.bearing,
 
             /*
             * A larger curve makes the flight feel less like a direct
             * zoom and more like a traveling camera move.
             */
-            curve: 1.55,
+            curve:
+              discoverScene.camera.curve,
 
-            duration: 5000,
+            duration:
+              discoverScene.camera.duration,
 
             essential: true,
           });
