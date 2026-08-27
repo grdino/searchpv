@@ -9,6 +9,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 import { useAtlasState } from "@/lib/atlas/state/AtlasState";
+import { buildIdxUrl } from "@/lib/idx";
 
 export default function AtlasMap() {
   const mapContainerRef =
@@ -19,6 +20,9 @@ export default function AtlasMap() {
 
   const listingMarkerRef =
     useRef<mapboxgl.Marker | null>(null);
+
+  const activeListingPopupRef =
+    useRef<mapboxgl.Popup | null>(null);
 
   function getListingDeepLinkCoordinates() {
     if (
@@ -830,6 +834,921 @@ export default function AtlasMap() {
       });
 
       // ========================================================
+      // ACTIVE LISTING MAP LAYER
+      // ========================================================
+      //
+      // Active inventory is deliberately understated at broader
+      // zoom levels.
+      //
+      // As the visitor moves closer:
+      //
+      //   broad view   -> invisible
+      //   area view    -> faint dots
+      //   neighborhood -> stronger dots
+      //   close view   -> price labels
+      //
+      // The source is intentionally separate from Atlas geography.
+      // ========================================================
+
+      fetch(
+        "/api/atlas/listing-markers",
+        {
+          cache: "no-store",
+        },
+      )
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(
+              "Unable to load Atlas listing markers.",
+            );
+          }
+
+          return response.json();
+        })
+        .then((listingData) => {
+          if (
+            map.getSource(
+              "atlas-active-listings",
+            )
+          ) {
+            return;
+          }
+
+          console.log(
+            "Atlas active listing markers:",
+            listingData.features?.length ?? 0,
+          );
+
+          map.addSource(
+            "atlas-active-listings",
+            {
+              type: "geojson",
+              data: listingData,
+            },
+          );
+
+          // ======================================================
+          // FAINT INVENTORY DOTS
+          // ======================================================
+
+          map.addLayer({
+            id:
+              "atlas-active-listing-dots",
+
+            type: "circle",
+
+            source:
+              "atlas-active-listings",
+
+            slot: "top",
+
+            minzoom: 11.5,
+
+            paint: {
+              "circle-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+
+                11.5,
+                1.5,
+
+                12.5,
+                2,
+
+                13.5,
+                3,
+
+                14.5,
+                4,
+
+                16,
+                5.5,
+
+                17.5,
+                7,
+              ],
+
+              "circle-color":
+                "#0f766e",
+
+              "circle-opacity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+
+                11.5,
+                0,
+
+                12,
+                0.08,
+
+                12.8,
+                0.18,
+
+                13.6,
+                0.38,
+
+                14.4,
+                0.7,
+              ],
+
+              "circle-stroke-color":
+                "#ffffff",
+
+              "circle-stroke-width": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+
+                12,
+                0,
+
+                13.5,
+                0.5,
+
+                14.5,
+                1,
+              ],
+
+              "circle-stroke-opacity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+
+                12,
+                0,
+
+                13.5,
+                0.3,
+
+                14.5,
+                0.8,
+              ],
+            },
+          });
+
+          // ======================================================
+          // PRICE MARKERS
+          // ======================================================
+
+          map.addLayer({
+            id:
+              "atlas-active-listing-prices",
+
+            type: "symbol",
+
+            source:
+              "atlas-active-listings",
+
+            slot: "top",
+
+            minzoom: 14.2,
+
+            layout: {
+              "text-field": [
+                "get",
+                "label",
+              ],
+
+              "text-size": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+
+                14.2,
+                10,
+
+                15,
+                11,
+
+                16,
+                12,
+
+                17.5,
+                13,
+              ],
+
+              "text-font": [
+                "DIN Pro Medium",
+                "Arial Unicode MS Regular",
+              ],
+
+              "text-allow-overlap":
+                true,
+
+              "text-ignore-placement":
+                true,
+
+              "text-padding":
+                5,
+            },
+
+            paint: {
+              "text-color":
+                "#0f172a",
+
+              "text-halo-color":
+                "rgba(255,255,255,0.96)",
+
+              "text-halo-width":
+                4,
+
+              "text-halo-blur":
+                1,
+
+              "text-opacity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+
+                14.2,
+                0,
+
+                14.6,
+                0.65,
+
+                15,
+                1,
+              ],
+            },
+          });
+
+          // ======================================================
+          // ACTIVE LISTING CLICK / POPUP
+          // ======================================================
+
+          function formatPopupPrice(
+            value: unknown,
+          ) {
+            const price =
+              Number(value);
+
+            if (
+              !Number.isFinite(price)
+            ) {
+              return "";
+            }
+
+            return new Intl.NumberFormat(
+              "en-US",
+              {
+                style: "currency",
+                currency: "USD",
+                maximumFractionDigits: 0,
+              },
+            ).format(price);
+          }
+
+          function formatRange(
+            minimum: unknown,
+            maximum: unknown,
+            suffix = "",
+          ) {
+            const min =
+              Number(minimum);
+
+            const max =
+              Number(maximum);
+
+            if (
+              !Number.isFinite(min) &&
+              !Number.isFinite(max)
+            ) {
+              return "";
+            }
+
+            if (
+              Number.isFinite(min) &&
+              Number.isFinite(max)
+            ) {
+              if (min === max) {
+                return `${min}${suffix}`;
+              }
+
+              return `${min}–${max}${suffix}`;
+            }
+
+            if (
+              Number.isFinite(min)
+            ) {
+              return `${min}${suffix}`;
+            }
+
+            return `${max}${suffix}`;
+          }
+
+          function createListingPopup(
+            feature: any,
+          ) {
+            const properties =
+              feature?.properties ?? {};
+
+            const coordinates =
+              feature?.geometry
+                ?.coordinates;
+
+            if (
+              !Array.isArray(
+                coordinates,
+              ) ||
+              coordinates.length <
+                2
+            ) {
+              return;
+            }
+
+            const longitude =
+              Number(
+                coordinates[0],
+              );
+
+            const latitude =
+              Number(
+                coordinates[1],
+              );
+
+            if (
+              !Number.isFinite(
+                longitude,
+              ) ||
+              !Number.isFinite(
+                latitude,
+              )
+            ) {
+              return;
+            }
+
+            const listingCount =
+              Math.max(
+                1,
+                Number(
+                  properties.listing_count,
+                ) || 1,
+              );
+
+            const developmentName =
+              String(
+                properties.development_name ??
+                  "",
+              ).trim();
+
+            const address =
+              String(
+                properties.address ??
+                  "",
+              ).trim();
+
+            const mlsIds =
+              String(
+                properties.mls_ids ??
+                  "",
+              ).trim();
+
+            const minPrice =
+              Number(
+                properties.min_price,
+              );
+
+            const maxPrice =
+              Number(
+                properties.max_price,
+              );
+
+            /*
+            * Remove any previous Active Listing popup.
+            */
+            activeListingPopupRef.current?.remove();
+
+            const popupContent =
+              document.createElement(
+                "div",
+              );
+
+            Object.assign(
+              popupContent.style,
+              {
+                minWidth: "220px",
+                maxWidth: "285px",
+                padding: "4px 2px 3px",
+                color: "#0f172a",
+                fontFamily: "inherit",
+              },
+            );
+
+            /*
+            * EYEBROW
+            */
+            const eyebrow =
+              document.createElement(
+                "div",
+              );
+
+            eyebrow.textContent =
+              listingCount > 1
+                ? `${listingCount} ACTIVE LISTINGS`
+                : "ACTIVE LISTING";
+
+            Object.assign(
+              eyebrow.style,
+              {
+                color: "#078a83",
+                fontSize: "10px",
+                fontWeight: "900",
+                letterSpacing: "0.09em",
+                textTransform:
+                  "uppercase",
+              },
+            );
+
+            popupContent.appendChild(
+              eyebrow,
+            );
+
+            /*
+            * DEVELOPMENT / ADDRESS
+            */
+            const title =
+              document.createElement(
+                "div",
+              );
+
+            title.textContent =
+              developmentName ||
+              address ||
+              "SearchPV Property";
+
+            Object.assign(
+              title.style,
+              {
+                marginTop: "4px",
+                fontSize: "16px",
+                fontWeight: "900",
+                lineHeight: "1.2",
+              },
+            );
+
+            popupContent.appendChild(
+              title,
+            );
+
+            /*
+            * If we have both development and address, show address
+            * quietly underneath.
+            */
+            if (
+              developmentName &&
+              address
+            ) {
+              const addressLine =
+                document.createElement(
+                  "div",
+                );
+
+              addressLine.textContent =
+                address;
+
+              Object.assign(
+                addressLine.style,
+                {
+                  marginTop: "3px",
+                  color: "#64748b",
+                  fontSize: "11px",
+                  fontWeight: "600",
+                  lineHeight: "1.25",
+                },
+              );
+
+              popupContent.appendChild(
+                addressLine,
+              );
+            }
+
+            /*
+            * PRICE
+            */
+            const priceLine =
+              document.createElement(
+                "div",
+              );
+
+            if (
+              listingCount > 1 &&
+              Number.isFinite(
+                minPrice,
+              ) &&
+              Number.isFinite(
+                maxPrice,
+              )
+            ) {
+              priceLine.textContent =
+                minPrice === maxPrice
+                  ? formatPopupPrice(
+                      minPrice,
+                    )
+                  : `${formatPopupPrice(
+                      minPrice,
+                    )} – ${formatPopupPrice(
+                      maxPrice,
+                    )}`;
+            } else if (
+              Number.isFinite(
+                minPrice,
+              )
+            ) {
+              priceLine.textContent =
+                formatPopupPrice(
+                  minPrice,
+                );
+            }
+
+            if (
+              priceLine.textContent
+            ) {
+              Object.assign(
+                priceLine.style,
+                {
+                  marginTop: "8px",
+                  fontSize: "18px",
+                  fontWeight: "900",
+                  lineHeight: "1.1",
+                },
+              );
+
+              popupContent.appendChild(
+                priceLine,
+              );
+            }
+
+            /*
+            * PROPERTY DETAIL RANGE
+            */
+            const details: string[] =
+              [];
+
+            const bedRange =
+              formatRange(
+                properties.min_beds,
+                properties.max_beds,
+                " BR",
+              );
+
+            const bathRange =
+              formatRange(
+                properties.min_baths,
+                properties.max_baths,
+                " BA",
+              );
+
+            const sqftRange =
+              formatRange(
+                properties.min_sqft,
+                properties.max_sqft,
+                " ft²",
+              );
+
+            if (bedRange) {
+              details.push(
+                bedRange,
+              );
+            }
+
+            if (bathRange) {
+              details.push(
+                bathRange,
+              );
+            }
+
+            if (sqftRange) {
+              details.push(
+                sqftRange,
+              );
+            }
+
+            if (
+              details.length > 0
+            ) {
+              const detailLine =
+                document.createElement(
+                  "div",
+                );
+
+              detailLine.textContent =
+                details.join(
+                  " · ",
+                );
+
+              Object.assign(
+                detailLine.style,
+                {
+                  marginTop: "6px",
+                  color: "#64748b",
+                  fontSize: "11px",
+                  fontWeight: "700",
+                  lineHeight: "1.35",
+                },
+              );
+
+              popupContent.appendChild(
+                detailLine,
+              );
+            }
+
+            /*
+            * IDX BUTTON
+            */
+            if (mlsIds) {
+              const idxUrl =
+                buildIdxUrl(
+                  mlsIds,
+                );
+
+              const action =
+                document.createElement(
+                  "a",
+                );
+
+              action.href =
+                idxUrl;
+
+              action.textContent =
+                listingCount > 1
+                  ? `View ${listingCount} Listings`
+                  : "View Listing";
+
+              Object.assign(
+                action.style,
+                {
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent:
+                    "center",
+
+                  width: "100%",
+
+                  marginTop: "12px",
+                  minHeight: "38px",
+
+                  padding:
+                    "8px 12px",
+
+                  border:
+                    "1px solid #0f172a",
+
+                  borderRadius:
+                    "999px",
+
+                  background:
+                    "#0f172a",
+
+                  color:
+                    "#ffffff",
+
+                  fontSize: "12px",
+                  fontWeight: "850",
+                  lineHeight: "1.1",
+
+                  textDecoration:
+                    "none",
+
+                  boxSizing:
+                    "border-box",
+                },
+              );
+
+              /*
+              * Prevent the IDX link itself from interacting with
+              * the underlying Mapbox map.
+              */
+              action.addEventListener(
+                "click",
+                (
+                  event,
+                ) => {
+                  event.stopPropagation();
+                },
+              );
+
+              popupContent.appendChild(
+                action,
+              );
+            }
+
+            const popup =
+              new mapboxgl.Popup({
+                offset: 14,
+                closeButton: true,
+                closeOnClick: true,
+                maxWidth: "300px",
+              })
+                .setLngLat([
+                  longitude,
+                  latitude,
+                ])
+                .setDOMContent(
+                  popupContent,
+                )
+                .addTo(map);
+
+            activeListingPopupRef.current =
+              popup;
+
+            /*
+              * Keep popup clear of Atlas controls AND the BottomSheet.
+              *
+              * Two animation frames allow Mapbox to fully position
+              * and size the popup before we measure it.
+              */
+              requestAnimationFrame(
+                () => {
+                  requestAnimationFrame(
+                    () => {
+                      const popupElement =
+                        popup.getElement();
+
+                      if (!popupElement) {
+                        return;
+                      }
+
+                      const popupRect =
+                        popupElement.getBoundingClientRect();
+
+                      /*
+                      * Safe visible vertical area.
+                      */
+                      const safeTop =
+                        window.innerWidth < 768
+                          ? 320
+                          : 310;
+
+                      const safeBottom =
+                        window.innerHeight *
+                        0.58;
+
+                      let panY = 0;
+
+                      /*
+                      * Popup is too high:
+                      * move map content downward.
+                      */
+                      if (
+                        popupRect.top <
+                        safeTop
+                      ) {
+                        panY =
+                          -(
+                            safeTop -
+                            popupRect.top
+                          );
+                      }
+
+                      /*
+                      * Popup is too low:
+                      * move map content upward.
+                      *
+                      * This can override the first adjustment if needed.
+                      */
+                      if (
+                        popupRect.bottom >
+                        safeBottom
+                      ) {
+                        panY =
+                          popupRect.bottom -
+                          safeBottom;
+                      }
+
+                      if (
+                        Math.abs(panY) >
+                        2
+                      ) {
+                        map.panBy(
+                          [
+                            0,
+                            panY,
+                          ],
+                          {
+                            duration: 550,
+                          },
+                        );
+                      }
+                    },
+                  );
+                },
+              );
+
+            popup.on(
+              "close",
+              () => {
+                if (
+                  activeListingPopupRef.current ===
+                  popup
+                ) {
+                  activeListingPopupRef.current =
+                    null;
+                }
+              },
+            );
+          }
+
+          /*
+          * One click handler handles both dots and price labels.
+          *
+          * Query price labels first, then dots.
+          */
+          map.on(
+            "click",
+            (
+              event,
+            ) => {
+              if (
+                modeRef.current !==
+                "explore"
+              ) {
+                return;
+              }
+
+              const features =
+                map.queryRenderedFeatures(
+                  event.point,
+                  {
+                    layers: [
+                      "atlas-active-listing-prices",
+                      "atlas-active-listing-dots",
+                    ],
+                  },
+                );
+
+              const listingFeature =
+                features?.[0];
+
+              if (
+                !listingFeature
+              ) {
+                return;
+              }
+
+              /*
+              * Mark this DOM event so the government-boundary
+              * handler below can recognize that the listing owns
+              * this click.
+              */
+              (
+                event.originalEvent as any
+              ).__atlasListingClick =
+                true;
+
+              createListingPopup(
+                listingFeature,
+              );
+            },
+          );
+
+          /*
+          * Desktop pointer feedback.
+          */
+          for (
+            const layerId of [
+              "atlas-active-listing-prices",
+              "atlas-active-listing-dots",
+            ]
+          ) {
+            map.on(
+              "mouseenter",
+              layerId,
+              () => {
+                if (
+                  modeRef.current ===
+                  "explore"
+                ) {
+                  map.getCanvas().style.cursor =
+                    "pointer";
+                }
+              },
+            );
+
+            map.on(
+              "mouseleave",
+              layerId,
+              () => {
+                if (
+                  modeRef.current ===
+                  "explore"
+                ) {
+                  map.getCanvas().style.cursor =
+                    "";
+                }
+              },
+            );
+          }
+        })
+        .catch((error) => {
+          console.error(
+            "Atlas active listing marker error:",
+            error,
+          );
+        });
+
+      // ========================================================
       // 7. ALL GOVERNMENT BOUNDARIES
       // ========================================================
 
@@ -988,6 +1907,43 @@ export default function AtlasMap() {
               "click",
               "atlas-boundaries-hit",
               async (event) => {
+              /*
+                * A listing dot / price marker owns this click.
+                *
+                * Do not also select the government boundary underneath.
+                */
+                if (
+                  (
+                    event.originalEvent as any
+                  )?.__atlasListingClick
+                ) {
+                  return;
+                }
+
+                const listingFeatures =
+                  map.queryRenderedFeatures(
+                    event.point,
+                    {
+                      layers: [
+                        "atlas-active-listing-prices",
+                        "atlas-active-listing-dots",
+                      ].filter(
+                        (layerId) =>
+                          Boolean(
+                            map.getLayer(
+                              layerId,
+                            ),
+                          ),
+                      ),
+                    },
+                  );
+
+                if (
+                  listingFeatures.length >
+                  0
+                ) {
+                  return;
+                }
                 const originalTarget =
                   event.originalEvent
                     ?.target as
@@ -1305,6 +2261,10 @@ export default function AtlasMap() {
         mapRef.current =
           null;
       }
+
+      activeListingPopupRef.current?.remove();
+      activeListingPopupRef.current =
+        null;
 
       map.remove();
     };
@@ -2282,9 +3242,73 @@ const pendingListingsUrl =
     * ----------------------------------------------------------
     */
 
+    const isLifestyleTransition =
+      popularAreaSelection
+        .footprintKey ===
+      "lifestyle-emiliano-zapata-zr";
+
+        if (isLifestyleTransition) {
+          const center =
+            bounds.getCenter();
+
+          /*
+          * The BottomSheet occupies a large part of the lower screen.
+          * Padding makes Mapbox treat the visible map area above the
+          * sheet as the effective viewport.
+          */
+          const bottomPadding =
+            Math.round(
+              window.innerHeight *
+                0.44,
+            );
+
+          map.flyTo({
+            center: [
+              center.lng,
+              center.lat,
+            ],
+
+            padding: {
+              top: 120,
+              right: 50,
+              bottom: bottomPadding,
+              left: 50,
+            },
+
+            /*
+            * Don't zoom quite as tightly.
+            * The highlighted footprint should remain comfortably
+            * visible above the BottomSheet.
+            */
+            zoom: 13.5,
+
+            pitch: 30,
+
+            /*
+            * A little more rotation makes the coastline appear to
+            * sweep through the viewport during the flight.
+            */
+            bearing: -8,
+
+            /*
+            * A larger curve makes the flight feel less like a direct
+            * zoom and more like a traveling camera move.
+            */
+            curve: 1.55,
+
+            duration: 5000,
+
+            essential: true,
+          });
+
+          return;
+        }
+
+    /*
+    * Normal Popular Area behavior remains unchanged.
+    */
     map.fitBounds(
       bounds,
-
       {
         padding: {
           top: 110,
@@ -2302,11 +3326,9 @@ const pendingListingsUrl =
 
         pitch: 45,
 
-        duration:
-          1800,
+        duration: 1800,
 
-        essential:
-          true,
+        essential: true,
       },
     );
   }, [

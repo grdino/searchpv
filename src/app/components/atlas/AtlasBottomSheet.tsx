@@ -288,6 +288,120 @@ export default function AtlasBottomSheet() {
   ] =
     useState(false);
 
+  /*
+   * ==========================================================
+   * OPENING DISCOVER BOTTOMSHEET TRANSITION
+   * ==========================================================
+   *
+   * Atlas needs to select Zona Romántica early so AtlasMap can
+   * begin the cinematic flight. The BottomSheet deliberately
+   * lags behind that live state: the opening "Find your place"
+   * message stays visible, fades away, and the destination
+   * content only fades in during the final approach.
+   */
+
+  const isOpeningDiscover =
+    popularAreaSelection?.footprintKey ===
+    "lifestyle-emiliano-zapata-zr";
+
+  const [
+    openingSheetPhase,
+    setOpeningSheetPhase,
+  ] = useState<
+    "initial" | "blank" | "destination"
+  >("initial");
+
+  const [
+    openingSheetVisible,
+    setOpeningSheetVisible,
+  ] = useState(true);
+
+  useEffect(() => {
+    if (!isOpeningDiscover) {
+      setOpeningSheetPhase(
+        "destination",
+      );
+
+      setOpeningSheetVisible(
+        true,
+      );
+
+      return;
+    }
+
+    // Hold the opening message while the flight gets underway.
+    setOpeningSheetPhase(
+      "initial",
+    );
+
+    setOpeningSheetVisible(
+      true,
+    );
+
+    // About 1.7s after Atlas first loads with the current
+    // Discover timing, begin a slow fade of "Find your place".
+    const fadeInitialTimer =
+      window.setTimeout(
+        () => {
+          setOpeningSheetVisible(
+            false,
+          );
+        },
+        1250,
+      );
+
+    // Once the fade is complete, leave the BottomSheet quiet
+    // while the lifestyle artwork and map own the scene.
+    const blankTimer =
+      window.setTimeout(
+        () => {
+          setOpeningSheetPhase(
+            "blank",
+          );
+        },
+        2350,
+      );
+
+    // The Discover artwork starts fading around 4.3s after
+    // Atlas load. Because ZR is selected about 0.45s in, this
+    // brings the real ZR sheet back at roughly that same moment.
+    const destinationTimer =
+      window.setTimeout(
+        () => {
+          setOpeningSheetPhase(
+            "destination",
+          );
+
+          window.requestAnimationFrame(
+            () => {
+              window.requestAnimationFrame(
+                () => {
+                  setOpeningSheetVisible(
+                    true,
+                  );
+                },
+              );
+            },
+          );
+        },
+        3850,
+      );
+
+    return () => {
+      window.clearTimeout(
+        fadeInitialTimer,
+      );
+
+      window.clearTimeout(
+        blankTimer,
+      );
+
+      window.clearTimeout(
+        destinationTimer,
+      );
+    };
+  }, [isOpeningDiscover]);
+
   const [
     showNearby,
     setShowNearby,
@@ -1173,6 +1287,22 @@ export default function AtlasBottomSheet() {
 
           margin:
             "0 auto",
+
+          opacity:
+            openingSheetVisible
+              ? 1
+              : 0,
+
+          transform:
+            openingSheetVisible
+              ? "translateY(0px)"
+              : "translateY(6px)",
+
+          transition:
+            [
+              "opacity 1000ms ease-in-out",
+              "transform 1100ms ease-in-out",
+            ].join(", "),
         }}
       >
         {/* =====================================================
@@ -1207,7 +1337,67 @@ export default function AtlasBottomSheet() {
               "1px solid rgba(226,232,240,0.65)",
           }}
         >
-          {isCustomMarket ? (
+          {isOpeningDiscover &&
+          openingSheetPhase ===
+            "initial" ? (
+            <>
+              <div
+                style={{
+                  fontSize:
+                    11,
+
+                  fontWeight:
+                    700,
+
+                  letterSpacing:
+                    "0.12em",
+
+                  color:
+                    "#94a3b8",
+
+                  textTransform:
+                    "uppercase",
+                }}
+              >
+                Explore the Bay
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    2,
+
+                  fontSize:
+                    24,
+
+                  fontWeight:
+                    700,
+
+                  color:
+                    "#0f172a",
+                }}
+              >
+                Find your place
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    4,
+
+                  fontSize:
+                    12,
+
+                  color:
+                    "#64748b",
+                }}
+              >
+                Beach towns, city neighborhoods, jungle retreats, and everything in between.
+              </div>
+            </>
+          ) : isOpeningDiscover &&
+            openingSheetPhase ===
+              "blank" ? null : isCustomMarket ? (
             <>
               <div
                 style={{
@@ -1555,7 +1745,7 @@ export default function AtlasBottomSheet() {
                     "#0f172a",
                 }}
               >
-                Find you place
+                Find your place
               </div>
 
               <div
@@ -1575,6 +1765,11 @@ export default function AtlasBottomSheet() {
             </>
           )}
         </div>
+
+        {(!isOpeningDiscover ||
+          openingSheetPhase ===
+            "destination") ? (
+          <>
 
         {/* =====================================================
             CUSTOM MARKET CONTROLS
@@ -3997,6 +4192,9 @@ export default function AtlasBottomSheet() {
               )}
             </div>
           </div>
+        ) : null}
+
+          </>
         ) : null}
       </div>
     </section>
