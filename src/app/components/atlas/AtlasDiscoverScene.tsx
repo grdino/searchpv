@@ -198,17 +198,14 @@ export default function AtlasDiscoverScene() {
             pointerEvents: "none",
           }}
         >
-          <div
+          <img
             key={scene.image}
+            src={scene.image}
+            alt=""
             className="atlas-discover-artwork"
             style={{
-              backgroundImage: `url("${scene.image}")`,
               opacity: artworkVisible ? 0.34 : 0,
-              transform: artworkVisible ? "scale(1.02)" : "scale(1.065)",
-              transition: [
-                "opacity 2100ms ease-in-out",
-                "transform 6500ms cubic-bezier(0.16, 0.72, 0.22, 1)",
-              ].join(", "),
+              transition: "opacity 2100ms ease-in-out",
               filter: "saturate(0.88) contrast(0.94)",
             }}
           />
@@ -237,7 +234,7 @@ export default function AtlasDiscoverScene() {
                 "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.16) 38%, rgba(255,255,255,0.76) 100%)",
             }}
           />
-
+{/*
           <div
             style={{
               position: "absolute",
@@ -306,6 +303,7 @@ export default function AtlasDiscoverScene() {
               {scene.copy.detail}
             </div>
           </div>
+*/}
         </div>
       ) : null}
 

@@ -140,16 +140,29 @@ body {
 
 .atlas-discover-artwork {
   position: absolute;
-  inset: 0;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
+  top: 160px;
+  left: 0;
+
+  width: auto;
+  height: calc(100dvh - 160px);
+  max-width: 100%;
+
+  object-fit: contain;
+  object-position: left top;
+  display: block;
 }
 
 @media (max-width: 640px) {
   .atlas-discover-artwork {
-    background-size: contain;
-    background-position: center top;
-    background-color: #edf7f8;
+    top: 160px;
+    left: 0;
+
+    width: 100%;
+    height: calc(100dvh - 160px);
+    max-width: none;
+
+    object-fit: contain;
+    object-position: left top;
+    transform: none;
   }
 }

@@ -1,21 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import {
-  BarChart3,
-  ChevronRight,
-  Compass,
-  Map,
-  Search,
-} from "lucide-react";
-import {
-  useEffect,
-  useState,
-  type ComponentType,
-} from "react";
+import { BarChart3, ChevronRight, Compass, Map, Search } from "lucide-react";
+import { useEffect, useState, type ComponentType } from "react";
 
 import Header from "@/app/components/Header";
-import { ATLAS_DISCOVER_SEQUENCE } from "@/app/components/atlas/AtlasDiscoverConfig";
+import {
+  ATLAS_DISCOVER_SEQUENCE,
+  type AtlasDiscoverSceneConfig,
+} from "@/app/components/atlas/AtlasDiscoverConfig";
 
 const ROTATION_MS = 7000;
 
@@ -46,27 +39,28 @@ export default function HomeDiscoveryBackdrop() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#edf7f8] text-slate-950">
       <div aria-hidden="true" className="absolute inset-0">
-        {ATLAS_DISCOVER_SEQUENCE.map((scene, index) => (
-          <div
-            key={scene.id}
-            className="absolute inset-0 bg-cover bg-center transition-opacity duration-[2400ms] ease-in-out motion-reduce:transition-none"
-            style={{
-              backgroundImage: `url("${scene.image}")`,
-              opacity: index === activeIndex ? 0.18 : 0,
-              transform: "scale(1.025)",
-              filter: "saturate(.78) contrast(.9)",
-            }}
-          />
-        ))}
-
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,.91)_0%,rgba(255,255,255,.78)_38%,rgba(237,247,248,.66)_72%,rgba(237,247,248,.84)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,.98)_0%,rgba(255,255,255,.88)_46%,rgba(237,247,248,.74)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-white/80 to-transparent" />
       </div>
 
       <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col px-5 pb-8 pt-8 md:px-8 md:pt-10">
         <Header />
 
-        <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center pb-16 text-center">
+        <div className="absolute left-8 top-[108px] hidden w-[280px] md:block">
+          <DiscoveryPreview
+            activeIndex={activeIndex}
+            activeScene={activeScene}
+          />
+        </div>
+
+        <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center pb-12 text-center md:pb-16">
+          <div className="mb-7 w-full max-w-[230px] md:hidden">
+            <DiscoveryPreview
+              activeIndex={activeIndex}
+              activeScene={activeScene}
+            />
+          </div>
+
           <p className="text-xs font-black uppercase tracking-[0.24em] text-teal-700">
             Puerto Vallarta · Riviera Nayarit
           </p>
@@ -105,25 +99,51 @@ export default function HomeDiscoveryBackdrop() {
               Icon={BarChart3}
             />
           </div>
-
-          <Link
-            key={activeScene.id}
-            href={`/atlas/discover?scene=${encodeURIComponent(activeScene.id)}`}
-            className="group mt-7 inline-flex min-h-11 items-center gap-3 rounded-full border border-white/70 bg-white/65 px-5 text-sm shadow-[0_10px_35px_rgba(15,23,42,.08)] backdrop-blur-xl transition hover:bg-white/90"
-          >
-            <span className="font-semibold text-slate-500">Discover</span>
-            <span className="font-black text-teal-800">
-              {activeScene.menuLabel}
-            </span>
-            <ChevronRight
-              aria-hidden="true"
-              size={16}
-              className="text-teal-700 transition-transform group-hover:translate-x-0.5"
-            />
-          </Link>
         </section>
       </div>
     </main>
+  );
+}
+
+function DiscoveryPreview({
+  activeIndex,
+  activeScene,
+}: {
+  activeIndex: number;
+  activeScene: AtlasDiscoverSceneConfig;
+}) {
+  return (
+    <Link
+      href={`/atlas/discover?scene=${encodeURIComponent(activeScene.id)}`}
+      aria-label={`Discover ${activeScene.menuLabel}`}
+      className="group block overflow-hidden rounded-[22px] border border-white/90 bg-white/70 shadow-[0_12px_35px_rgba(15,23,42,.12)] backdrop-blur-md transition hover:-translate-y-0.5 hover:shadow-[0_16px_42px_rgba(15,23,42,.16)]"
+    >
+      <div className="relative aspect-[3/2] overflow-hidden bg-white/40">
+        {ATLAS_DISCOVER_SEQUENCE.map((scene, index) => (
+          <img
+            key={scene.id}
+            src={scene.image}
+            alt=""
+            className="absolute inset-0 h-full w-full object-contain transition-opacity duration-[1800ms] ease-in-out motion-reduce:transition-none"
+            style={{ opacity: index === activeIndex ? 0.82 : 0 }}
+          />
+        ))}
+
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/45 via-transparent to-white/5" />
+
+        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 px-4 py-3 text-left text-white">
+          <span className="min-w-0 truncate text-xs font-black drop-shadow-md sm:text-sm">
+            {activeScene.menuLabel}
+          </span>
+
+          <ChevronRight
+            aria-hidden="true"
+            size={16}
+            className="shrink-0 drop-shadow-md transition-transform group-hover:translate-x-0.5"
+          />
+        </div>
+      </div>
+    </Link>
   );
 }
 
