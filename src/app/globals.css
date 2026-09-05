@@ -137,3 +137,19 @@ body {
     right: 8px !important;
   }
 }
+
+.atlas-discover-artwork {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+@media (max-width: 640px) {
+  .atlas-discover-artwork {
+    background-size: contain;
+    background-position: center top;
+    background-color: #edf7f8;
+  }
+}
