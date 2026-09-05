@@ -46,15 +46,8 @@ export default function HomeDiscoveryBackdrop() {
       <div className="relative z-10 mx-auto flex min-h-dvh max-w-6xl flex-col px-5 pb-8 pt-8 md:px-8 md:pt-10">
         <Header />
 
-        <div className="absolute left-8 top-[108px] hidden w-[280px] md:block">
-          <DiscoveryPreview
-            activeIndex={activeIndex}
-            activeScene={activeScene}
-          />
-        </div>
-
-        <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-start pb-12 pt-2 text-center md:justify-center md:pb-16 md:pt-0 xl:translate-x-14">
-          <div className="mb-7 w-full max-w-[230px] md:hidden">
+        <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-start pb-12 pt-0 text-center md:pb-16">
+          <div className="mb-4 w-full max-w-[230px] md:mb-5 md:max-w-[280px]">
             <DiscoveryPreview
               activeIndex={activeIndex}
               activeScene={activeScene}

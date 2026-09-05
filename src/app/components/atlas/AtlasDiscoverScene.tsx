@@ -34,6 +34,10 @@ export default function AtlasDiscoverScene() {
   const runSceneRef = useRef<(index: number) => void>(() => undefined);
   const pauseRef = useRef<() => void>(() => undefined);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const atlasReadyRef = useRef(false);
+  const pendingPopularAreaRef = useRef<
+    AtlasDiscoverSceneConfig["popularArea"] | null
+  >(null);
 
   selectPopularAreaRef.current = selectPopularArea;
 
@@ -65,6 +69,7 @@ export default function AtlasDiscoverScene() {
       setArtworkVisible(false);
       setMessageVisible(false);
       setSceneVisible(false);
+      pendingPopularAreaRef.current = null;
       setTourStatus("paused");
 
       // Existing Atlas map and sheet listeners use this event to stop
@@ -100,10 +105,13 @@ export default function AtlasDiscoverScene() {
         revealArtwork();
       }, timing.artworkDelay);
 
-      later(
-        () => selectPopularAreaRef.current(nextScene.popularArea),
-        timing.selectionDelay,
-      );
+      later(() => {
+        if (atlasReadyRef.current) {
+          selectPopularAreaRef.current(nextScene.popularArea);
+        } else {
+          pendingPopularAreaRef.current = nextScene.popularArea;
+        }
+      }, timing.selectionDelay);
 
       later(() => setMessageVisible(true), timing.messageDelay);
       later(() => setArtworkVisible(false), timing.artworkFadeDelay);
@@ -159,11 +167,35 @@ export default function AtlasDiscoverScene() {
       if (statusRef.current === "waiting") runScene(initialIndex);
     };
 
-    window.addEventListener("atlas-discover-ready", startTour);
+    const handleAtlasReady = () => {
+      atlasReadyRef.current = true;
 
-    if (document.documentElement.dataset.atlasDiscoverReady === "true") {
+      if (
+        pendingPopularAreaRef.current &&
+        statusRef.current === "running"
+      ) {
+        selectPopularAreaRef.current(pendingPopularAreaRef.current);
+      }
+
+      pendingPopularAreaRef.current = null;
+
       startTour();
-    }
+    };
+
+    atlasReadyRef.current =
+      document.documentElement.dataset.atlasDiscoverReady === "true";
+
+    window.addEventListener("atlas-discover-ready", handleAtlasReady);
+
+    // Discovery is now entered through an intentional user action, so begin
+    // the visual sequence immediately instead of waiting for Mapbox. The
+    // selected Atlas area remains in state and the map can react as it becomes
+    // ready. The ready event above is retained as a fallback and cannot start
+    // the tour twice because startTour only runs from the waiting state.
+    // Use a managed zero-delay timer so React Strict Mode can perform its
+    // development-only setup/cleanup cycle without leaving the tour marked as
+    // running after its scene timers have been cleared.
+    later(startTour, 0);
 
     return () => {
       clearTimers();
@@ -171,7 +203,7 @@ export default function AtlasDiscoverScene() {
       window.removeEventListener("touchstart", handleInteraction, true);
       window.removeEventListener("wheel", handleInteraction, true);
       window.removeEventListener("keydown", handleInteraction, true);
-      window.removeEventListener("atlas-discover-ready", startTour);
+      window.removeEventListener("atlas-discover-ready", handleAtlasReady);
     };
   }, []);
 
