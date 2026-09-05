@@ -251,6 +251,9 @@ export default function AtlasMap() {
     mapRef.current =
       map;
 
+    // Temporary browser-console access for Atlas diagnostics.
+      (window as any).__atlasMap = map;
+
     if (window.innerWidth >= 768) {
       map.addControl(
         new mapboxgl.NavigationControl({
@@ -1825,6 +1828,15 @@ export default function AtlasMap() {
                 currentVersion + 1,
             );
 
+            // Discover Mode must not start its clock until the exact
+            // boundary geometry used by its flights is available.
+            document.documentElement.dataset.atlasDiscoverReady =
+              "true";
+
+            window.dispatchEvent(
+              new Event("atlas-discover-ready"),
+            );
+
             map.addSource(
               "atlas-boundaries",
               {
@@ -2266,6 +2278,9 @@ export default function AtlasMap() {
       activeListingPopupRef.current?.remove();
       activeListingPopupRef.current =
         null;
+
+      delete document.documentElement.dataset
+        .atlasDiscoverReady;
 
       map.remove();
     };
@@ -3341,6 +3356,29 @@ const pendingListingsUrl =
     popularAreaSelection,
     boundaryDataVersion,
   ]);
+
+  /*
+   * A real user interaction ends the automatic tour. Stop any
+   * in-progress Mapbox animation and leave Atlas at its current
+   * live position and selection.
+   */
+  useEffect(() => {
+    const stopDiscoverFlight = () => {
+      mapRef.current?.stop();
+    };
+
+    window.addEventListener(
+      "atlas-discover-cancel",
+      stopDiscoverFlight,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "atlas-discover-cancel",
+        stopDiscoverFlight,
+      );
+    };
+  }, []);
 
   // ============================================================
   // BROADER SEARCHPV CONTEXT

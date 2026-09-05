@@ -1,26 +1,12 @@
-import {
-  NextRequest,
-  NextResponse,
-} from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
 
-type PropertyTypeFilter =
-  | "all"
-  | "condo"
-  | "house";
+type PropertyTypeFilter = "all" | "condo" | "house";
 
-type MarketTypeFilter =
-  | "all"
-  | "resale"
-  | "precon";
+type MarketTypeFilter = "all" | "resale" | "precon";
 
-type BedroomFilter =
-  | "all"
-  | "0br"
-  | "1br"
-  | "2br"
-  | "3br_plus";
+type BedroomFilter = "all" | "0br" | "1br" | "2br" | "3br_plus";
 
 type GeographyEntityDetail = {
   entity?: {
@@ -251,132 +237,64 @@ type DevelopmentNearbyPlace = {
  * ============================================================
  */
 
-function identifierPartToSlug(
-  value: string,
-) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(
-      /_/g,
-      "-",
-    );
+function identifierPartToSlug(value: string) {
+  return value.trim().toLowerCase().replace(/_/g, "-");
 }
 
-function parseDevelopmentIdentifier(
-  identifier: string,
-) {
-  const parts =
-    identifier.split("__");
+function parseDevelopmentIdentifier(identifier: string) {
+  const parts = identifier.split("__");
 
-  if (
-    parts.length < 5 ||
-    parts[0] !== "dv"
-  ) {
+  if (parts.length < 5 || parts[0] !== "dv") {
     return null;
   }
 
-  const [
-    ,
-    zonePart,
-    areaPart,
-    communityPart,
-    ...developmentParts
-  ] = parts;
+  const [, zonePart, areaPart, communityPart, ...developmentParts] = parts;
 
-  const developmentPart =
-    developmentParts.join(
-      "__",
-    );
+  const developmentPart = developmentParts.join("__");
 
-  if (
-    !zonePart ||
-    !areaPart ||
-    !communityPart ||
-    !developmentPart
-  ) {
+  if (!zonePart || !areaPart || !communityPart || !developmentPart) {
     return null;
   }
 
   return {
-    zoneSlug:
-      identifierPartToSlug(
-        zonePart,
-      ),
+    zoneSlug: identifierPartToSlug(zonePart),
 
-    areaSlug:
-      identifierPartToSlug(
-        areaPart,
-      ),
+    areaSlug: identifierPartToSlug(areaPart),
 
-    communitySlug:
-      identifierPartToSlug(
-        communityPart,
-      ),
+    communitySlug: identifierPartToSlug(communityPart),
 
-    developmentSlug:
-      identifierPartToSlug(
-        developmentPart,
-      ),
+    developmentSlug: identifierPartToSlug(developmentPart),
   };
 }
 
-function parseListingIds(
-  value: string | null | undefined,
-): number[] {
+function parseListingIds(value: string | null | undefined): number[] {
   if (!value) {
     return [];
   }
 
   return value
     .split(",")
-    .map((id) =>
-      Number(id.trim()),
-    )
-    .filter((id) =>
-      Number.isFinite(id),
-    );
+    .map((id) => Number(id.trim()))
+    .filter((id) => Number.isFinite(id));
 }
 
-export async function GET(
-  request: NextRequest,
-) {
+export async function GET(request: NextRequest) {
   /*
    * ==========================================================
    * PARAMETERS
    * ==========================================================
    */
 
-  const entityKy =
-    Number(
-      request.nextUrl.searchParams.get(
-        "entityKy",
-      ),
-    );
+  const entityKy = Number(request.nextUrl.searchParams.get("entityKy"));
 
-  const propertyType =
-    (
-      request.nextUrl.searchParams.get(
-        "propertyType",
-      ) ??
-      "all"
-    ) as PropertyTypeFilter;
+  const propertyType = (request.nextUrl.searchParams.get("propertyType") ??
+    "all") as PropertyTypeFilter;
 
-  const marketType =
-    (
-      request.nextUrl.searchParams.get(
-        "marketType",
-      ) ??
-      "all"
-    ) as MarketTypeFilter;
+  const marketType = (request.nextUrl.searchParams.get("marketType") ??
+    "all") as MarketTypeFilter;
 
-  const bedroom =
-    (
-      request.nextUrl.searchParams.get(
-        "bedroom",
-      ) ??
-      "all"
-    ) as BedroomFilter;
+  const bedroom = (request.nextUrl.searchParams.get("bedroom") ??
+    "all") as BedroomFilter;
 
   /*
    * ==========================================================
@@ -384,16 +302,10 @@ export async function GET(
    * ==========================================================
    */
 
-  if (
-    !Number.isFinite(
-      entityKy,
-    ) ||
-    entityKy <= 0
-  ) {
+  if (!Number.isFinite(entityKy) || entityKy <= 0) {
     return NextResponse.json(
       {
-        error:
-          "Invalid entityKy.",
+        error: "Invalid entityKy.",
       },
       {
         status: 400,
@@ -401,19 +313,10 @@ export async function GET(
     );
   }
 
-  if (
-    ![
-      "all",
-      "condo",
-      "house",
-    ].includes(
-      propertyType,
-    )
-  ) {
+  if (!["all", "condo", "house"].includes(propertyType)) {
     return NextResponse.json(
       {
-        error:
-          "Invalid propertyType.",
+        error: "Invalid propertyType.",
       },
       {
         status: 400,
@@ -421,19 +324,10 @@ export async function GET(
     );
   }
 
-  if (
-    ![
-      "all",
-      "resale",
-      "precon",
-    ].includes(
-      marketType,
-    )
-  ) {
+  if (!["all", "resale", "precon"].includes(marketType)) {
     return NextResponse.json(
       {
-        error:
-          "Invalid marketType.",
+        error: "Invalid marketType.",
       },
       {
         status: 400,
@@ -441,21 +335,10 @@ export async function GET(
     );
   }
 
-  if (
-    ![
-      "all",
-      "0br",
-      "1br",
-      "2br",
-      "3br_plus",
-    ].includes(
-      bedroom,
-    )
-  ) {
+  if (!["all", "0br", "1br", "2br", "3br_plus"].includes(bedroom)) {
     return NextResponse.json(
       {
-        error:
-          "Invalid bedroom.",
+        error: "Invalid bedroom.",
       },
       {
         status: 400,
@@ -463,8 +346,7 @@ export async function GET(
     );
   }
 
-  const supabase =
-    await createClient();
+  const supabase = await createClient();
 
   /*
    * ==========================================================
@@ -472,27 +354,19 @@ export async function GET(
    * ==========================================================
    */
 
-  const {
-    data: geographyData,
-    error: geographyError,
-  } = await supabase.rpc(
+  const { data: geographyData, error: geographyError } = await supabase.rpc(
     "geography_entity_detail",
     {
-      p_entity_ky:
-        entityKy,
+      p_entity_ky: entityKy,
     },
   );
 
   if (geographyError) {
-    console.error(
-      "Unable to resolve Atlas development:",
-      geographyError,
-    );
+    console.error("Unable to resolve Atlas development:", geographyError);
 
     return NextResponse.json(
       {
-        error:
-          geographyError.message,
+        error: geographyError.message,
       },
       {
         status: 500,
@@ -503,8 +377,7 @@ export async function GET(
   if (!geographyData) {
     return NextResponse.json(
       {
-        error:
-          "Development entity not found.",
+        error: "Development entity not found.",
       },
       {
         status: 404,
@@ -512,21 +385,14 @@ export async function GET(
     );
   }
 
-  const geography =
-    geographyData as GeographyEntityDetail;
+  const geography = geographyData as GeographyEntityDetail;
 
-  const entity =
-    geography.entity;
+  const entity = geography.entity;
 
-  if (
-    !entity ||
-    entity.entity_type_cd !==
-      "DV"
-  ) {
+  if (!entity || entity.entity_type_cd !== "DV") {
     return NextResponse.json(
       {
-        error:
-          "The selected Atlas entity is not a development.",
+        error: "The selected Atlas entity is not a development.",
       },
       {
         status: 400,
@@ -534,14 +400,12 @@ export async function GET(
     );
   }
 
-  const identifier =
-    entity.entity_identifier_cd;
+  const atlasIdentifier = entity.entity_identifier_cd;
 
-  if (!identifier) {
+  if (!atlasIdentifier) {
     return NextResponse.json(
       {
-        error:
-          "Development entity does not have an identifier.",
+        error: "Development entity does not have an identifier.",
       },
       {
         status: 404,
@@ -549,21 +413,17 @@ export async function GET(
     );
   }
 
-  const hierarchy =
-    parseDevelopmentIdentifier(
-      identifier,
-    );
+  const atlasHierarchy = parseDevelopmentIdentifier(atlasIdentifier);
 
-  if (!hierarchy) {
+  if (!atlasHierarchy) {
     console.error(
       "Unable to parse Atlas development identifier:",
-      identifier,
+      atlasIdentifier,
     );
 
     return NextResponse.json(
       {
-        error:
-          "Unable to resolve the development hierarchy.",
+        error: "Unable to resolve the development hierarchy.",
       },
       {
         status: 500,
@@ -572,24 +432,104 @@ export async function GET(
   }
 
   /*
- * ==========================================================
- * DEVELOPMENT NEARBY
- * ==========================================================
- *
- * Nearby information describes the physical development
- * location, so it does not depend on Property / Market /
- * Bedroom filters.
- */
+   * Atlas developments describe physical places. MLS reporting may assign
+   * listings in that place to a differently named MLS development. Resolve
+   * that explicit crosswalk before querying Market Intelligence, while the
+   * original Atlas entity continues to supply the displayed place and map
+   * coordinates.
+   */
+  const { data: developmentMap, error: developmentMapError } = await supabase
+    .schema("geo")
+    .from("atlas_development_mls_map")
+    .select("mls_entity_ky")
+    .eq("atlas_entity_ky", entityKy)
+    .maybeSingle();
 
-const {
-  data: nearbyRollupData,
-  error: nearbyRollupError,
-} = await supabase
-  .from(
-    "development_nearby_rollup",
-  )
-  .select(
-    `
+  if (developmentMapError) {
+    console.error(
+      "Unable to resolve Atlas development MLS mapping:",
+      developmentMapError,
+    );
+
+    return NextResponse.json(
+      { error: developmentMapError.message },
+      { status: 500 },
+    );
+  }
+
+  const reportingEntityKy = Number(developmentMap?.mls_entity_ky) || entityKy;
+
+  let reportingEntity = entity;
+
+  if (reportingEntityKy !== entityKy) {
+    const { data: reportingGeographyData, error: reportingGeographyError } =
+      await supabase.rpc("geography_entity_detail", {
+        p_entity_ky: reportingEntityKy,
+      });
+
+    if (reportingGeographyError) {
+      console.error(
+        "Unable to resolve mapped MLS development:",
+        reportingGeographyError,
+      );
+
+      return NextResponse.json(
+        { error: reportingGeographyError.message },
+        { status: 500 },
+      );
+    }
+
+    const mappedEntity = (
+      reportingGeographyData as GeographyEntityDetail | null
+    )?.entity;
+
+    if (!mappedEntity || mappedEntity.entity_type_cd !== "DV") {
+      return NextResponse.json(
+        { error: "The mapped MLS reporting entity is not a development." },
+        { status: 500 },
+      );
+    }
+
+    reportingEntity = mappedEntity;
+  }
+
+  const identifier = reportingEntity.entity_identifier_cd;
+
+  if (!identifier) {
+    return NextResponse.json(
+      { error: "MLS reporting development does not have an identifier." },
+      { status: 500 },
+    );
+  }
+
+  const hierarchy = parseDevelopmentIdentifier(identifier);
+
+  if (!hierarchy) {
+    console.error(
+      "Unable to parse MLS reporting development identifier:",
+      identifier,
+    );
+
+    return NextResponse.json(
+      { error: "Unable to resolve the MLS reporting hierarchy." },
+      { status: 500 },
+    );
+  }
+
+  /*
+   * ==========================================================
+   * DEVELOPMENT NEARBY
+   * ==========================================================
+   *
+   * Nearby information describes the physical development
+   * location, so it does not depend on Property / Market /
+   * Bedroom filters.
+   */
+
+  const { data: nearbyRollupData, error: nearbyRollupError } = await supabase
+    .from("development_nearby_rollup")
+    .select(
+      `
       walkability_score,
       walkability_label,
       walkability_summary,
@@ -609,46 +549,25 @@ const {
       nearest_pharmacy_m,
       nearest_hospital_urgent_care_m
     `,
-  )
-  .eq(
-    "zone_slug",
-    hierarchy.zoneSlug,
-  )
-  .eq(
-    "area_slug",
-    hierarchy.areaSlug,
-  )
-  .eq(
-    "community_slug",
-    hierarchy.communitySlug,
-  )
-  .eq(
-    "development_slug",
-    hierarchy.developmentSlug,
-  )
-  .maybeSingle();
+    )
+    .eq("zone_slug", atlasHierarchy.zoneSlug)
+    .eq("area_slug", atlasHierarchy.areaSlug)
+    .eq("community_slug", atlasHierarchy.communitySlug)
+    .eq("development_slug", atlasHierarchy.developmentSlug)
+    .maybeSingle();
 
-if (nearbyRollupError) {
-  console.error(
-    "Unable to load development nearby rollup:",
-    {
+  if (nearbyRollupError) {
+    console.error("Unable to load development nearby rollup:", {
       entityKy,
-      hierarchy,
-      error:
-        nearbyRollupError,
-    },
-  );
-}
+      hierarchy: atlasHierarchy,
+      error: nearbyRollupError,
+    });
+  }
 
-const {
-  data: nearbyPlacesData,
-  error: nearbyPlacesError,
-} = await supabase
-  .from(
-    "development_nearby",
-  )
-  .select(
-    `
+  const { data: nearbyPlacesData, error: nearbyPlacesError } = await supabase
+    .from("development_nearby")
+    .select(
+      `
       place_ky,
       place_category,
       place_name,
@@ -660,58 +579,29 @@ const {
       why_it_matters
 
     `,
-  )
-  .eq(
-    "zone_slug",
-    hierarchy.zoneSlug,
-  )
-  .eq(
-    "area_slug",
-    hierarchy.areaSlug,
-  )
-  .eq(
-    "community_slug",
-    hierarchy.communitySlug,
-  )
-  .eq(
-    "development_slug",
-    hierarchy.developmentSlug,
-  )
-  .order(
-    "display_order",
-    {
+    )
+    .eq("zone_slug", atlasHierarchy.zoneSlug)
+    .eq("area_slug", atlasHierarchy.areaSlug)
+    .eq("community_slug", atlasHierarchy.communitySlug)
+    .eq("development_slug", atlasHierarchy.developmentSlug)
+    .order("display_order", {
       ascending: true,
-    },
-  )
-  .order(
-    "distance_m",
-    {
+    })
+    .order("distance_m", {
       ascending: true,
-    },
-  );
+    });
 
-if (nearbyPlacesError) {
-  console.error(
-    "Unable to load development nearby places:",
-    {
+  if (nearbyPlacesError) {
+    console.error("Unable to load development nearby places:", {
       entityKy,
-      hierarchy,
-      error:
-        nearbyPlacesError,
-    },
-  );
-}
+      hierarchy: atlasHierarchy,
+      error: nearbyPlacesError,
+    });
+  }
 
-const nearbyRollup =
-  nearbyRollupData as
-    | DevelopmentNearbyRollup
-    | null;
+  const nearbyRollup = nearbyRollupData as DevelopmentNearbyRollup | null;
 
-const nearbyPlaces =
-  (
-    nearbyPlacesData ??
-    []
-  ) as DevelopmentNearbyPlace[];
+  const nearbyPlaces = (nearbyPlacesData ?? []) as DevelopmentNearbyPlace[];
 
   /*
    * ==========================================================
@@ -720,144 +610,80 @@ const nearbyPlaces =
    */
 
   const propertyTypeSegment =
-    propertyType ===
-    "condo"
+    propertyType === "condo"
       ? "condos"
-      : propertyType ===
-          "house"
+      : propertyType === "house"
         ? "houses"
         : "all";
 
   const marketSegment =
-    marketType ===
-    "precon"
-      ? "pre_construction"
-      : marketType;
+    marketType === "precon" ? "pre_construction" : marketType;
 
   /*
- * ==========================================================
- * DEVELOPMENT LISTING POPULATIONS
- * ==========================================================
- *
- * These are the exact MLS populations behind the Active,
- * Pending, and Sold 12 Mo development metrics.
- */
+   * ==========================================================
+   * DEVELOPMENT LISTING POPULATIONS
+   * ==========================================================
+   *
+   * These are the exact MLS populations behind the Active,
+   * Pending, and Sold 12 Mo development metrics.
+   */
 
-const {
-  data: drilldownData,
-  error: drilldownError,
-} = await supabase
-  .from(
-    "development_listing_drilldown",
-  )
-  .select(
-    `
+  const { data: drilldownData, error: drilldownError } = await supabase
+    .from("development_listing_drilldown")
+    .select(
+      `
       metric_group,
       listing_count,
       listing_ids
     `,
-  )
-  .eq(
-    "zone_slug",
-    hierarchy.zoneSlug,
-  )
-  .eq(
-    "area_slug",
-    hierarchy.areaSlug,
-  )
-  .eq(
-    "community_slug",
-    hierarchy.communitySlug,
-  )
-  .eq(
-    "development_slug",
-    hierarchy.developmentSlug,
-  )
-  .eq(
-    "property_type_segment",
-    propertyTypeSegment,
-  )
-  .eq(
-    "market_segment",
-    marketSegment,
-  )
-  .eq(
-    "bedroom_segment",
-    bedroom,
-  )
-  .in(
-    "metric_group",
-    [
-      "active",
-      "pending",
-      "sold_12mo",
-    ],
-  );
+    )
+    .eq("zone_slug", hierarchy.zoneSlug)
+    .eq("area_slug", hierarchy.areaSlug)
+    .eq("community_slug", hierarchy.communitySlug)
+    .eq("development_slug", hierarchy.developmentSlug)
+    .eq("property_type_segment", propertyTypeSegment)
+    .eq("market_segment", marketSegment)
+    .eq("bedroom_segment", bedroom)
+    .in("metric_group", ["active", "pending", "sold_12mo"]);
 
-if (drilldownError) {
-  console.error(
-    "Unable to load Atlas development listing populations:",
-    {
+  if (drilldownError) {
+    console.error("Unable to load Atlas development listing populations:", {
       entityKy,
       identifier,
       hierarchy,
       propertyTypeSegment,
       marketSegment,
       bedroom,
-      error:
-        drilldownError,
-    },
+      error: drilldownError,
+    });
+
+    return NextResponse.json(
+      {
+        error: drilldownError.message,
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+  const activeDrilldown = drilldownData?.find(
+    (item) => item.metric_group === "active",
   );
 
-  return NextResponse.json(
-    {
-      error:
-        drilldownError.message,
-    },
-    {
-      status: 500,
-    },
-  );
-}
-
-const activeDrilldown =
-  drilldownData?.find(
-    (item) =>
-      item.metric_group ===
-      "active",
+  const pendingDrilldown = drilldownData?.find(
+    (item) => item.metric_group === "pending",
   );
 
-const pendingDrilldown =
-  drilldownData?.find(
-    (item) =>
-      item.metric_group ===
-      "pending",
+  const soldDrilldown = drilldownData?.find(
+    (item) => item.metric_group === "sold_12mo",
   );
 
-const soldDrilldown =
-  drilldownData?.find(
-    (item) =>
-      item.metric_group ===
-      "sold_12mo",
-  );
+  const activeMls = parseListingIds(activeDrilldown?.listing_ids);
 
-const activeMls =
-  parseListingIds(
-    activeDrilldown
-      ?.listing_ids,
-  );
+  const pendingMls = parseListingIds(pendingDrilldown?.listing_ids);
 
-const pendingMls =
-  parseListingIds(
-    pendingDrilldown
-      ?.listing_ids,
-  );
-
-const closedMls =
-  parseListingIds(
-    soldDrilldown
-      ?.listing_ids,
-  );
+  const closedMls = parseListingIds(soldDrilldown?.listing_ids);
 
   /*
    * ==========================================================
@@ -865,13 +691,8 @@ const closedMls =
    * ==========================================================
    */
 
-  const {
-    data,
-    error,
-  } = await supabase
-    .from(
-      "development_snapshot",
-    )
+  const { data, error } = await supabase
+    .from("development_snapshot")
     .select(
       `
         zone_name,
@@ -1003,50 +824,28 @@ const closedMls =
         development_slug
       `,
     )
-    .eq(
-      "zone_slug",
-      hierarchy.zoneSlug,
-    )
-    .eq(
-      "area_slug",
-      hierarchy.areaSlug,
-    )
-    .eq(
-      "community_slug",
-      hierarchy.communitySlug,
-    )
-    .eq(
-      "development_slug",
-      hierarchy.developmentSlug,
-    )
-    .eq(
-      "property_type_segment",
-      propertyTypeSegment,
-    )
-    .eq(
-      "market_segment",
-      marketSegment,
-    )
+    .eq("zone_slug", hierarchy.zoneSlug)
+    .eq("area_slug", hierarchy.areaSlug)
+    .eq("community_slug", hierarchy.communitySlug)
+    .eq("development_slug", hierarchy.developmentSlug)
+    .eq("property_type_segment", propertyTypeSegment)
+    .eq("market_segment", marketSegment)
     .maybeSingle();
 
   if (error) {
-    console.error(
-      "Unable to load Atlas development snapshot:",
-      {
-        entityKy,
-        identifier,
-        hierarchy,
-        propertyTypeSegment,
-        marketSegment,
-        bedroom,
-        error,
-      },
-    );
+    console.error("Unable to load Atlas development snapshot:", {
+      entityKy,
+      identifier,
+      hierarchy,
+      propertyTypeSegment,
+      marketSegment,
+      bedroom,
+      error,
+    });
 
     return NextResponse.json(
       {
-        error:
-          error.message,
+        error: error.message,
       },
       {
         status: 500,
@@ -1055,42 +854,37 @@ const closedMls =
   }
 
   /*
-  * ==========================================================
-  * EMPTY FILTER COMBINATION
-  * ==========================================================
-  *
-  * development_snapshot intentionally omits combinations with
-  * no Active, Pending, or Sold-12-month activity.
-  *
-  * In Atlas, however, that is a valid market result rather than
-  * an application error.
-  *
-  * Example:
-  *
-  * AVIDA + Pre-Con
-  *
-  * If AVIDA has no current/recent pre-construction activity,
-  * Atlas should display:
-  *
-  * Active      0
-  * Pending     0
-  * Sold 12 Mo  0
-  *
-  * with unavailable pricing metrics shown as —.
-  *
-  * Load the all/all development row only to preserve the
-  * development identity and property counts.
-  * ==========================================================
-  */
+   * ==========================================================
+   * EMPTY FILTER COMBINATION
+   * ==========================================================
+   *
+   * development_snapshot intentionally omits combinations with
+   * no Active, Pending, or Sold-12-month activity.
+   *
+   * In Atlas, however, that is a valid market result rather than
+   * an application error.
+   *
+   * Example:
+   *
+   * AVIDA + Pre-Con
+   *
+   * If AVIDA has no current/recent pre-construction activity,
+   * Atlas should display:
+   *
+   * Active      0
+   * Pending     0
+   * Sold 12 Mo  0
+   *
+   * with unavailable pricing metrics shown as —.
+   *
+   * Load the all/all development row only to preserve the
+   * development identity and property counts.
+   * ==========================================================
+   */
 
   if (!data) {
-    const {
-      data: baselineData,
-      error: baselineError,
-    } = await supabase
-      .from(
-        "development_snapshot",
-      )
+    const { data: baselineData, error: baselineError } = await supabase
+      .from("development_snapshot")
       .select(
         `
           zone_name,
@@ -1105,30 +899,12 @@ const closedMls =
           house_property_count
         `,
       )
-      .eq(
-        "zone_slug",
-        hierarchy.zoneSlug,
-      )
-      .eq(
-        "area_slug",
-        hierarchy.areaSlug,
-      )
-      .eq(
-        "community_slug",
-        hierarchy.communitySlug,
-      )
-      .eq(
-        "development_slug",
-        hierarchy.developmentSlug,
-      )
-      .eq(
-        "property_type_segment",
-        "all",
-      )
-      .eq(
-        "market_segment",
-        "all",
-      )
+      .eq("zone_slug", hierarchy.zoneSlug)
+      .eq("area_slug", hierarchy.areaSlug)
+      .eq("community_slug", hierarchy.communitySlug)
+      .eq("development_slug", hierarchy.developmentSlug)
+      .eq("property_type_segment", "all")
+      .eq("market_segment", "all")
       .maybeSingle();
 
     if (baselineError) {
@@ -1139,8 +915,7 @@ const closedMls =
 
       return NextResponse.json(
         {
-          error:
-            baselineError.message,
+          error: baselineError.message,
         },
         {
           status: 500,
@@ -1149,14 +924,13 @@ const closedMls =
     }
 
     /*
-    * If even the baseline row does not exist, then we truly
-    * do not have reporting data for this development.
-    */
+     * If even the baseline row does not exist, then we truly
+     * do not have reporting data for this development.
+     */
     if (!baselineData) {
       return NextResponse.json(
         {
-          error:
-            "No development snapshot is available.",
+          error: "No development snapshot is available.",
         },
         {
           status: 404,
@@ -1167,34 +941,28 @@ const closedMls =
     return NextResponse.json({
       entityKy,
 
-      sourceType:
-        "development",
+      sourceType: "development",
 
       developmentName:
+        geography.canonical?.entity_variant_nm ??
         baselineData.development_name ??
-        geography.canonical
-          ?.entity_variant_nm ??
         null,
 
-      zoneName:
-        baselineData.zone_name,
+      mlsDevelopmentName: baselineData.development_name ?? null,
 
-      areaName:
-        baselineData.area_name,
+      reportingEntityKy,
 
-      communityName:
-        baselineData.community_name,
+      zoneName: baselineData.zone_name,
 
-      longitude:
-        entity.longitude_nb ??
-        null,
+      areaName: baselineData.area_name,
 
-      latitude:
-        entity.latitude_nb ??
-        null,
+      communityName: baselineData.community_name,
 
-      snapshotDate:
-        baselineData.snapshot_date,
+      longitude: entity.longitude_nb ?? null,
+
+      latitude: entity.latitude_nb ?? null,
+
+      snapshotDate: baselineData.snapshot_date,
 
       propertyType,
 
@@ -1203,31 +971,19 @@ const closedMls =
       bedroom,
 
       /*
-      * These describe the development itself and therefore
-      * remain useful even when the selected market combination
-      * has no listing activity.
-      */
-      propertyCount:
-        Number(
-          baselineData.property_count ??
-            0,
-        ),
+       * These describe the development itself and therefore
+       * remain useful even when the selected market combination
+       * has no listing activity.
+       */
+      propertyCount: Number(baselineData.property_count ?? 0),
 
-      condoPropertyCount:
-        Number(
-          baselineData.condo_property_count ??
-            0,
-        ),
+      condoPropertyCount: Number(baselineData.condo_property_count ?? 0),
 
-      housePropertyCount:
-        Number(
-          baselineData.house_property_count ??
-            0,
-        ),
+      housePropertyCount: Number(baselineData.house_property_count ?? 0),
 
       /*
-      * Valid empty-market result.
-      */
+       * Valid empty-market result.
+       */
       activeCount: 0,
       activeMls: [],
 
@@ -1267,17 +1023,14 @@ const closedMls =
 
       monthsInventory: null,
       nearby: {
-        rollup:
-          nearbyRollup,
+        rollup: nearbyRollup,
 
-        places:
-          nearbyPlaces,
+        places: nearbyPlaces,
       },
     });
   }
 
-  const row =
-    data as DevelopmentSnapshotRow;
+  const row = data as DevelopmentSnapshotRow;
 
   /*
    * ==========================================================
@@ -1285,264 +1038,172 @@ const closedMls =
    * ==========================================================
    */
 
-  let activeCount =
-    row.active_count;
+  let activeCount = row.active_count;
 
-  let pendingCount =
-    row.pending_count;
+  let pendingCount = row.pending_count;
 
-  let sales12Mo =
-    row.sales_12mo;
+  let sales12Mo = row.sales_12mo;
 
-  let avgListPrice =
-    row.avg_list_price;
+  let avgListPrice = row.avg_list_price;
 
-  let medianListPrice =
-    row.median_list_price;
+  let medianListPrice = row.median_list_price;
 
-  let avgListPriceFt2 =
-    row.avg_list_price_ft2;
+  let avgListPriceFt2 = row.avg_list_price_ft2;
 
-  let medianListPriceFt2 =
-    row.median_list_price_ft2;
+  let medianListPriceFt2 = row.median_list_price_ft2;
 
-  let avgListPriceM2 =
-    row.avg_list_price_m2;
+  let avgListPriceM2 = row.avg_list_price_m2;
 
-  let medianListPriceM2 =
-    row.median_list_price_m2;
+  let medianListPriceM2 = row.median_list_price_m2;
 
-  let avgSoldPrice =
-    row.avg_sold_price;
+  let avgSoldPrice = row.avg_sold_price;
 
-  let medianSoldPrice =
-    row.median_sold_price;
+  let medianSoldPrice = row.median_sold_price;
 
-  let avgSoldPriceFt2 =
-    row.avg_sold_price_ft2;
+  let avgSoldPriceFt2 = row.avg_sold_price_ft2;
 
-  let medianSoldPriceFt2 =
-    row.median_sold_price_ft2;
+  let medianSoldPriceFt2 = row.median_sold_price_ft2;
 
-  let avgSoldPriceM2 =
-    row.avg_sold_price_m2;
+  let avgSoldPriceM2 = row.avg_sold_price_m2;
 
-  let medianSoldPriceM2 =
-    row.median_sold_price_m2;
+  let medianSoldPriceM2 = row.median_sold_price_m2;
 
-  let monthsInventory =
-    row.months_inventory;
+  let monthsInventory = row.months_inventory;
 
-  if (
-    bedroom ===
-    "0br"
-  ) {
-    activeCount =
-      row.active_0br;
+  if (bedroom === "0br") {
+    activeCount = row.active_0br;
 
-    pendingCount =
-      row.pending_0br;
+    pendingCount = row.pending_0br;
 
-    sales12Mo =
-      row.sales_0br_12mo;
+    sales12Mo = row.sales_0br_12mo;
 
-    avgListPrice =
-      row.avg_list_price_0br;
+    avgListPrice = row.avg_list_price_0br;
 
-    medianListPrice =
-      row.median_list_price_0br;
+    medianListPrice = row.median_list_price_0br;
 
-    avgListPriceFt2 =
-      row.avg_list_price_ft2_0br;
+    avgListPriceFt2 = row.avg_list_price_ft2_0br;
 
-    medianListPriceFt2 =
-      row.median_list_price_ft2_0br;
+    medianListPriceFt2 = row.median_list_price_ft2_0br;
 
-    avgListPriceM2 =
-      row.avg_list_price_m2_0br;
+    avgListPriceM2 = row.avg_list_price_m2_0br;
 
-    medianListPriceM2 =
-      row.median_list_price_m2_0br;
+    medianListPriceM2 = row.median_list_price_m2_0br;
 
-    avgSoldPrice =
-      row.avg_sold_price_0br;
+    avgSoldPrice = row.avg_sold_price_0br;
 
-    medianSoldPrice =
-      row.median_sold_price_0br;
+    medianSoldPrice = row.median_sold_price_0br;
 
-    avgSoldPriceFt2 =
-      row.avg_sold_price_ft2_0br;
+    avgSoldPriceFt2 = row.avg_sold_price_ft2_0br;
 
-    medianSoldPriceFt2 =
-      row.median_sold_price_ft2_0br;
+    medianSoldPriceFt2 = row.median_sold_price_ft2_0br;
 
-    avgSoldPriceM2 =
-      row.avg_sold_price_m2_0br;
+    avgSoldPriceM2 = row.avg_sold_price_m2_0br;
 
-    medianSoldPriceM2 =
-      row.median_sold_price_m2_0br;
+    medianSoldPriceM2 = row.median_sold_price_m2_0br;
 
-    monthsInventory =
-      row.months_inventory_0br;
+    monthsInventory = row.months_inventory_0br;
   }
 
-  if (
-    bedroom ===
-    "1br"
-  ) {
-    activeCount =
-      row.active_1br;
+  if (bedroom === "1br") {
+    activeCount = row.active_1br;
 
-    pendingCount =
-      row.pending_1br;
+    pendingCount = row.pending_1br;
 
-    sales12Mo =
-      row.sales_1br_12mo;
+    sales12Mo = row.sales_1br_12mo;
 
-    avgListPrice =
-      row.avg_list_price_1br;
+    avgListPrice = row.avg_list_price_1br;
 
-    medianListPrice =
-      row.median_list_price_1br;
+    medianListPrice = row.median_list_price_1br;
 
-    avgListPriceFt2 =
-      row.avg_list_price_ft2_1br;
+    avgListPriceFt2 = row.avg_list_price_ft2_1br;
 
-    medianListPriceFt2 =
-      row.median_list_price_ft2_1br;
+    medianListPriceFt2 = row.median_list_price_ft2_1br;
 
-    avgListPriceM2 =
-      row.avg_list_price_m2_1br;
+    avgListPriceM2 = row.avg_list_price_m2_1br;
 
-    medianListPriceM2 =
-      row.median_list_price_m2_1br;
+    medianListPriceM2 = row.median_list_price_m2_1br;
 
-    avgSoldPrice =
-      row.avg_sold_price_1br;
+    avgSoldPrice = row.avg_sold_price_1br;
 
-    medianSoldPrice =
-      row.median_sold_price_1br;
+    medianSoldPrice = row.median_sold_price_1br;
 
-    avgSoldPriceFt2 =
-      row.avg_sold_price_ft2_1br;
+    avgSoldPriceFt2 = row.avg_sold_price_ft2_1br;
 
-    medianSoldPriceFt2 =
-      row.median_sold_price_ft2_1br;
+    medianSoldPriceFt2 = row.median_sold_price_ft2_1br;
 
-    avgSoldPriceM2 =
-      row.avg_sold_price_m2_1br;
+    avgSoldPriceM2 = row.avg_sold_price_m2_1br;
 
-    medianSoldPriceM2 =
-      row.median_sold_price_m2_1br;
+    medianSoldPriceM2 = row.median_sold_price_m2_1br;
 
-    monthsInventory =
-      row.months_inventory_1br;
+    monthsInventory = row.months_inventory_1br;
   }
 
-  if (
-    bedroom ===
-    "2br"
-  ) {
-    activeCount =
-      row.active_2br;
+  if (bedroom === "2br") {
+    activeCount = row.active_2br;
 
-    pendingCount =
-      row.pending_2br;
+    pendingCount = row.pending_2br;
 
-    sales12Mo =
-      row.sales_2br_12mo;
+    sales12Mo = row.sales_2br_12mo;
 
-    avgListPrice =
-      row.avg_list_price_2br;
+    avgListPrice = row.avg_list_price_2br;
 
-    medianListPrice =
-      row.median_list_price_2br;
+    medianListPrice = row.median_list_price_2br;
 
-    avgListPriceFt2 =
-      row.avg_list_price_ft2_2br;
+    avgListPriceFt2 = row.avg_list_price_ft2_2br;
 
-    medianListPriceFt2 =
-      row.median_list_price_ft2_2br;
+    medianListPriceFt2 = row.median_list_price_ft2_2br;
 
-    avgListPriceM2 =
-      row.avg_list_price_m2_2br;
+    avgListPriceM2 = row.avg_list_price_m2_2br;
 
-    medianListPriceM2 =
-      row.median_list_price_m2_2br;
+    medianListPriceM2 = row.median_list_price_m2_2br;
 
-    avgSoldPrice =
-      row.avg_sold_price_2br;
+    avgSoldPrice = row.avg_sold_price_2br;
 
-    medianSoldPrice =
-      row.median_sold_price_2br;
+    medianSoldPrice = row.median_sold_price_2br;
 
-    avgSoldPriceFt2 =
-      row.avg_sold_price_ft2_2br;
+    avgSoldPriceFt2 = row.avg_sold_price_ft2_2br;
 
-    medianSoldPriceFt2 =
-      row.median_sold_price_ft2_2br;
+    medianSoldPriceFt2 = row.median_sold_price_ft2_2br;
 
-    avgSoldPriceM2 =
-      row.avg_sold_price_m2_2br;
+    avgSoldPriceM2 = row.avg_sold_price_m2_2br;
 
-    medianSoldPriceM2 =
-      row.median_sold_price_m2_2br;
+    medianSoldPriceM2 = row.median_sold_price_m2_2br;
 
-    monthsInventory =
-      row.months_inventory_2br;
+    monthsInventory = row.months_inventory_2br;
   }
 
-  if (
-    bedroom ===
-    "3br_plus"
-  ) {
-    activeCount =
-      row.active_3br_plus;
+  if (bedroom === "3br_plus") {
+    activeCount = row.active_3br_plus;
 
-    pendingCount =
-      row.pending_3br_plus;
+    pendingCount = row.pending_3br_plus;
 
-    sales12Mo =
-      row.sales_3br_plus_12mo;
+    sales12Mo = row.sales_3br_plus_12mo;
 
-    avgListPrice =
-      row.avg_list_price_3br_plus;
+    avgListPrice = row.avg_list_price_3br_plus;
 
-    medianListPrice =
-      row.median_list_price_3br_plus;
+    medianListPrice = row.median_list_price_3br_plus;
 
-    avgListPriceFt2 =
-      row.avg_list_price_ft2_3br_plus;
+    avgListPriceFt2 = row.avg_list_price_ft2_3br_plus;
 
-    medianListPriceFt2 =
-      row.median_list_price_ft2_3br_plus;
+    medianListPriceFt2 = row.median_list_price_ft2_3br_plus;
 
-    avgListPriceM2 =
-      row.avg_list_price_m2_3br_plus;
+    avgListPriceM2 = row.avg_list_price_m2_3br_plus;
 
-    medianListPriceM2 =
-      row.median_list_price_m2_3br_plus;
+    medianListPriceM2 = row.median_list_price_m2_3br_plus;
 
-    avgSoldPrice =
-      row.avg_sold_price_3br_plus;
+    avgSoldPrice = row.avg_sold_price_3br_plus;
 
-    medianSoldPrice =
-      row.median_sold_price_3br_plus;
+    medianSoldPrice = row.median_sold_price_3br_plus;
 
-    avgSoldPriceFt2 =
-      row.avg_sold_price_ft2_3br_plus;
+    avgSoldPriceFt2 = row.avg_sold_price_ft2_3br_plus;
 
-    medianSoldPriceFt2 =
-      row.median_sold_price_ft2_3br_plus;
+    medianSoldPriceFt2 = row.median_sold_price_ft2_3br_plus;
 
-    avgSoldPriceM2 =
-      row.avg_sold_price_m2_3br_plus;
+    avgSoldPriceM2 = row.avg_sold_price_m2_3br_plus;
 
-    medianSoldPriceM2 =
-      row.median_sold_price_m2_3br_plus;
+    medianSoldPriceM2 = row.median_sold_price_m2_3br_plus;
 
-    monthsInventory =
-      row.months_inventory_3br_plus;
+    monthsInventory = row.months_inventory_3br_plus;
   }
 
   /*
@@ -1559,49 +1220,33 @@ const closedMls =
    * We can add bedroom-level DOM later if desired.
    */
 
-  const currentAvgDom =
-    bedroom ===
-    "all"
-      ? row.current_avg_dom
-      : null;
+  const currentAvgDom = bedroom === "all" ? row.current_avg_dom : null;
 
-  const soldAvgDom12Mo =
-    bedroom ===
-    "all"
-      ? row.sold_avg_dom_12mo
-      : null;
+  const soldAvgDom12Mo = bedroom === "all" ? row.sold_avg_dom_12mo : null;
 
   return NextResponse.json({
     entityKy,
 
-    sourceType:
-      "development",
+    sourceType: "development",
 
     developmentName:
-      row.development_name ??
-      geography.canonical
-        ?.entity_variant_nm ??
-      null,
+      geography.canonical?.entity_variant_nm ?? row.development_name ?? null,
 
-    zoneName:
-      row.zone_name,
+    mlsDevelopmentName: row.development_name ?? null,
 
-    areaName:
-      row.area_name,
+    reportingEntityKy,
 
-    communityName:
-      row.community_name,
+    zoneName: row.zone_name,
 
-    longitude:
-      entity.longitude_nb ??
-      null,
+    areaName: row.area_name,
 
-    latitude:
-      entity.latitude_nb ??
-      null,
+    communityName: row.community_name,
 
-    snapshotDate:
-      row.snapshot_date,
+    longitude: entity.longitude_nb ?? null,
+
+    latitude: entity.latitude_nb ?? null,
+
+    snapshotDate: row.snapshot_date,
 
     propertyType,
 
@@ -1613,45 +1258,21 @@ const closedMls =
      * Property counts describe the development itself.
      * They are not bedroom-filtered listing counts.
      */
-    propertyCount:
-      Number(
-        row.property_count ??
-          0,
-      ),
+    propertyCount: Number(row.property_count ?? 0),
 
-    condoPropertyCount:
-      Number(
-        row.condo_property_count ??
-          0,
-      ),
+    condoPropertyCount: Number(row.condo_property_count ?? 0),
 
-    housePropertyCount:
-      Number(
-        row.house_property_count ??
-          0,
-      ),
+    housePropertyCount: Number(row.house_property_count ?? 0),
 
-    activeCount:
-      Number(
-        activeCount ??
-          0,
-      ),
+    activeCount: Number(activeCount ?? 0),
 
     activeMls,
 
-    pendingCount:
-      Number(
-        pendingCount ??
-          0,
-      ),
+    pendingCount: Number(pendingCount ?? 0),
 
     pendingMls,
 
-    sales12Mo:
-      Number(
-        sales12Mo ??
-          0,
-      ),
+    sales12Mo: Number(sales12Mo ?? 0),
 
     closedMls,
 
@@ -1685,11 +1306,9 @@ const closedMls =
 
     monthsInventory,
     nearby: {
-      rollup:
-        nearbyRollup,
+      rollup: nearbyRollup,
 
-      places:
-        nearbyPlaces,
+      places: nearbyPlaces,
     },
   });
 }

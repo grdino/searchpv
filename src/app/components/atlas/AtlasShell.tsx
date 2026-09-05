@@ -4,14 +4,15 @@ import AtlasSearch from "./AtlasSearch";
 import AtlasBottomSheet from "./AtlasBottomSheet";
 import AtlasDeepLink from "./AtlasDeepLink";
 import AtlasBranding from "./AtlasBranding";
-import AtlasLifestyle from "./AtlasLifestyle";
 import AtlasDiscoverScene from "./AtlasDiscoverScene";
 
-import {
-  AtlasStateProvider,
-} from "@/lib/atlas/state/AtlasState";
+import { AtlasStateProvider } from "@/lib/atlas/state/AtlasState";
 
-export default function AtlasShell() {
+export default function AtlasShell({
+  discoveryMode = false,
+}: {
+  discoveryMode?: boolean;
+}) {
   return (
     <main
       style={{
@@ -23,14 +24,13 @@ export default function AtlasShell() {
     >
       <AtlasStateProvider>
         <AtlasDeepLink />
-
         <AtlasViewport />
 
         <AtlasOverlay>
-          <AtlasDiscoverScene />
+          {discoveryMode ? <AtlasDiscoverScene /> : null}
 
           <AtlasBranding />
-          <AtlasSearch />
+          {!discoveryMode ? <AtlasSearch /> : null}
           <AtlasBottomSheet />
         </AtlasOverlay>
       </AtlasStateProvider>

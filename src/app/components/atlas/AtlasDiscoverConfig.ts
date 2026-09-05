@@ -2,6 +2,8 @@ import type { AtlasPopularArea } from "@/lib/atlas/state/AtlasState";
 
 export type AtlasDiscoverSceneConfig = {
   id: string;
+  menuLabel: string;
+  homepageLabel: string;
   popularArea: AtlasPopularArea;
   image: string;
   copy: {
@@ -30,6 +32,8 @@ export type AtlasDiscoverSceneConfig = {
 export const ATLAS_DISCOVER_SEQUENCE: AtlasDiscoverSceneConfig[] = [
   {
     id: "zona-romantica",
+    menuLabel: "Zona Romántica",
+    homepageLabel: "Beach days and walkable streets",
     popularArea: {
       footprintKey: "lifestyle-emiliano-zapata-zr",
       displayName: "Emiliano Zapata / Zona Romántica",
@@ -49,17 +53,19 @@ export const ATLAS_DISCOVER_SEQUENCE: AtlasDiscoverSceneConfig[] = [
       duration: 5000,
     },
     timing: {
-      artworkDelay: 1100,
-      selectionDelay: 450,
-      messageDelay: 1850,
-      artworkFadeDelay: 4300,
-      messageFadeDelay: 5350,
-      sheetRevealDelay: 3850,
-      nextSceneDelay: 8500,
+      artworkDelay: 150,
+      selectionDelay: 550,
+      messageDelay: 900,
+      artworkFadeDelay: 4700,
+      messageFadeDelay: 5500,
+      sheetRevealDelay: 4200,
+      nextSceneDelay: 9800,
     },
   },
   {
     id: "marina-vallarta",
+    menuLabel: "Marina Vallarta",
+    homepageLabel: "Yachts, golf and waterfront dining",
     popularArea: {
       footprintKey: "lifestyle-marina-vallarta",
       displayName: "Marina Vallarta",
@@ -90,6 +96,8 @@ export const ATLAS_DISCOVER_SEQUENCE: AtlasDiscoverSceneConfig[] = [
   },
   {
     id: "nuevo-nayarit",
+    menuLabel: "Nuevo Vallarta / Nuevo Nayarit",
+    homepageLabel: "Wide beaches and room to breathe",
     popularArea: {
       footprintKey: "lifestyle-nuevo-nayarit",
       displayName: "Nuevo Vallarta / Nuevo Nayarit",
@@ -118,38 +126,28 @@ export const ATLAS_DISCOVER_SEQUENCE: AtlasDiscoverSceneConfig[] = [
       nextSceneDelay: 7600,
     },
   },
-
   {
     id: "conchas-chinas",
-
+    menuLabel: "Conchas Chinas",
+    homepageLabel: "Hidden coves and hillside views",
     popularArea: {
       footprintKey: "lifestyle-conchas-chinas",
       displayName: "Conchas Chinas",
       boundaryKys: [475],
     },
-
     image: "/atlas/discover/conchas-chinas.png",
-
     copy: {
       title: "Conchas Chinas",
-
-      lines: [
-        "Hidden coves.",
-        "Hillside villas.",
-        "Endless views.",
-      ],
-
+      lines: ["Hidden coves.", "Hillside villas.", "Endless views."],
       detail: "Minutes from Zona Romántica. Privacy above the bay.",
     },
-
     camera: {
-      zoom: 14.5,
+      zoom: 14.25,
       pitch: 42,
       bearing: -16,
       curve: 1.65,
       duration: 5800,
     },
-
     timing: {
       artworkDelay: 0,
       selectionDelay: 200,
@@ -157,8 +155,6 @@ export const ATLAS_DISCOVER_SEQUENCE: AtlasDiscoverSceneConfig[] = [
       artworkFadeDelay: 4400,
       messageFadeDelay: 5400,
       sheetRevealDelay: 4250,
-
-      // Conchas Chinas is the final scene.
       nextSceneDelay: null,
     },
   },
@@ -173,5 +169,15 @@ export function getAtlasDiscoverScene(
     ATLAS_DISCOVER_SEQUENCE.find(
       (scene) => scene.popularArea.footprintKey === footprintKey,
     ) ?? null
+  );
+}
+
+export function getAtlasDiscoverSceneById(
+  sceneId: string | null | undefined,
+) {
+  if (!sceneId) return null;
+
+  return (
+    ATLAS_DISCOVER_SEQUENCE.find((scene) => scene.id === sceneId) ?? null
   );
 }

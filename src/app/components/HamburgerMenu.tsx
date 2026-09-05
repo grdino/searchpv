@@ -21,6 +21,7 @@ const marketIntelligenceLinks = [
     href: "/market-intelligence/closed-sales",
     exists: true,
   },
+/*
   {
     label: "Price Changes",
     href: "/market-intelligence/price-changes",
@@ -31,6 +32,7 @@ const marketIntelligenceLinks = [
     href: "/market-intelligence/new-listings",
     exists: false,
   },
+*/
 ];
 
 const reportLinks = [
@@ -49,6 +51,7 @@ const reportLinks = [
     href: "/reports/closed-sales-report",
     exists: false,
   },
+/*
   {
     label: "Price Changes Report",
     href: "/reports/price-changes-report",
@@ -59,6 +62,7 @@ const reportLinks = [
     href: "/reports/new-listings-report",
     exists: false,
   },
+*/
 ];
 
 type MenuSection = "market-intelligence" | "reports" | null;
@@ -168,6 +172,7 @@ export default function HamburgerMenu() {
             Search Properties
           </Link>
 
+{/*
           <Link
             href="/ask-searchpv"
             onClick={closeMenu}
@@ -197,6 +202,7 @@ export default function HamburgerMenu() {
           >
             Explore the Market
           </Link>
+*/}
 
           <div style={sectionStyle}>
             <button

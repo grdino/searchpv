@@ -30,6 +30,7 @@ const reports = [
     Icon: BadgeDollarSign,
     inDevelopment: true,
   },
+/*
   {
     title: "Price Changes Report",
     description: "Download price changes, reductions, and listing adjustments.",
@@ -44,6 +45,7 @@ const reports = [
     Icon: Sparkles,
     inDevelopment: true,
   },
+*/
 ];
 
 export default function ReportsPage() {

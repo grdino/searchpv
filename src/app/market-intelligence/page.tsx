@@ -32,6 +32,7 @@ const reports = [
     Icon: BadgeDollarSign,
     inDevelopment: false,
   },
+/*
   {
     title: "Price Reductions",
     description: "Track price changes, reductions, and listing adjustments.",
@@ -60,6 +61,7 @@ const reports = [
     Icon: ChartLine,
     inDevelopment: true,
   },
+*/
 ];
 
 export default function ReportsPage() {

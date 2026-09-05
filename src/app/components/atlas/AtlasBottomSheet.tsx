@@ -322,14 +322,28 @@ export default function AtlasBottomSheet() {
     setOpeningSheetVisible,
   ] = useState(true);
 
+  const [
+    discoverCancelled,
+    setDiscoverCancelled,
+  ] = useState(false);
+
   /*
-   * AtlasDiscoverScene sends this before leaving any stop.
-   * Keeping the signal outside AtlasState prevents this purely
-   * cinematic concern from changing normal Atlas behavior.
-   */
+  * AtlasDiscoverScene sends these events to coordinate the
+  * cinematic Bottom Sheet without adding tour state to AtlasState.
+  */
   useEffect(() => {
     const hideForNextStop = () => {
       setOpeningSheetVisible(false);
+    };
+
+    const finishDiscoverImmediately = () => {
+      setDiscoverCancelled(true);
+      setOpeningSheetPhase("destination");
+      setOpeningSheetVisible(true);
+    };
+
+    const resumeDiscover = () => {
+      setDiscoverCancelled(false);
     };
 
     window.addEventListener(
@@ -337,15 +351,41 @@ export default function AtlasBottomSheet() {
       hideForNextStop,
     );
 
+    window.addEventListener(
+      "atlas-discover-cancel",
+      finishDiscoverImmediately,
+    );
+
+    window.addEventListener(
+      "atlas-discover-resume",
+      resumeDiscover,
+    );
+
     return () => {
       window.removeEventListener(
         "atlas-discover-hide-sheet",
         hideForNextStop,
       );
+
+      window.removeEventListener(
+        "atlas-discover-cancel",
+        finishDiscoverImmediately,
+      );
+
+      window.removeEventListener(
+        "atlas-discover-resume",
+        resumeDiscover,
+      );
     };
   }, []);
 
   useEffect(() => {
+    if (discoverCancelled) {
+      setOpeningSheetPhase("destination");
+      setOpeningSheetVisible(true);
+      return;
+    }
+
     if (!discoverScene) {
       setOpeningSheetPhase(
         "destination",
@@ -458,6 +498,7 @@ export default function AtlasBottomSheet() {
       );
     };
   }, [
+    discoverCancelled,
     discoverScene,
     isOpeningDiscover,
   ]);
