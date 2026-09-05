@@ -21,7 +21,7 @@ export default function ThanksPage() {
         }}
       >
         <h1>Message Sent</h1>
-        <p>Thanks. SearchPV will follow up with you soon.</p>
+        <p>Thanks. An agent will follow up with you shortly.</p>
         <Link href="/">Back to SearchPV</Link>
       </div>
     </main>
