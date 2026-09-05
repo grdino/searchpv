@@ -386,13 +386,9 @@ export default function AtlasDiscoverScene() {
 
       <div
         data-atlas-discover-control
+        className="absolute left-[112px] right-2 top-[76px] w-auto md:left-1/2 md:right-auto md:top-4 md:w-[calc(100vw-132px)] md:max-w-[620px] md:-translate-x-1/2"
         style={{
-          position: "absolute",
           zIndex: 40,
-          top: "var(--atlas-search-top, 16px)",
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: "min(620px, calc(100vw - 132px))",
           display: "flex",
           alignItems: "center",
           gap: 8,
@@ -450,7 +446,7 @@ export default function AtlasDiscoverScene() {
           style={controlButtonStyle}
         >
           {status === "running" ? <Pause size={17} /> : <Play size={17} />}
-          <span className="hidden sm:inline">
+          <span className="hidden md:inline">
             {status === "running"
               ? "Pause"
               : status === "complete"
@@ -466,7 +462,7 @@ export default function AtlasDiscoverScene() {
           style={controlButtonStyle}
         >
           <X size={17} />
-          <span className="hidden sm:inline">Exit</span>
+          <span className="hidden md:inline">Exit</span>
         </button>
       </div>
     </>
