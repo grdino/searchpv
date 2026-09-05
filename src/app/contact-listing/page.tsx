@@ -13,8 +13,8 @@ export default async function ContactListingPage({
   const mls = params.mls ?? "";
 
   const defaultMessage = mls
-    ? `Hi SearchPV,\n\nI would like more information about MLS #${mls}.`
-    : `Hi SearchPV,\n\nI would like more information about a property I saw on SearchPV.`;
+    ? `Hi,\n\nI would like more information about MLS #${mls}.`
+    : `Hi,\n\nI would like more information about a property I saw on SearchPV.`;
 
   return (
     <main style={{ background: "#f4f7fb", minHeight: "100vh" }}>
