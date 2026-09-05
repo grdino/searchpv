@@ -4039,6 +4039,7 @@ const pendingListingsUrl =
            */
           <button
             type="button"
+            className="px-2.5 py-2 text-[11px] md:px-3.5 md:py-[9px] md:text-xs"
             onClick={
               startCustomMarket
             }
@@ -4048,9 +4049,6 @@ const pendingListingsUrl =
 
               borderRadius:
                 999,
-
-              padding:
-                "9px 14px",
 
               background:
                 "rgba(255,255,255,0.94)",
@@ -4063,8 +4061,6 @@ const pendingListingsUrl =
 
               color:
                 "#334155",
-
-              fontSize: 12,
 
               fontWeight:
                 750,

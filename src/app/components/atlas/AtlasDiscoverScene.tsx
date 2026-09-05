@@ -386,13 +386,11 @@ export default function AtlasDiscoverScene() {
 
       <div
         data-atlas-discover-control
-        className="absolute left-[112px] right-2 top-[76px] w-auto md:left-1/2 md:right-auto md:top-4 md:w-[calc(100vw-132px)] md:max-w-[620px] md:-translate-x-1/2"
+        className="absolute left-[124px] right-2 top-[76px] w-auto gap-1.5 p-1.5 md:left-1/2 md:right-auto md:top-4 md:w-[calc(100vw-132px)] md:max-w-[620px] md:-translate-x-1/2 md:gap-2 md:p-[7px]"
         style={{
           zIndex: 40,
           display: "flex",
           alignItems: "center",
-          gap: 8,
-          padding: 7,
           border: "1px solid rgba(255,255,255,.84)",
           borderRadius: 18,
           background: "rgba(255,255,255,.88)",
@@ -407,6 +405,7 @@ export default function AtlasDiscoverScene() {
 
         <select
           id="atlas-discover-destination"
+          className="h-9 px-2 text-xs md:h-10 md:px-3 md:text-[13px]"
           value={scene.id}
           onChange={(event) => {
             const index = ATLAS_DISCOVER_SEQUENCE.findIndex(
@@ -417,14 +416,11 @@ export default function AtlasDiscoverScene() {
           style={{
             minWidth: 0,
             flex: 1,
-            height: 40,
             border: 0,
             borderRadius: 12,
-            padding: "0 12px",
             outline: "none",
             background: "rgba(241,245,249,.9)",
             color: "#0f172a",
-            fontSize: 13,
             fontWeight: 800,
           }}
         >
@@ -443,6 +439,7 @@ export default function AtlasDiscoverScene() {
           }}
           aria-label={status === "running" ? "Pause tour" : "Resume tour"}
           title={status === "complete" ? "Restart tour" : undefined}
+          className="h-9 px-2 md:h-10 md:px-3"
           style={controlButtonStyle}
         >
           {status === "running" ? <Pause size={17} /> : <Play size={17} />}
@@ -459,6 +456,7 @@ export default function AtlasDiscoverScene() {
           type="button"
           onClick={exitTour}
           aria-label="Exit tour and explore Atlas"
+          className="h-9 px-2 md:h-10 md:px-3"
           style={controlButtonStyle}
         >
           <X size={17} />
@@ -470,14 +468,12 @@ export default function AtlasDiscoverScene() {
 }
 
 const controlButtonStyle: CSSProperties = {
-  height: 40,
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
   gap: 6,
   border: 0,
   borderRadius: 12,
-  padding: "0 12px",
   background: "#0f172a",
   color: "white",
   fontSize: 12,
