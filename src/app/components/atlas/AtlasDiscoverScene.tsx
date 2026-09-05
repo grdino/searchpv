@@ -389,7 +389,7 @@ export default function AtlasDiscoverScene() {
         style={{
           position: "absolute",
           zIndex: 40,
-          top: 16,
+          top: "var(--atlas-search-top, 16px)",
           left: "50%",
           transform: "translateX(-50%)",
           width: "min(620px, calc(100vw - 132px))",
