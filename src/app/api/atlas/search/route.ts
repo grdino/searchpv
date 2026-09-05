@@ -101,10 +101,10 @@ export async function GET(
       result.candidates
         .filter(
           (candidate) =>
-            candidate.entityType !==
-              "development" ||
-            eligibleDevelopmentKeys.has(
-              candidate.entityKey,
+            candidate.entityType !== "development" ||
+            (
+              candidate.entityKey !== undefined &&
+              eligibleDevelopmentKeys.has(candidate.entityKey)
             ),
         )
         .slice(
