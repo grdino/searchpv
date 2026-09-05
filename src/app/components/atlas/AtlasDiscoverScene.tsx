@@ -200,12 +200,9 @@ export default function AtlasDiscoverScene() {
         >
           <div
             key={scene.image}
+            className="atlas-discover-artwork"
             style={{
-              position: "absolute",
-              inset: 0,
               backgroundImage: `url("${scene.image}")`,
-              backgroundSize: "cover",
-              backgroundPosition: "center center",
               opacity: artworkVisible ? 0.34 : 0,
               transform: artworkVisible ? "scale(1.02)" : "scale(1.065)",
               transition: [
