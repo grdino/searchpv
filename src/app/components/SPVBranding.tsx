@@ -22,7 +22,7 @@ export default function SPVBranding() {
         </Link>
       </div>
     </div>
-
+{/*
     <a
       href="https://ronmorgan.net"
       target="_blank"
@@ -39,6 +39,7 @@ export default function SPVBranding() {
         style={rmpHorizontalLogoStyle}
       />
     </a>
+*/}
   </div>
 );
 }
