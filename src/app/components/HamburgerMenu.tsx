@@ -124,6 +124,8 @@ export default function HamburgerMenu() {
   const isSearchPropertiesActive =
     pathname === "/search-properties" ||
     pathname.startsWith("/search-properties/");
+  const isMapActive =
+    pathname === "/atlas" || pathname.startsWith("/atlas/");
   const isAskSearchPVActive =
     pathname === "/ask-searchpv" ||
     pathname.startsWith("/ask-searchpv/");
@@ -170,6 +172,30 @@ export default function HamburgerMenu() {
             }}
           >
             Search Properties
+          </Link>
+
+          <Link
+            href="/atlas"
+            onClick={closeMenu}
+            aria-current={isMapActive ? "page" : undefined}
+            style={{
+              ...menuLinkStyle,
+              ...(isMapActive ? activeTopLevelLinkStyle : {}),
+            }}
+          >
+            Explore The Map
+          </Link>
+
+          <Link
+            href="/atlas/discover"
+            onClick={closeMenu}
+            aria-current={isMapActive ? "page" : undefined}
+            style={{
+              ...menuLinkStyle,
+              ...(isMapActive ? activeTopLevelLinkStyle : {}),
+            }}
+          >
+            Take a Tour
           </Link>
 
 {/*

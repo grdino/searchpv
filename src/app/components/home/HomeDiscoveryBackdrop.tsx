@@ -37,13 +37,13 @@ export default function HomeDiscoveryBackdrop() {
   const activeScene = ATLAS_DISCOVER_SEQUENCE[activeIndex];
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#edf7f8] text-slate-950">
+    <main className="relative min-h-dvh overflow-x-hidden bg-[#edf7f8] text-slate-950">
       <div aria-hidden="true" className="absolute inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,.98)_0%,rgba(255,255,255,.88)_46%,rgba(237,247,248,.74)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-white/80 to-transparent" />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col px-5 pb-8 pt-8 md:px-8 md:pt-10">
+      <div className="relative z-10 mx-auto flex min-h-dvh max-w-6xl flex-col px-5 pb-8 pt-8 md:px-8 md:pt-10">
         <Header />
 
         <div className="absolute left-8 top-[108px] hidden w-[280px] md:block">
@@ -53,7 +53,7 @@ export default function HomeDiscoveryBackdrop() {
           />
         </div>
 
-        <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center pb-12 text-center md:pb-16">
+        <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-start pb-12 pt-2 text-center md:justify-center md:pb-16 md:pt-0 xl:translate-x-14">
           <div className="mb-7 w-full max-w-[230px] md:hidden">
             <DiscoveryPreview
               activeIndex={activeIndex}
@@ -75,7 +75,7 @@ export default function HomeDiscoveryBackdrop() {
               title="Discover the Bay"
               detail="Take the visual tour"
               Icon={Compass}
-              featured
+              tone="cyan"
             />
 
             <HomePill
@@ -83,6 +83,7 @@ export default function HomeDiscoveryBackdrop() {
               title="Search Properties"
               detail="Traditional listing search"
               Icon={Search}
+              tone="teal"
             />
 
             <HomePill
@@ -90,6 +91,7 @@ export default function HomeDiscoveryBackdrop() {
               title="Explore the Map"
               detail="Open Atlas directly"
               Icon={Map}
+              tone="sky"
             />
 
             <HomePill
@@ -97,6 +99,7 @@ export default function HomeDiscoveryBackdrop() {
               title="Market Intelligence"
               detail="Inventory, sales and trends"
               Icon={BarChart3}
+              tone="indigo"
             />
           </div>
         </section>
@@ -152,30 +155,50 @@ function HomePill({
   title,
   detail,
   Icon,
-  featured = false,
+  tone,
 }: {
   href: string;
   title: string;
   detail: string;
   Icon: ComponentType<{ size?: number; strokeWidth?: number }>;
-  featured?: boolean;
+  tone: "cyan" | "teal" | "sky" | "indigo";
 }) {
+  const toneStyles = {
+    cyan: {
+      card: "border-cyan-200/80 bg-cyan-50/85 hover:bg-cyan-50",
+      icon: "bg-cyan-100 text-cyan-800",
+      arrow: "text-cyan-700",
+    },
+    teal: {
+      card: "border-teal-200/80 bg-teal-50/85 hover:bg-teal-50",
+      icon: "bg-teal-100 text-teal-800",
+      arrow: "text-teal-700",
+    },
+    sky: {
+      card: "border-sky-200/80 bg-sky-50/85 hover:bg-sky-50",
+      icon: "bg-sky-100 text-sky-800",
+      arrow: "text-sky-700",
+    },
+    indigo: {
+      card: "border-indigo-200/80 bg-indigo-50/85 hover:bg-indigo-50",
+      icon: "bg-indigo-100 text-indigo-800",
+      arrow: "text-indigo-700",
+    },
+  }[tone];
+
   return (
     <Link
       href={href}
       className={[
         "group flex min-h-[82px] items-center gap-4 rounded-[24px] border px-5 py-4 text-left shadow-[0_10px_35px_rgba(15,23,42,.08)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:shadow-[0_15px_40px_rgba(15,23,42,.12)]",
-        featured
-          ? "border-teal-700/20 bg-slate-950 text-white"
-          : "border-white/80 bg-white/[0.76] text-slate-950 hover:bg-white/95",
+        "text-slate-950",
+        toneStyles.card,
       ].join(" ")}
     >
       <span
         className={[
           "flex h-11 w-11 shrink-0 items-center justify-center rounded-full",
-          featured
-            ? "bg-cyan-300 text-slate-950"
-            : "bg-teal-50 text-teal-800",
+          toneStyles.icon,
         ].join(" ")}
       >
         <Icon size={21} strokeWidth={2.25} />
@@ -184,10 +207,7 @@ function HomePill({
       <span className="min-w-0 flex-1">
         <span className="block text-base font-black">{title}</span>
         <span
-          className={[
-            "mt-0.5 block text-xs font-semibold",
-            featured ? "text-slate-300" : "text-slate-500",
-          ].join(" ")}
+          className="mt-0.5 block text-xs font-semibold text-slate-500"
         >
           {detail}
         </span>
@@ -198,7 +218,7 @@ function HomePill({
         size={18}
         className={[
           "shrink-0 transition-transform group-hover:translate-x-0.5",
-          featured ? "text-cyan-300" : "text-teal-700",
+          toneStyles.arrow,
         ].join(" ")}
       />
     </Link>

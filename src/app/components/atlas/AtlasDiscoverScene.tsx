@@ -33,6 +33,7 @@ export default function AtlasDiscoverScene() {
   const selectPopularAreaRef = useRef(selectPopularArea);
   const runSceneRef = useRef<(index: number) => void>(() => undefined);
   const pauseRef = useRef<() => void>(() => undefined);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   selectPopularAreaRef.current = selectPopularArea;
 
@@ -173,6 +174,82 @@ export default function AtlasDiscoverScene() {
       window.removeEventListener("atlas-discover-ready", startTour);
     };
   }, []);
+
+  useEffect(() => {
+    let effectCancelled = false;
+
+    const releaseWakeLock = async () => {
+      const wakeLock = wakeLockRef.current;
+      wakeLockRef.current = null;
+
+      if (wakeLock && !wakeLock.released) {
+        try {
+          await wakeLock.release();
+        } catch {
+          // A wake lock may already have been released by the browser.
+        }
+      }
+    };
+
+    const requestWakeLock = async () => {
+      if (
+        effectCancelled ||
+        statusRef.current !== "running" ||
+        document.visibilityState !== "visible" ||
+        !("wakeLock" in navigator)
+      ) {
+        return;
+      }
+
+      try {
+        const wakeLock = await navigator.wakeLock.request("screen");
+
+        if (effectCancelled || statusRef.current !== "running") {
+          await wakeLock.release();
+          return;
+        }
+
+        wakeLockRef.current = wakeLock;
+
+        wakeLock.addEventListener("release", () => {
+          if (wakeLockRef.current === wakeLock) {
+            wakeLockRef.current = null;
+          }
+        });
+      } catch {
+        // Discovery still works when wake lock is unavailable or denied.
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === "visible" &&
+        statusRef.current === "running" &&
+        wakeLockRef.current === null
+      ) {
+        void requestWakeLock();
+      }
+    };
+
+    if (status === "running") {
+      void requestWakeLock();
+      document.addEventListener(
+        "visibilitychange",
+        handleVisibilityChange,
+      );
+    } else {
+      void releaseWakeLock();
+    }
+
+    return () => {
+      effectCancelled = true;
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange,
+      );
+      void releaseWakeLock();
+    };
+  }, [status]);
 
   const resumeOrRestart = () => {
     runSceneRef.current(
