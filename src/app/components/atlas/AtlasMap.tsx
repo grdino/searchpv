@@ -7,12 +7,18 @@ import {
 } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { usePathname } from "next/navigation";
 
 import { useAtlasState } from "@/lib/atlas/state/AtlasState";
 import { buildIdxUrl } from "@/lib/idx";
 import { getAtlasDiscoverScene } from "./AtlasDiscoverConfig";
 
 export default function AtlasMap() {
+  const pathname = usePathname();
+  const isDiscoveryMode =
+    pathname === "/atlas/discover" ||
+    pathname.startsWith("/atlas/discover/");
+
   const mapContainerRef =
     useRef<HTMLDivElement | null>(null);
 
@@ -4016,6 +4022,7 @@ const pendingListingsUrl =
           CUSTOM MARKET CONTROL
           ====================================================== */}
 
+      {!isDiscoveryMode ? (
       <div
         style={{
           position:
@@ -4577,6 +4584,7 @@ const pendingListingsUrl =
           </div>
         )}
       </div>
+      ) : null}
     </>
   );
 }

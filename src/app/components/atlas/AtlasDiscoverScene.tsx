@@ -291,7 +291,7 @@ export default function AtlasDiscoverScene() {
 
   const exitTour = () => {
     window.dispatchEvent(new Event("atlas-discover-cancel"));
-    window.location.assign("/atlas");
+    window.location.assign("/");
   };
 
   return (

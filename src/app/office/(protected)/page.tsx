@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import Header from "@/app/components/Header";
 import { createClient } from "@/lib/supabase/server";
 
 import { logout } from "./actions";
@@ -14,6 +15,8 @@ export default async function OfficePage() {
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-8 sm:px-6">
       <div className="mx-auto max-w-5xl">
+        <Header />
+
         <header className="mb-8 flex flex-col gap-4 rounded-2xl bg-slate-950 px-6 py-6 text-white sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-400">
@@ -78,7 +81,6 @@ export default async function OfficePage() {
               Maintain geographic entities, aliases, coordinates, and hierarchy.
             </p>
           </Link>
-
 
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6">
             <h2 className="text-lg font-bold text-slate-950">
