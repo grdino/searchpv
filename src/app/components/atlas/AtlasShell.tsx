@@ -24,7 +24,7 @@ export default function AtlasShell({
     >
       <AtlasStateProvider>
         <AtlasDeepLink />
-        <AtlasViewport />
+        <AtlasViewport discoveryMode={discoveryMode} />
 
         <AtlasOverlay>
           {discoveryMode ? <AtlasDiscoverScene /> : null}

@@ -34,6 +34,7 @@ export default function AtlasDiscoverScene() {
   const runSceneRef = useRef<(index: number) => void>(() => undefined);
   const pauseRef = useRef<() => void>(() => undefined);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const leavingDiscoveryRef = useRef(false);
   const atlasReadyRef = useRef(false);
   const pendingPopularAreaRef = useRef<
     AtlasDiscoverSceneConfig["popularArea"] | null
@@ -142,8 +143,27 @@ export default function AtlasDiscoverScene() {
       );
     };
 
+    const enterAtlas = () => {
+      if (leavingDiscoveryRef.current) return;
+
+      leavingDiscoveryRef.current = true;
+      pauseTour();
+      window.location.assign("/atlas");
+    };
+
     const handleInteraction = (event: Event) => {
-      if (!isTourControl(event)) pauseTour();
+      if (isTourControl(event)) return;
+
+      if (
+        event.type === "pointerdown" ||
+        event.type === "touchstart" ||
+        event.type === "wheel"
+      ) {
+        enterAtlas();
+        return;
+      }
+
+      pauseTour();
     };
 
     const interactionOptions: AddEventListenerOptions = {
@@ -291,7 +311,7 @@ export default function AtlasDiscoverScene() {
 
   const exitTour = () => {
     window.dispatchEvent(new Event("atlas-discover-cancel"));
-    window.location.assign("/");
+    window.location.assign("/atlas");
   };
 
   return (

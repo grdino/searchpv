@@ -1,6 +1,10 @@
 import AtlasMap from "./AtlasMap";
 
-export default function AtlasViewport() {
+export default function AtlasViewport({
+  discoveryMode = false,
+}: {
+  discoveryMode?: boolean;
+}) {
   return (
     <div
       style={{
@@ -10,7 +14,7 @@ export default function AtlasViewport() {
         height: "100%",
       }}
     >
-      <AtlasMap />
+      <AtlasMap discoveryMode={discoveryMode} />
     </div>
   );
 }
