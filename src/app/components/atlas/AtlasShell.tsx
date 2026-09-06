@@ -31,7 +31,7 @@ export default function AtlasShell({
 
           <AtlasBranding />
           {!discoveryMode ? <AtlasSearch /> : null}
-          <AtlasBottomSheet />
+          <AtlasBottomSheet discoveryMode={discoveryMode} />
         </AtlasOverlay>
       </AtlasStateProvider>
     </main>

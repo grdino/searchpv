@@ -10,6 +10,7 @@ import {
   type AtlasEntity,
   type AtlasPopularArea,
 } from "@/lib/atlas/state/AtlasState";
+import { getAtlasDiscoverSceneById } from "./AtlasDiscoverConfig";
 
 type AtlasSearchCandidate = {
   entityKey: number;
@@ -320,6 +321,14 @@ export default function AtlasDeepLink() {
         window.location.search,
       );
 
+    const atlasAreaName =
+      params.get("atlasArea")?.trim() ??
+      "";
+
+    const discoverSceneId =
+      params.get("discoverScene")?.trim() ??
+      "";
+
     const zoneName =
       params.get("mlsZone")?.trim() ??
       "";
@@ -340,6 +349,8 @@ export default function AtlasDeepLink() {
 
     if (
       !developmentName &&
+      !discoverSceneId &&
+      !atlasAreaName &&
       !zoneName &&
       !areaName &&
       !communityName
@@ -350,6 +361,33 @@ export default function AtlasDeepLink() {
     startedRef.current = true;
 
     async function resolveDeepLink() {
+      const requestedDiscoverScene =
+        getAtlasDiscoverSceneById(discoverSceneId);
+
+      if (requestedDiscoverScene) {
+        await new Promise<void>((resolve) => {
+          const finishAfterSources = () => {
+            window.setTimeout(resolve, 0);
+          };
+
+          if (
+            document.documentElement.dataset.atlasDiscoverReady ===
+            "true"
+          ) {
+            finishAfterSources();
+          } else {
+            window.addEventListener(
+              "atlas-discover-ready",
+              finishAfterSources,
+              { once: true },
+            );
+          }
+        });
+
+        selectPopularArea(requestedDiscoverScene.popularArea);
+        return;
+      }
+
       /*
        * A requested Development takes priority over its broader
        * Atlas Area. Without a Development, first try to match the
@@ -361,6 +399,7 @@ export default function AtlasDeepLink() {
             await loadPopularAreas();
 
           const atlasAreaNames = [
+            atlasAreaName,
             communityName,
             areaName,
           ].filter(Boolean);
@@ -523,6 +562,8 @@ export default function AtlasDeepLink() {
         "Atlas could not resolve the IDX geography.",
         {
           developmentName,
+          discoverSceneId,
+          atlasAreaName,
           zoneName,
           areaName,
           communityName,

@@ -184,7 +184,11 @@ function formatWholeNumber(
   ).toLocaleString("en-US");
 }
 
-export default function AtlasBottomSheet() {
+export default function AtlasBottomSheet({
+  discoveryMode = false,
+}: {
+  discoveryMode?: boolean;
+}) {
   const {
     contextEntity,
     analysisEntity,
@@ -301,10 +305,11 @@ export default function AtlasBottomSheet() {
    * content only fades in during the final approach.
    */
 
-  const discoverScene =
-    getAtlasDiscoverScene(
-      popularAreaSelection?.footprintKey,
-    );
+  const discoverScene = discoveryMode
+    ? getAtlasDiscoverScene(
+        popularAreaSelection?.footprintKey,
+      )
+    : null;
 
   const isOpeningDiscover =
     discoverScene?.id ===
@@ -2282,7 +2287,7 @@ export default function AtlasBottomSheet() {
             MARKET FILTERS
             ===================================================== */}
 
-        {hasMarketContext ? (
+        {hasMarketContext && !discoveryMode ? (
           <div
             style={{
               marginTop:

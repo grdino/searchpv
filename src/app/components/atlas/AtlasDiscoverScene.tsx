@@ -26,6 +26,7 @@ export default function AtlasDiscoverScene() {
   const [sceneVisible, setSceneVisible] = useState(false);
   const [artworkVisible, setArtworkVisible] = useState(false);
   const [messageVisible, setMessageVisible] = useState(false);
+  const sceneRef = useRef(scene);
 
   const timersRef = useRef<number[]>([]);
   const statusRef = useRef<TourStatus>("waiting");
@@ -41,6 +42,7 @@ export default function AtlasDiscoverScene() {
   >(null);
 
   selectPopularAreaRef.current = selectPopularArea;
+  sceneRef.current = scene;
 
   useEffect(() => {
     const setTourStatus = (nextStatus: TourStatus) => {
@@ -136,10 +138,11 @@ export default function AtlasDiscoverScene() {
     pauseRef.current = pauseTour;
 
     const isTourControl = (event: Event) => {
-      const target = event.target;
-      return (
-        target instanceof Element &&
-        target.closest("[data-atlas-discover-control]") !== null
+      return event.composedPath().some(
+        (target) =>
+          target instanceof Element &&
+          (target.hasAttribute("data-atlas-discover-control") ||
+            target.closest("[data-atlas-discover-control]") !== null),
       );
     };
 
@@ -148,7 +151,10 @@ export default function AtlasDiscoverScene() {
 
       leavingDiscoveryRef.current = true;
       pauseTour();
-      window.location.assign("/atlas");
+
+      window.location.assign(
+        `/atlas?discoverScene=${encodeURIComponent(sceneRef.current.id)}`,
+      );
     };
 
     const handleInteraction = (event: Event) => {
@@ -310,8 +316,9 @@ export default function AtlasDiscoverScene() {
   };
 
   const exitTour = () => {
+    leavingDiscoveryRef.current = true;
     window.dispatchEvent(new Event("atlas-discover-cancel"));
-    window.location.assign("/atlas");
+    window.location.assign("/");
   };
 
   return (
@@ -507,7 +514,7 @@ export default function AtlasDiscoverScene() {
         <button
           type="button"
           onClick={exitTour}
-          aria-label="Exit tour and explore Atlas"
+          aria-label="Exit tour and return home"
           className="h-9 px-2 md:h-10 md:px-3"
           style={controlButtonStyle}
         >
