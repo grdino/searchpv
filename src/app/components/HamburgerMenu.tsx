@@ -223,7 +223,7 @@ export default function HamburgerMenu() {
                 : {}),
             }}
           >
-            <span>Saved</span>
+            <span>My Saved</span>
             {savedCount > 0 ? <span style={savedCountStyle}>{savedCount}</span> : null}
           </Link>
 
