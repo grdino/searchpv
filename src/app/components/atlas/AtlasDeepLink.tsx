@@ -329,6 +329,12 @@ export default function AtlasDeepLink() {
       params.get("discoverScene")?.trim() ??
       "";
 
+    const entityKeyParam =
+      params.get("entityKy")?.trim() ??
+      "";
+
+    const entityKey = Number(entityKeyParam);
+
     const zoneName =
       params.get("mlsZone")?.trim() ??
       "";
@@ -349,6 +355,7 @@ export default function AtlasDeepLink() {
 
     if (
       !developmentName &&
+      !entityKeyParam &&
       !discoverSceneId &&
       !atlasAreaName &&
       !zoneName &&
@@ -361,31 +368,54 @@ export default function AtlasDeepLink() {
     startedRef.current = true;
 
     async function resolveDeepLink() {
+      await new Promise<void>((resolve) => {
+        const finishAfterSources = () => {
+          window.setTimeout(resolve, 0);
+        };
+
+        if (
+          document.documentElement.dataset.atlasDiscoverReady ===
+          "true"
+        ) {
+          finishAfterSources();
+        } else {
+          window.addEventListener(
+            "atlas-discover-ready",
+            finishAfterSources,
+            { once: true },
+          );
+        }
+      });
+
       const requestedDiscoverScene =
         getAtlasDiscoverSceneById(discoverSceneId);
 
       if (requestedDiscoverScene) {
-        await new Promise<void>((resolve) => {
-          const finishAfterSources = () => {
-            window.setTimeout(resolve, 0);
-          };
-
-          if (
-            document.documentElement.dataset.atlasDiscoverReady ===
-            "true"
-          ) {
-            finishAfterSources();
-          } else {
-            window.addEventListener(
-              "atlas-discover-ready",
-              finishAfterSources,
-              { once: true },
-            );
-          }
-        });
-
         selectPopularArea(requestedDiscoverScene.popularArea);
         return;
+      }
+
+      if (Number.isInteger(entityKey) && entityKey > 0) {
+        try {
+          const detail = await loadEntity(entityKey);
+          const canonicalName =
+            detail.canonical?.entity_variant_nm ?? `Atlas geography ${entityKey}`;
+
+          selectEntity(
+            toAtlasEntity(detail, {
+              entityKey,
+              entityType: detail.entity.entity_type_cd,
+              canonicalName,
+              matchedVariant: canonicalName,
+              identifier: String(entityKey),
+              confidence: 100,
+            }),
+          );
+
+          return;
+        } catch (error) {
+          console.error("Atlas entity deep-link resolution failed:", error);
+        }
       }
 
       /*
@@ -562,6 +592,7 @@ export default function AtlasDeepLink() {
         "Atlas could not resolve the IDX geography.",
         {
           developmentName,
+          entityKeyParam,
           discoverSceneId,
           atlasAreaName,
           zoneName,

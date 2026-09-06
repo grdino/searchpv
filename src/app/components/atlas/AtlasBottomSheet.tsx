@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import { useAtlasState } from "@/lib/atlas/state/AtlasState";
 import { buildIdxUrl } from "@/lib/idx";
 import { getAtlasDiscoverScene } from "./AtlasDiscoverConfig";
+import {
+  isItemSaved,
+  shareUrl,
+  toggleSavedItem,
+} from "@/lib/saved-items";
 
 function entityTypeLabel(entityType: string) {
   switch (entityType) {
@@ -292,6 +297,42 @@ export default function AtlasBottomSheet({
     setShowMarketStats,
   ] =
     useState(false);
+
+  const [areaSaved, setAreaSaved] = useState(false);
+  const [shareMessage, setShareMessage] = useState("");
+
+  const selectedSaveTarget = popularAreaSelection
+    ? {
+        id: `atlas-area:${popularAreaSelection.footprintKey}`,
+        referenceId: popularAreaSelection.footprintKey,
+        title: popularAreaSelection.displayName,
+        subtitle: "Atlas Area",
+        href: `/atlas?atlasArea=${encodeURIComponent(popularAreaSelection.displayName)}`,
+        metadata: {
+          footprintKey: popularAreaSelection.footprintKey,
+          boundaryKys: popularAreaSelection.boundaryKys,
+        },
+      }
+    : selectedEntity
+      ? {
+          id: `mls-geography:${selectedEntity.entityType}:${selectedEntity.entityKy}`,
+          referenceId: String(selectedEntity.entityKy),
+          title: selectedEntity.displayName,
+          subtitle: entityTypeLabel(selectedEntity.entityType),
+          href: `/atlas?entityKy=${encodeURIComponent(String(selectedEntity.entityKy))}`,
+          metadata: {
+            entityKy: selectedEntity.entityKy,
+            entityType: selectedEntity.entityType,
+          },
+        }
+      : null;
+
+  const savedAreaId = selectedSaveTarget?.id ?? null;
+
+  useEffect(() => {
+    setAreaSaved(savedAreaId ? isItemSaved(savedAreaId) : false);
+    setShareMessage("");
+  }, [savedAreaId]);
 
   /*
    * ==========================================================
@@ -1287,6 +1328,36 @@ export default function AtlasBottomSheet({
     );
   }
 
+  function toggleAreaSave() {
+    if (!selectedSaveTarget) return;
+
+    const isNowSaved = toggleSavedItem({
+      id: selectedSaveTarget.id,
+      type: "area",
+      referenceId: selectedSaveTarget.referenceId,
+      title: selectedSaveTarget.title,
+      subtitle: selectedSaveTarget.subtitle,
+      href: selectedSaveTarget.href,
+      metadata: selectedSaveTarget.metadata,
+    });
+
+    setAreaSaved(isNowSaved);
+  }
+
+  async function shareArea() {
+    if (!selectedSaveTarget) return;
+
+    const result = await shareUrl(
+      `${selectedSaveTarget.title} | SearchPV Atlas`,
+      selectedSaveTarget.href,
+    );
+
+    if (result === "copied") {
+      setShareMessage("Link copied");
+      window.setTimeout(() => setShareMessage(""), 2200);
+    }
+  }
+
   return (
     <section
       style={{
@@ -1876,6 +1947,50 @@ export default function AtlasBottomSheet({
           openingSheetPhase ===
             "destination") ? (
           <>
+
+        {selectedSaveTarget ? (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 7,
+              marginTop: 12,
+            }}
+          >
+            <button
+              type="button"
+              onClick={toggleAreaSave}
+              aria-pressed={areaSaved}
+              style={areaActionButtonStyle(areaSaved)}
+            >
+              {areaSaved ? "Saved" : "Save Area"}
+            </button>
+
+            {buildActivityUrl("active") ? (
+              <a
+                href={buildActivityUrl("active") ?? undefined}
+                style={{
+                  ...areaActionButtonStyle(false),
+                  textDecoration: "none",
+                }}
+              >
+                View Properties
+              </a>
+            ) : (
+              <span style={areaActionButtonStyle(false, true)}>
+                No Active Listings
+              </span>
+            )}
+
+            <button
+              type="button"
+              onClick={shareArea}
+              style={areaActionButtonStyle(false)}
+            >
+              {shareMessage || "Share"}
+            </button>
+          </div>
+        ) : null}
 
         {/* =====================================================
             CUSTOM MARKET CONTROLS
@@ -4803,4 +4918,26 @@ export default function AtlasBottomSheet({
         return "📍";
     }
   }
+}
+
+function areaActionButtonStyle(
+  active: boolean,
+  disabled = false,
+): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 38,
+    border: active ? "1px solid #0f766e" : "1px solid #cbd5e1",
+    borderRadius: 999,
+    padding: "7px 8px",
+    background: active ? "#ecfdf5" : "#ffffff",
+    color: disabled ? "#94a3b8" : active ? "#115e59" : "#334155",
+    fontSize: 10,
+    lineHeight: 1.15,
+    fontWeight: 750,
+    textAlign: "center",
+    cursor: disabled ? "default" : "pointer",
+  };
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { CSSProperties } from "react";
+import { useSavedItems } from "@/app/components/useSavedItems";
 
 const marketIntelligenceLinks = [
   {
@@ -81,6 +82,7 @@ function getSectionFromPathname(pathname: string): MenuSection {
 
 export default function HamburgerMenu() {
   const pathname = usePathname();
+  const { count: savedCount } = useSavedItems();
   const activeSection = getSectionFromPathname(pathname);
 
   const [open, setOpen] = useState(false);
@@ -196,6 +198,29 @@ export default function HamburgerMenu() {
             }}
           >
             Take a Tour
+          </Link>
+
+          <Link
+            href="/saved"
+            onClick={closeMenu}
+            aria-current={
+              pathname === "/saved" || pathname.startsWith("/saved/")
+                ? "page"
+                : undefined
+            }
+            style={{
+              ...menuLinkStyle,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              ...(pathname === "/saved" || pathname.startsWith("/saved/")
+                ? activeTopLevelLinkStyle
+                : {}),
+            }}
+          >
+            <span>Saved</span>
+            {savedCount > 0 ? <span style={savedCountStyle}>{savedCount}</span> : null}
           </Link>
 
 {/*
@@ -532,5 +557,19 @@ const subMenuLinkStyle: CSSProperties = {
 const activeLinkStyle: CSSProperties = {
   textDecoration: "underline",
   textUnderlineOffset: "4px",
+  fontWeight: 900,
+};
+
+const savedCountStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minWidth: "25px",
+  height: "25px",
+  padding: "0 7px",
+  borderRadius: "999px",
+  background: "#ccfbf1",
+  color: "#115e59",
+  fontSize: "0.78rem",
   fontWeight: 900,
 };

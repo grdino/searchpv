@@ -6,6 +6,7 @@ import HamburgerMenu from "@/app/components/HamburgerMenu";
 import MainSloganBranding from "@/app/components/MainSloganBranding";
 import ClosedListingFilters from "@/app/components/ClosedListingFilters";
 import ClosedSalesMonthlyChart from "@/app/components/ClosedSalesMonthlyChart";
+import ReportSaveActions from "@/app/components/ReportSaveActions";
 
 // ***********************************************
 // Import dynamic Metadata
@@ -562,6 +563,11 @@ export default async function ClosedSalesPage({
             areas={areas}
             communities={communities}
             developments={developments}
+          />
+
+          <ReportSaveActions
+            reportName="Closed Sales"
+            filterSummary={selectedFiltersLabel}
           />
         </div>
       </section>

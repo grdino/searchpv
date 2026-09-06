@@ -10,6 +10,7 @@ import { buildIdxUrl } from "@/lib/idx";
 import { supabase } from "@/lib/supabase";
 
 import ActiveListingMetricsSection from "@/app/components/market-listings/ActiveListingMetricsSection";
+import ReportSaveActions from "@/app/components/ReportSaveActions";
 
 export const metadata: Metadata = {
   title: "Active Listings | SearchPV Market Intelligence",
@@ -481,6 +482,19 @@ export default async function ActiveListingsPage({
             areas={areas}
             communities={communities}
             developments={developments}
+          />
+
+          <ReportSaveActions
+            reportName="Active Listings"
+            filterSummary={formatSelectedFilters({
+              market: selectedMarket,
+              propertyType: selectedPropertyType,
+              bedrooms: selectedBedrooms,
+              zone: selectedZone,
+              area: selectedArea,
+              community: selectedCommunity,
+              development: selectedDevelopment,
+            })}
           />
         </div>
       </section>
