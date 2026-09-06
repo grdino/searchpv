@@ -178,7 +178,11 @@ export default function HamburgerMenu() {
 
           <Link
             href="/atlas"
-            onClick={closeMenu}
+            onClick={(event) => {
+              event.preventDefault();
+              closeMenu();
+              window.location.assign("/atlas");
+            }}
             aria-current={isMapActive ? "page" : undefined}
             style={{
               ...menuLinkStyle,
