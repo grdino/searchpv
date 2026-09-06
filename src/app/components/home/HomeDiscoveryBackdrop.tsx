@@ -85,6 +85,7 @@ export default function HomeDiscoveryBackdrop() {
               detail="Open Atlas directly"
               Icon={Map}
               tone="sky"
+              hardNavigate
             />
 
             <HomePill
@@ -149,12 +150,14 @@ function HomePill({
   detail,
   Icon,
   tone,
+  hardNavigate = false,
 }: {
   href: string;
   title: string;
   detail: string;
   Icon: ComponentType<{ size?: number; strokeWidth?: number }>;
   tone: "cyan" | "teal" | "sky" | "indigo";
+  hardNavigate?: boolean;
 }) {
   const toneStyles = {
     cyan: {
@@ -182,6 +185,14 @@ function HomePill({
   return (
     <Link
       href={href}
+      onClick={
+        hardNavigate
+          ? (event) => {
+              event.preventDefault();
+              window.location.assign(href);
+            }
+          : undefined
+      }
       className={[
         "group flex min-h-[82px] items-center gap-4 rounded-[24px] border px-5 py-4 text-left shadow-[0_10px_35px_rgba(15,23,42,.08)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:shadow-[0_15px_40px_rgba(15,23,42,.12)]",
         "text-slate-950",
