@@ -6,6 +6,7 @@ import ReportHierarchyFilters from "@/app/components/ReportHierarchyFilters";
 import { buildIdxUrl } from "@/lib/idx";
 import SPVBranding from "@/app/components/SPVBranding";
 import HamburgerMenu from "@/app/components/HamburgerMenu";
+import ReportSaveActions from "@/app/components/ReportSaveActions";
 
 export const metadata: Metadata = {
   title: "Active Listings Report | SearchPV",
@@ -241,11 +242,22 @@ if (params.zone) {
           style={{
             display: "flex",
             justifyContent: "flex-end",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "10px",
             marginTop: "12px",
             width: "100%",
           }}
         >
-          <ReportExportButtons reportKey="active-listings-report" />
+          <ReportSaveActions
+            reportName="Active Listings Report"
+            filterSummary={buildFilterSummary(params).join(" / ")}
+            saveLabel="Save Report"
+            savedLabel="Report Saved"
+            variant="light"
+            toolbar
+          />
+          <ReportExportButtons reportKey="active-listings" />
         </div>
       </div>
 

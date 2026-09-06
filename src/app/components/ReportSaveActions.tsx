@@ -12,9 +12,17 @@ import {
 export default function ReportSaveActions({
   reportName,
   filterSummary,
+  saveLabel = "Save Search",
+  savedLabel = "Search Saved",
+  variant = "dark",
+  toolbar = false,
 }: {
   reportName: string;
   filterSummary: string;
+  saveLabel?: string;
+  savedLabel?: string;
+  variant?: "dark" | "light";
+  toolbar?: boolean;
 }) {
   const [href, setHref] = useState("");
   const [saved, setSaved] = useState(false);
@@ -65,7 +73,7 @@ export default function ReportSaveActions({
   }
 
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-2">
+    <div className={`${toolbar ? "" : "mt-4"} flex flex-wrap items-center gap-2`}>
       <button
         type="button"
         onClick={toggleSave}
@@ -75,18 +83,25 @@ export default function ReportSaveActions({
           "inline-flex min-h-10 items-center gap-2 rounded-full border px-4 py-2 text-xs font-black transition disabled:cursor-wait disabled:opacity-60",
           saved
             ? "border-emerald-300 bg-emerald-50 text-emerald-900"
-            : "border-slate-500 bg-white/10 text-white hover:border-white hover:bg-white/15",
+            : variant === "light"
+              ? "border-slate-300 bg-white text-slate-800 hover:border-teal-600 hover:text-teal-800"
+              : "border-slate-500 bg-white/10 text-white hover:border-white hover:bg-white/15",
         ].join(" ")}
       >
         {saved ? <Check size={15} /> : <Bookmark size={15} />}
-        {saved ? "Search Saved" : "Save Search"}
+        {saved ? savedLabel : saveLabel}
       </button>
 
       <button
         type="button"
         onClick={shareReport}
         disabled={!href}
-        className="inline-flex min-h-10 items-center gap-2 rounded-full border border-slate-500 bg-white/10 px-4 py-2 text-xs font-black text-white transition hover:border-white hover:bg-white/15 disabled:cursor-wait disabled:opacity-60"
+        className={[
+          "inline-flex min-h-10 items-center gap-2 rounded-full border px-4 py-2 text-xs font-black transition disabled:cursor-wait disabled:opacity-60",
+          variant === "light"
+            ? "border-slate-300 bg-white text-slate-800 hover:border-teal-600 hover:text-teal-800"
+            : "border-slate-500 bg-white/10 text-white hover:border-white hover:bg-white/15",
+        ].join(" ")}
       >
         <Share2 size={15} />
         {shareMessage || "Share Report"}
