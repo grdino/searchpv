@@ -4,6 +4,7 @@ import {
   useEffect,
   useRef,
 } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import {
   useAtlasState,
@@ -303,6 +304,9 @@ function toAtlasEntity(
 }
 
 export default function AtlasDeepLink() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const {
     selectEntity,
     selectPopularArea,
@@ -310,18 +314,18 @@ export default function AtlasDeepLink() {
     exitCustomMarket,
   } = useAtlasState();
 
-  const startedRef =
-    useRef(false);
+  const resolvedLocationRef = useRef("");
+
+  const locationKey = `${pathname}?${searchParams.toString()}`;
 
   useEffect(() => {
-    if (startedRef.current) {
+    if (resolvedLocationRef.current === locationKey) {
       return;
     }
 
-    const params =
-      new URLSearchParams(
-        window.location.search,
-      );
+    resolvedLocationRef.current = locationKey;
+
+    const params = new URLSearchParams(searchParams.toString());
 
     const atlasAreaName =
       params.get("atlasArea")?.trim() ??
@@ -364,7 +368,6 @@ export default function AtlasDeepLink() {
       !areaName &&
       !communityName
     ) {
-      startedRef.current = true;
       clearSelection();
       exitCustomMarket();
       window.setTimeout(() => {
@@ -372,8 +375,6 @@ export default function AtlasDeepLink() {
       }, 0);
       return;
     }
-
-    startedRef.current = true;
 
     async function resolveDeepLink() {
       await new Promise<void>((resolve) => {
@@ -612,6 +613,8 @@ export default function AtlasDeepLink() {
 
     void resolveDeepLink();
   }, [
+    locationKey,
+    searchParams,
     selectEntity,
     selectPopularArea,
     clearSelection,

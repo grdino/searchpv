@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import AtlasViewport from "./AtlasViewport";
 import AtlasOverlay from "./AtlasOverlay";
 import AtlasSearch from "./AtlasSearch";
@@ -23,7 +25,10 @@ export default function AtlasShell({
       }}
     >
       <AtlasStateProvider>
-        <AtlasDeepLink />
+        <Suspense fallback={null}>
+          <AtlasDeepLink />
+        </Suspense>
+
         <AtlasViewport discoveryMode={discoveryMode} />
 
         <AtlasOverlay>
