@@ -47,6 +47,8 @@ export default function AtlasSearch() {
   const {
     selectEntity,
     selectPopularArea,
+    mode,
+    startCustomMarket,
   } = useAtlasState();
 
   const [
@@ -626,6 +628,18 @@ export default function AtlasSearch() {
                 "hidden",
             }}
           />
+        ) : null}
+
+        {mode === "explore" ? (
+          <div className="mt-2 md:hidden">
+            <button
+              type="button"
+              onClick={startCustomMarket}
+              className="rounded-full border border-slate-900/15 bg-white/95 px-3 py-2 text-[11px] font-bold text-slate-700 shadow-[0_5px_18px_rgba(15,23,42,0.12)] backdrop-blur-xl"
+            >
+              Custom Market
+            </button>
+          </div>
         ) : null}
 
         {/* =====================================================

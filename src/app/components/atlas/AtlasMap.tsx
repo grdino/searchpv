@@ -3371,15 +3371,41 @@ const pendingListingsUrl =
       mapRef.current?.stop();
     };
 
+    const resetAtlasView = () => {
+      const map = mapRef.current;
+
+      if (!map) return;
+
+      map.stop();
+      map.easeTo({
+        center: [-105.3, 20.66],
+        zoom: 9.7,
+        bearing: 0,
+        pitch: 20,
+        duration: 700,
+        essential: true,
+      });
+    };
+
     window.addEventListener(
       "atlas-discover-cancel",
       stopDiscoverFlight,
+    );
+
+    window.addEventListener(
+      "atlas-reset-view",
+      resetAtlasView,
     );
 
     return () => {
       window.removeEventListener(
         "atlas-discover-cancel",
         stopDiscoverFlight,
+      );
+
+      window.removeEventListener(
+        "atlas-reset-view",
+        resetAtlasView,
       );
     };
   }, []);
@@ -4022,6 +4048,7 @@ const pendingListingsUrl =
 
       {!discoveryMode ? (
       <div
+        className="hidden md:block"
         style={{
           position:
             "absolute",

@@ -306,6 +306,8 @@ export default function AtlasDeepLink() {
   const {
     selectEntity,
     selectPopularArea,
+    clearSelection,
+    exitCustomMarket,
   } = useAtlasState();
 
   const startedRef =
@@ -362,6 +364,12 @@ export default function AtlasDeepLink() {
       !areaName &&
       !communityName
     ) {
+      startedRef.current = true;
+      clearSelection();
+      exitCustomMarket();
+      window.setTimeout(() => {
+        window.dispatchEvent(new Event("atlas-reset-view"));
+      }, 0);
       return;
     }
 
@@ -606,6 +614,8 @@ export default function AtlasDeepLink() {
   }, [
     selectEntity,
     selectPopularArea,
+    clearSelection,
+    exitCustomMarket,
   ]);
 
   return null;
