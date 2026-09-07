@@ -24,6 +24,8 @@ import PropertySearchMarketStatistics from "@/app/components/PropertySearchMarke
 
 import AreaGuideModal from "@/app/components/AreaGuideModal";
 
+import PropertySearchSaveActions from "@/app/components/PropertySearchSaveActions";
+
 type SortKey =
   | "name"
   | "active_count"
@@ -724,6 +726,26 @@ function SelectedMarketPanel({
 }) {
   const labels = buildSelectedMarketLabels(filters);
 
+  const locationLabels = [
+    filters.zone ?? "Puerto Vallarta",
+    filters.area,
+    filters.community,
+    filters.development,
+  ].filter((value): value is string => Boolean(value));
+
+  const searchTitle = `${
+    filters.development ??
+    filters.community ??
+    filters.area ??
+    filters.zone ??
+    "Puerto Vallarta"
+  } Property Search`;
+
+  const filterSummary = [
+    ...locationLabels,
+    ...labels,
+  ].join(" · ");
+
   return (
     <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
       <div className="text-sm font-bold uppercase tracking-[0.12em] text-slate-900">
@@ -804,6 +826,10 @@ function SelectedMarketPanel({
             : "developments"}{" "}
         shown
       </div>
+        <PropertySearchSaveActions
+          searchTitle={searchTitle}
+          filterSummary={filterSummary}
+        />
     </div>
   );
 }

@@ -82,6 +82,24 @@ export default async function OfficePage() {
             </p>
           </Link>
 
+          <Link
+            href="/office/saved-analytics"
+            className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
+              Engagement
+            </p>
+
+            <h2 className="mt-2 text-lg font-bold text-slate-950">
+              Saved-Item Analytics
+            </h2>
+
+            <p className="mt-2 text-sm text-slate-600">
+              Monitor anonymous saves, removals, popular
+              items, visitors, and device usage.
+            </p>
+          </Link>
+
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6">
             <h2 className="text-lg font-bold text-slate-950">
               Property Inventory

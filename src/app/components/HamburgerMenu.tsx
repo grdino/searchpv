@@ -444,7 +444,31 @@ export default function HamburgerMenu() {
                 : {}),
             }}
           >
-            🔒 Office
+            🔒 Office Use
+          </Link>
+          <Link
+            href="/privacy"
+            onClick={closeMenu}
+            aria-current={
+              pathname === "/privacy" ||
+              pathname.startsWith("/privacy/")
+                ? "page"
+                : undefined
+            }
+            style={{
+              ...menuLinkStyle,
+              marginTop: "6px",
+              paddingTop: "12px",
+              borderTop: "1px solid #e2e8f0",
+              fontSize: "0.88rem",
+              fontWeight: 700,
+              color: "#64748b",
+              ...(pathname === "/privacy"
+                ? activeTopLevelLinkStyle
+                : {}),
+            }}
+          >
+            Privacy
           </Link>
         </div>
       )}
