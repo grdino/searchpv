@@ -1,16 +1,13 @@
-export const SAVED_ITEMS_STORAGE_KEY =
-  "searchpv:saved-items:v1";
-
-export const SAVED_ITEMS_CHANGED_EVENT =
-  "searchpv:saved-items-changed";
+export const SAVED_ITEMS_STORAGE_KEY = "searchpv:saved-items:v1";
+export const SAVED_ITEMS_CHANGED_EVENT = "searchpv:saved-items-changed";
+export const SAVED_ITEM_FEEDBACK_EVENT = "searchpv:saved-item-feedback";
+export const OPEN_SAVE_EMAIL_EVENT = "searchpv:open-save-email";
+export const SAVED_SYNC_STATUS_EVENT = "searchpv:saved-sync-status";
 
 const ANONYMOUS_VISITOR_STORAGE_KEY =
   "searchpv:anonymous-visitor-id:v1";
 
-export type SavedItemType =
-  | "area"
-  | "property"
-  | "search";
+export type SavedItemType = "area" | "property" | "search";
 
 export type SavedItem = {
   id: string;
@@ -23,14 +20,13 @@ export type SavedItem = {
   metadata?: Record<string, unknown>;
 };
 
-type SavedItemEventType = "save" | "remove";
+export type SavedItemFeedbackDetail = {
+  action: "save" | "remove";
+  item: SavedItem;
+};
 
-function isSavedItem(
-  value: unknown,
-): value is SavedItem {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
+function isSavedItem(value: unknown): value is SavedItem {
+  if (!value || typeof value !== "object") return false;
 
   const item = value as Partial<SavedItem>;
 
@@ -47,19 +43,14 @@ function isSavedItem(
 }
 
 function getAnonymousVisitorId() {
-  if (typeof window === "undefined") {
-    return null;
-  }
+  if (typeof window === "undefined") return null;
 
   try {
-    const existingId =
-      window.localStorage.getItem(
-        ANONYMOUS_VISITOR_STORAGE_KEY,
-      );
+    const existingId = window.localStorage.getItem(
+      ANONYMOUS_VISITOR_STORAGE_KEY,
+    );
 
-    if (existingId) {
-      return existingId;
-    }
+    if (existingId) return existingId;
 
     const newId = window.crypto.randomUUID();
 
@@ -74,118 +65,92 @@ function getAnonymousVisitorId() {
   }
 }
 
-function getDeviceType():
-  | "mobile"
-  | "tablet"
-  | "desktop" {
-  if (typeof window === "undefined") {
-    return "desktop";
-  }
-
-  const width = window.innerWidth;
-
-  if (width < 768) {
-    return "mobile";
-  }
-
-  if (width < 1024) {
-    return "tablet";
-  }
-
+function getDeviceType(): "mobile" | "tablet" | "desktop" {
+  if (typeof window === "undefined") return "desktop";
+  if (window.innerWidth < 768) return "mobile";
+  if (window.innerWidth < 1024) return "tablet";
   return "desktop";
 }
 
 function recordSavedItemEvent(
-  eventType: SavedItemEventType,
-  item: Pick<
-    SavedItem,
-    "type" | "referenceId" | "title"
-  >,
+  eventType: "save" | "remove",
+  item: SavedItem,
 ) {
-  if (typeof window === "undefined") {
-    return;
-  }
+  if (typeof window === "undefined") return;
 
-  const anonymousVisitorId =
-    getAnonymousVisitorId();
-
-  if (!anonymousVisitorId) {
-    return;
-  }
-
-  const payload = {
-    anonymousVisitorId,
-    eventType,
-    itemType: item.type,
-    referenceId: item.referenceId,
-    itemTitle: item.title,
-    sourcePath: window.location.pathname,
-    deviceType: getDeviceType(),
-  };
+  const anonymousVisitorId = getAnonymousVisitorId();
+  if (!anonymousVisitorId) return;
 
   void fetch("/api/analytics/save-event", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      anonymousVisitorId,
+      eventType,
+      itemType: item.type,
+      referenceId: item.referenceId,
+      itemTitle: item.title,
+      sourcePath: window.location.pathname,
+      deviceType: getDeviceType(),
+    }),
     keepalive: true,
   }).catch(() => {
-    /*
-     * Analytics must never prevent a visitor
-     * from saving or removing an item.
-     */
+    // Analytics must never interfere with saving.
   });
 }
 
+function dispatchFeedback(
+  action: SavedItemFeedbackDetail["action"],
+  item: SavedItem,
+) {
+  window.dispatchEvent(
+    new CustomEvent<SavedItemFeedbackDetail>(
+      SAVED_ITEM_FEEDBACK_EVENT,
+      { detail: { action, item } },
+    ),
+  );
+}
+
 export function getSavedItems(): SavedItem[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
+  if (typeof window === "undefined") return [];
 
   try {
     const parsed: unknown = JSON.parse(
-      window.localStorage.getItem(
-        SAVED_ITEMS_STORAGE_KEY,
-      ) ?? "[]",
+      window.localStorage.getItem(SAVED_ITEMS_STORAGE_KEY) ?? "[]",
     );
 
-    return Array.isArray(parsed)
-      ? parsed.filter(isSavedItem)
-      : [];
+    return Array.isArray(parsed) ? parsed.filter(isSavedItem) : [];
   } catch {
     return [];
   }
 }
 
-function writeSavedItems(items: SavedItem[]) {
+export function replaceSavedItems(items: SavedItem[]) {
+  if (typeof window === "undefined") return;
+
   window.localStorage.setItem(
     SAVED_ITEMS_STORAGE_KEY,
     JSON.stringify(items),
   );
 
-  window.dispatchEvent(
-    new CustomEvent(
-      SAVED_ITEMS_CHANGED_EVENT,
-    ),
-  );
+  window.dispatchEvent(new CustomEvent(SAVED_ITEMS_CHANGED_EVENT));
+}
+
+function writeSavedItems(items: SavedItem[]) {
+  replaceSavedItems(items);
 }
 
 export function saveItem(
-  item: Omit<SavedItem, "savedAt"> & {
-    savedAt?: string;
-  },
+  item: Omit<SavedItem, "savedAt"> & { savedAt?: string },
 ) {
   const currentItems = getSavedItems();
-
-  const alreadySaved = currentItems.some(
-    (saved) => saved.id === item.id,
-  );
+  const alreadySaved = currentItems.some((saved) => saved.id === item.id);
 
   const nextItem: SavedItem = {
     ...item,
-    savedAt:
-      item.savedAt ?? new Date().toISOString(),
+    savedAt: item.savedAt ?? new Date().toISOString(),
   };
 
   const remaining = currentItems.filter(
@@ -196,6 +161,7 @@ export function saveItem(
 
   if (!alreadySaved) {
     recordSavedItemEvent("save", nextItem);
+    dispatchFeedback("save", nextItem);
   }
 
   return nextItem;
@@ -203,34 +169,21 @@ export function saveItem(
 
 export function removeSavedItem(id: string) {
   const currentItems = getSavedItems();
+  const itemBeingRemoved = currentItems.find((item) => item.id === id);
 
-  const itemBeingRemoved = currentItems.find(
-    (item) => item.id === id,
-  );
-
-  writeSavedItems(
-    currentItems.filter(
-      (item) => item.id !== id,
-    ),
-  );
+  writeSavedItems(currentItems.filter((item) => item.id !== id));
 
   if (itemBeingRemoved) {
-    recordSavedItemEvent(
-      "remove",
-      itemBeingRemoved,
-    );
+    recordSavedItemEvent("remove", itemBeingRemoved);
+    dispatchFeedback("remove", itemBeingRemoved);
   }
 }
 
 export function isItemSaved(id: string) {
-  return getSavedItems().some(
-    (item) => item.id === id,
-  );
+  return getSavedItems().some((item) => item.id === id);
 }
 
-export function toggleSavedItem(
-  item: Omit<SavedItem, "savedAt">,
-) {
+export function toggleSavedItem(item: Omit<SavedItem, "savedAt">) {
   if (isItemSaved(item.id)) {
     removeSavedItem(item.id);
     return false;
@@ -240,36 +193,20 @@ export function toggleSavedItem(
   return true;
 }
 
-export async function shareUrl(
-  title: string,
-  url: string,
-) {
-  const absoluteUrl = new URL(
-    url,
-    window.location.origin,
-  ).toString();
+export async function shareUrl(title: string, url: string) {
+  const absoluteUrl = new URL(url, window.location.origin).toString();
 
   if (navigator.share) {
     try {
-      await navigator.share({
-        title,
-        url: absoluteUrl,
-      });
-
+      await navigator.share({ title, url: absoluteUrl });
       return "shared" as const;
     } catch (error) {
-      if (
-        error instanceof DOMException &&
-        error.name === "AbortError"
-      ) {
+      if (error instanceof DOMException && error.name === "AbortError") {
         return "cancelled" as const;
       }
     }
   }
 
-  await navigator.clipboard.writeText(
-    absoluteUrl,
-  );
-
+  await navigator.clipboard.writeText(absoluteUrl);
   return "copied" as const;
 }

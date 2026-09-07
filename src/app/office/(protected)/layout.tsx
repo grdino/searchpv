@@ -14,18 +14,23 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+const OFFICE_EMAILS = new Set(["gerry@ronmorgan.net"]);
+
 export default async function ProtectedOfficeLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const supabase = await createClient();
-
   const { data } = await supabase.auth.getClaims();
 
-  if (!data?.claims) {
-    redirect("/office/login");
-  }
+  const email =
+    typeof data?.claims?.email === "string"
+      ? data.claims.email.toLowerCase()
+      : null;
+
+  if (!email) redirect("/office/login");
+  if (!OFFICE_EMAILS.has(email)) redirect("/");
 
   return <>{children}</>;
 }
