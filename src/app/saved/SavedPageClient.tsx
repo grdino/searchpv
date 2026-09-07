@@ -15,9 +15,11 @@ import { useEffect, useState } from "react";
 import { useSavedItems } from "@/app/components/useSavedItems";
 import { createClient } from "@/lib/supabase/client";
 import {
+  DISCONNECT_SAVED_DEVICE_EVENT,
   OPEN_SAVE_EMAIL_EVENT,
   removeSavedItem,
   SAVED_SYNC_STATUS_EVENT,
+  SWITCH_SAVED_EMAIL_EVENT,
   type SavedItemType,
 } from "@/lib/saved-items";
 
@@ -67,6 +69,14 @@ export default function SavedPageClient() {
     window.dispatchEvent(new CustomEvent(OPEN_SAVE_EMAIL_EVENT));
   }
 
+  function switchEmail() {
+    window.dispatchEvent(new CustomEvent(SWITCH_SAVED_EMAIL_EVENT));
+  }
+
+  function disconnectDevice() {
+    window.dispatchEvent(new CustomEvent(DISCONNECT_SAVED_DEVICE_EVENT));
+  }
+
   return (
     <section className="mx-auto mt-10 max-w-4xl">
       <p className="text-xs font-black uppercase tracking-[0.22em] text-teal-700">
@@ -79,7 +89,7 @@ export default function SavedPageClient() {
 
       <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-600">
         {verifiedEmail
-          ? "Your saved items are available across your verified devices."
+          ? "Your saved items are connected to your email."
           : "These items are currently saved on this device."}
       </p>
 
@@ -95,19 +105,37 @@ export default function SavedPageClient() {
             <div>
               <h2 className="font-black text-slate-950">
                 {verifiedEmail
-                  ? "Available across devices"
-                  : "These items are saved on this device"}
+                  ? `Connected to ${verifiedEmail}`
+                  : "Saved on this device only"}
               </h2>
 
               <p className="mt-1 text-sm leading-6 text-slate-600">
                 {verifiedEmail
-                  ? `Connected to ${verifiedEmail}.`
-                  : "Keep them available on your phone, tablet, and computer by verifying your email."}
+                  ? "To see these saves on another phone, tablet, or computer, open Saved there and sign in with this same email. We’ll send a secure link—no password required."
+                  : "Connect these saves to your email. On every additional device, open Saved and sign in using that same email."}
               </p>
             </div>
           </div>
 
-          {!verifiedEmail ? (
+          {verifiedEmail ? (
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={switchEmail}
+                className="rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-black text-white transition hover:bg-emerald-800"
+              >
+                Use Another Email
+              </button>
+
+              <button
+                type="button"
+                onClick={disconnectDevice}
+                className="rounded-full border border-emerald-300 bg-white px-5 py-2.5 text-sm font-black text-emerald-800 transition hover:bg-emerald-100"
+              >
+                Disconnect This Device
+              </button>
+            </div>
+          ) : (
             <button
               type="button"
               onClick={openEmailPrompt}
@@ -115,7 +143,7 @@ export default function SavedPageClient() {
             >
               Keep Across Devices
             </button>
-          ) : null}
+          )}
         </div>
       </div>
 

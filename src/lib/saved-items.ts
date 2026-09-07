@@ -3,6 +3,9 @@ export const SAVED_ITEMS_CHANGED_EVENT = "searchpv:saved-items-changed";
 export const SAVED_ITEM_FEEDBACK_EVENT = "searchpv:saved-item-feedback";
 export const OPEN_SAVE_EMAIL_EVENT = "searchpv:open-save-email";
 export const SAVED_SYNC_STATUS_EVENT = "searchpv:saved-sync-status";
+export const SWITCH_SAVED_EMAIL_EVENT = "searchpv:switch-saved-email";
+export const DISCONNECT_SAVED_DEVICE_EVENT =
+  "searchpv:disconnect-saved-device";
 
 const ANONYMOUS_VISITOR_STORAGE_KEY =
   "searchpv:anonymous-visitor-id:v1";

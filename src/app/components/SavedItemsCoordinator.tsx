@@ -5,11 +5,13 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { createClient } from "@/lib/supabase/client";
 import {
+  DISCONNECT_SAVED_DEVICE_EVENT,
   getSavedItems,
   OPEN_SAVE_EMAIL_EVENT,
   replaceSavedItems,
   SAVED_ITEM_FEEDBACK_EVENT,
   SAVED_SYNC_STATUS_EVENT,
+  SWITCH_SAVED_EMAIL_EVENT,
   type SavedItem,
   type SavedItemFeedbackDetail,
 } from "@/lib/saved-items";
@@ -35,6 +37,10 @@ export default function SavedItemsCoordinator() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [accountAction, setAccountAction] = useState<
+    "switch" | "disconnect" | null
+  >(null);
+  const [changingAccount, setChangingAccount] = useState(false);
   const userIdRef = useRef<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
 
@@ -103,18 +109,37 @@ export default function SavedItemsCoordinator() {
     }
 
     function openDialog() {
+      setEmail("");
       setDialogOpen(true);
       setSent(false);
       setErrorMessage("");
     }
 
+    function requestSwitch() {
+      setAccountAction("switch");
+    }
+
+    function requestDisconnect() {
+      setAccountAction("disconnect");
+    }
+
     window.addEventListener(SAVED_ITEM_FEEDBACK_EVENT, onSavedFeedback);
     window.addEventListener(OPEN_SAVE_EMAIL_EVENT, openDialog);
+    window.addEventListener(SWITCH_SAVED_EMAIL_EVENT, requestSwitch);
+    window.addEventListener(
+      DISCONNECT_SAVED_DEVICE_EVENT,
+      requestDisconnect,
+    );
 
     return () => {
       authListener.subscription.unsubscribe();
       window.removeEventListener(SAVED_ITEM_FEEDBACK_EVENT, onSavedFeedback);
       window.removeEventListener(OPEN_SAVE_EMAIL_EVENT, openDialog);
+      window.removeEventListener(SWITCH_SAVED_EMAIL_EVENT, requestSwitch);
+      window.removeEventListener(
+        DISCONNECT_SAVED_DEVICE_EVENT,
+        requestDisconnect,
+      );
 
       if (toastTimerRef.current) {
         window.clearTimeout(toastTimerRef.current);
@@ -129,7 +154,6 @@ export default function SavedItemsCoordinator() {
 
     const supabase = createClient();
     const callbackUrl = new URL("/auth/callback", window.location.origin);
-/*    callbackUrl.searchParams.set("next", "/saved"); */
 
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
@@ -147,6 +171,38 @@ export default function SavedItemsCoordinator() {
     }
 
     setSent(true);
+  }
+
+  async function confirmAccountAction() {
+    if (!accountAction) return;
+
+    const action = accountAction;
+    setChangingAccount(true);
+    setErrorMessage("");
+
+    const supabase = createClient();
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+
+    if (error) {
+      setChangingAccount(false);
+      setErrorMessage(error.message);
+      return;
+    }
+
+    userIdRef.current = null;
+    window.localStorage.removeItem(SYNCED_USER_STORAGE_KEY);
+    replaceSavedItems([]);
+    setVerifiedEmail(null);
+    setToast(null);
+    setAccountAction(null);
+    setChangingAccount(false);
+
+    if (action === "switch") {
+      setEmail("");
+      setSent(false);
+      setErrorMessage("");
+      setDialogOpen(true);
+    }
   }
 
   return (
@@ -265,6 +321,98 @@ export default function SavedItemsCoordinator() {
                 </form>
               </>
             )}
+          </div>
+        </div>
+      ) : null}
+
+      {accountAction ? (
+        <div
+          className="fixed inset-0 z-[12000] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="saved-account-action-title"
+        >
+          <div className="w-full max-w-md rounded-[24px] border border-white/80 bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-emerald-800">
+                <Mail size={21} />
+              </span>
+
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={() => {
+                  setAccountAction(null);
+                  setErrorMessage("");
+                }}
+                className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X size={19} />
+              </button>
+            </div>
+
+            <h2
+              id="saved-account-action-title"
+              className="mt-4 text-xl font-black text-slate-950"
+            >
+              {accountAction === "switch"
+                ? "Use another email?"
+                : "Disconnect this device?"}
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              {accountAction === "switch" ? (
+                <>
+                  Your saves for {verifiedEmail ?? "this email"} will remain safely
+                  stored online, but they will be removed from this browser. Afterward,
+                  we’ll send a secure sign-in link for the new email.
+                </>
+              ) : (
+                <>
+                  Your saved items will remain safely stored online, but they will be
+                  removed from this browser. To reconnect this device, you’ll need to
+                  open a new secure link sent to {verifiedEmail ?? "your email"}.
+                </>
+              )}
+            </p>
+
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              This changes the SearchPV account used in this browser and may also
+              sign you out of other private SearchPV sections.
+            </p>
+
+            {errorMessage ? (
+              <p className="mt-3 text-sm font-semibold text-red-700">
+                {errorMessage}
+              </p>
+            ) : null}
+
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                disabled={changingAccount}
+                onClick={() => {
+                  setAccountAction(null);
+                  setErrorMessage("");
+                }}
+                className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                disabled={changingAccount}
+                onClick={() => void confirmAccountAction()}
+                className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-800 disabled:cursor-wait disabled:opacity-60"
+              >
+                {changingAccount
+                  ? "Please wait…"
+                  : accountAction === "switch"
+                    ? "Continue With Another Email"
+                    : "Disconnect This Device"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
