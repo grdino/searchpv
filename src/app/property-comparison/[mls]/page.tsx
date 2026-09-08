@@ -194,7 +194,13 @@ function SubjectCard({ subject, unit: suppliedUnit }: { subject: SubjectListing;
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Subject · {sentenceCase(subject.listing_status)}</p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+              Subject
+            </span>
+
+            <StatusBadge status={subject.listing_status} />
+          </div>
           <h2 className="mt-1 text-2xl font-black">
             {subject.development_name || subject.address || `MLS #${subject.mls}`}{unit ? ` · Unit ${unit}` : ""}
           </h2>
@@ -282,7 +288,16 @@ function CandidateCard({ row, unit }: { row: ComparisonRow; unit: string | null 
           <h3 className="mt-3 text-lg font-black">{row.comp_development_name || `MLS #${row.comp_mls}`}{unit ? ` · Unit ${unit}` : ""}</h3>
           <p className="mt-1 text-sm text-slate-600">
             <Link href={href} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-700 hover:underline">MLS #{row.comp_mls} ↗</Link>
-            {` · ${sentenceCase(row.comp_status)}`}{row.comp_community_name ? ` · ${row.comp_community_name}` : ""}
+            <span className="mx-1 text-slate-400">·</span>
+
+            <StatusBadge status={row.comp_status} />
+
+            {row.comp_community_name && (
+              <>
+                <span className="mx-1 text-slate-400">·</span>
+                {row.comp_community_name}
+              </>
+            )}
           </p>
         </div>
         <div className="text-right"><p className="font-black">{formatMoney(row.comp_price)}</p><p className="text-xs text-slate-500">{formatMoney(row.comp_price_per_sqm)}/m²</p></div>
@@ -292,7 +307,17 @@ function CandidateCard({ row, unit }: { row: ComparisonRow; unit: string | null 
         <p className="mt-1 text-slate-600">{formatDistance(row.distance_m)} · {formatSizeDifference(row.size_difference_pct)}{row.comp_beds === row.subject_beds ? " · Same bedroom count" : ` · ${formatSigned(row.comp_beds - row.subject_beds)} bedroom difference`}</p>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Fact label="Beds" value={formatNumber(row.comp_beds)} /><Fact label="Baths" value={formatNumber(row.comp_baths)} /><Fact label="DOM" value={formatNumber(row.comp_dom)} /><Fact label={isClosed ? "Sold" : "Status"} value={isClosed ? formatDate(row.sold_date) : sentenceCase(row.comp_status)} />
+        <Fact label="Beds" value={formatNumber(row.comp_beds)} />
+        <Fact label="Baths" value={formatNumber(row.comp_baths)} />
+        <Fact label="DOM" value={formatNumber(row.comp_dom)} />
+        <Fact
+          label={isClosed ? "Sold" : "Status"}
+          value={
+            isClosed
+              ? formatDate(row.sold_date)
+              : <StatusBadge status={row.comp_status} />
+          }
+        />
       </div>
       {row.sold_to_final_list_pct !== null && <p className="mt-3 text-sm text-slate-600">Sold for {formatNumber(row.sold_to_final_list_pct, 1)}% of final asking price.</p>}
       {(row.limitation_codes ?? []).length > 0 && <div className="mt-4 border-t border-slate-200 pt-3"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">Comparison notes</p><ul className="mt-2 space-y-1 text-sm text-slate-600">{(row.limitation_codes ?? []).map((code) => <li key={code}>• {limitationText(code)}</li>)}</ul></div>}
@@ -308,8 +333,43 @@ function PositionCard({ label, value, detail }: { label: string; value: string; 
   return <div className="rounded-xl border border-amber-200 bg-white p-4"><p className="text-[11px] font-black uppercase tracking-wide text-slate-500">{label}</p><p className="mt-1 text-lg font-black text-slate-950">{value}</p><p className="mt-1 text-xs leading-5 text-slate-500">{detail}</p></div>;
 }
 
-function Fact({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-xl border border-slate-200 bg-white px-3 py-2"><p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-1 font-bold">{value}</p></div>;
+function Fact({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+
+      <div className="mt-1 font-bold">{value}</div>
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const normalized = status.toLowerCase();
+
+  const style =
+    normalized === "active"
+      ? "bg-emerald-100 text-emerald-800"
+      : normalized === "pending"
+        ? "bg-amber-100 text-amber-900"
+        : normalized === "closed"
+          ? "bg-sky-100 text-sky-800"
+          : "bg-slate-100 text-slate-700";
+
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${style}`}
+    >
+      {sentenceCase(status)}
+    </span>
+  );
 }
 
 function QualityBadge({ quality }: { quality: ComparisonRow["match_quality"] }) {
