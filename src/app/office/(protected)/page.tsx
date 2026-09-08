@@ -44,6 +44,24 @@ export default async function OfficePage() {
 
         <section className="grid gap-5 sm:grid-cols-2">
           <Link
+            href="/office/listing-comparison"
+            className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-700">
+              Market Position
+            </p>
+
+            <h2 className="mt-2 text-lg font-bold text-slate-950">
+              Listing Comparison Diagnostic
+            </h2>
+
+            <p className="mt-2 text-sm text-slate-600">
+              Review automatically selected current competitors and recent
+              sales for any MLS listing.
+            </p>
+          </Link>
+
+          <Link
             href="/office/closed-sales/agencies"
             className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
           >

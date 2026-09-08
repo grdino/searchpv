@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { isAuthorizedOfficeEmail } from "@/lib/office-auth";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -13,8 +14,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
-
-const OFFICE_EMAILS = new Set(["gerry@ronmorgan.net"]);
 
 export default async function ProtectedOfficeLayout({
   children,
@@ -30,7 +29,7 @@ export default async function ProtectedOfficeLayout({
       : null;
 
   if (!email) redirect("/office/login");
-  if (!OFFICE_EMAILS.has(email)) redirect("/");
+  if (!isAuthorizedOfficeEmail(email)) redirect("/");
 
   return <>{children}</>;
 }

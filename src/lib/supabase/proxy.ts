@@ -4,6 +4,8 @@ import {
   type NextRequest,
 } from "next/server";
 
+import { isAuthorizedOfficeEmail } from "@/lib/office-auth";
+
 function copyCookies(
   source: NextResponse,
   destination: NextResponse,
@@ -99,7 +101,11 @@ export async function updateSession(
     );
   }
 
-  if (claims && isLoginPage) {
+  if (
+    claims &&
+    isLoginPage &&
+    isAuthorizedOfficeEmail(claims.email)
+  ) {
     const officeUrl = request.nextUrl.clone();
 
     officeUrl.pathname = "/office";
