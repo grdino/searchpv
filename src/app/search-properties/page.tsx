@@ -549,9 +549,9 @@ function PopularMarketShortcuts() {
   );
 
   return (
-    <section className="border-b border-slate-200 bg-white px-4 py-5 shadow-sm md:px-8">
+    <section className="border-b border-emerald-200 bg-emerald-50/60 px-4 py-5 shadow-sm md:px-8">
       <div className="mx-auto max-w-6xl">
-        <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+        <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-800">
           Popular Market Shortcuts
         </div>
 
@@ -590,7 +590,7 @@ function ShortcutGroup({
           <Link
             key={preset.id}
             href={buildQuickSearchHref(preset)}
-            className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-800 transition hover:-translate-y-0.5 hover:border-cyan-500 hover:bg-cyan-50 hover:text-cyan-900"
+            className="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-900 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-500 hover:bg-emerald-100"
           >
             {preset.label}
           </Link>
