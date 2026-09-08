@@ -25,6 +25,7 @@ import PropertySearchMarketStatistics from "@/app/components/PropertySearchMarke
 import AreaGuideModal from "@/app/components/AreaGuideModal";
 
 import PropertySearchSaveActions from "@/app/components/PropertySearchSaveActions";
+import { supabase } from "@/lib/supabase";
 
 type SortKey =
   | "name"
@@ -35,6 +36,116 @@ type SortKey =
   | "median_active_dom";
 
 type SortDir = "asc" | "desc";
+
+type QuickSearchId =
+  | "affordable-zona-romantica"
+  | "affordable-versalles"
+  | "affordable-amapas"
+  | "affordable-pv-beachfront"
+  | "value-zona-romantica"
+  | "value-versalles"
+  | "value-amapas"
+  | "value-pv-beachfront";
+
+type QuickSearchPreset = {
+  id: QuickSearchId;
+  label: string;
+  resultTitle: string;
+  sort: "price" | "price_per_sqm";
+  area: string | null;
+  community: string | null;
+  beachfrontOnly: boolean;
+};
+
+type QuickListing = {
+  mls: number;
+  address: string | null;
+  development_name: string | null;
+  community_name: string | null;
+  unit_id: string | null;
+  beds: number | null;
+  baths: number | null;
+  sqm: number | null;
+  current_price: number | null;
+  price_per_sqft: number | null;
+  price_per_sqm: number | null;
+  dom: number | null;
+};
+
+const QUICK_SEARCH_PRESETS: QuickSearchPreset[] = [
+  {
+    id: "affordable-zona-romantica",
+    label: "Zona Romántica",
+    resultTitle: "Most Affordable Condos in Zona Romántica",
+    sort: "price",
+    area: "Centro South",
+    community: "Emiliano Zapata",
+    beachfrontOnly: false,
+  },
+  {
+    id: "affordable-versalles",
+    label: "Versalles",
+    resultTitle: "Most Affordable Condos in Versalles",
+    sort: "price",
+    area: "Francisco Villa West",
+    community: "Versalles",
+    beachfrontOnly: false,
+  },
+  {
+    id: "affordable-amapas",
+    label: "Amapas",
+    resultTitle: "Most Affordable Condos in Amapas",
+    sort: "price",
+    area: "South Shore",
+    community: "Amapas",
+    beachfrontOnly: false,
+  },
+  {
+    id: "affordable-pv-beachfront",
+    label: "PV Beachfront",
+    resultTitle: "Most Affordable Beachfront Condos in Puerto Vallarta",
+    sort: "price",
+    area: null,
+    community: null,
+    beachfrontOnly: true,
+  },
+  {
+    id: "value-zona-romantica",
+    label: "Zona Romántica",
+    resultTitle: "Best Condo Value per m² in Zona Romántica",
+    sort: "price_per_sqm",
+    area: "Centro South",
+    community: "Emiliano Zapata",
+    beachfrontOnly: false,
+  },
+  {
+    id: "value-versalles",
+    label: "Versalles",
+    resultTitle: "Best Condo Value per m² in Versalles",
+    sort: "price_per_sqm",
+    area: "Francisco Villa West",
+    community: "Versalles",
+    beachfrontOnly: false,
+  },
+  {
+    id: "value-amapas",
+    label: "Amapas",
+    resultTitle: "Best Condo Value per m² in Amapas",
+    sort: "price_per_sqm",
+    area: "South Shore",
+    community: "Amapas",
+    beachfrontOnly: false,
+  },
+  {
+    id: "value-pv-beachfront",
+    label: "PV Beachfront",
+    resultTitle: "Best Beachfront Condo Value per m² in Puerto Vallarta",
+    sort: "price_per_sqm",
+    area: null,
+    community: null,
+    beachfrontOnly: true,
+  },
+];
 
 export async function generateMetadata(): Promise<Metadata> {
   const title =
@@ -68,14 +179,20 @@ export default async function SearchPropertiesPage({
 }) {
   const params = await searchParams;
   const filters = parsePropertySearchFilters(params);
+  const quickSearch = getQuickSearchPreset(firstParam(params.quick));
 
   const selectedSort = getSortKey(firstParam(params.sort));
   const selectedDir = getSortDir(firstParam(params.dir));
 
   let pageData;
+  let quickListings: QuickListing[] = [];
 
   try {
     pageData = await getPropertySearchPageData(filters);
+
+    if (quickSearch) {
+      quickListings = await getQuickListings(quickSearch);
+    }
   } catch (error) {
     return (
       <main className="min-h-screen bg-slate-50 p-8 text-slate-900">
@@ -103,6 +220,12 @@ export default async function SearchPropertiesPage({
     selectedSort,
     selectedDir
   );
+
+  const quickSummary = quickSearch
+    ? summarizeQuickListings(quickListings)
+    : null;
+
+  const displayedSummary = quickSummary ?? summary;
 
   const selectedZone = filters.zone ?? "Puerto Vallarta";
   const selectedArea = filters.area;
@@ -254,39 +377,42 @@ export default async function SearchPropertiesPage({
         </div>
       </section>
 
+      <PopularMarketShortcuts />
+
       <section className="mx-auto max-w-6xl px-4 pb-6 pt-0 md:px-8 md:pb-10 md:pt-2">
         <SelectedMarketPanel
           filters={filters}
           displayMode={displayMode}
-          rowCount={displayedRows.length}
+          rowCount={quickSearch ? quickListings.length : displayedRows.length}
+          quickSearch={quickSearch}
         />
 
         <PropertySearchMarketStatistics
-          activeCount={summary.activeCount}
-          pendingCount={summary.pendingCount}
+          activeCount={displayedSummary.activeCount}
+          pendingCount={displayedSummary.pendingCount}
           activeListingHref={
-            summary.activeListingIds
-              ? buildIdxUrl(summary.activeListingIds)
+            displayedSummary.activeListingIds
+              ? buildIdxUrl(displayedSummary.activeListingIds)
               : null
           }
           pendingListingHref={
-            summary.pendingListingIds
-              ? buildIdxUrl(summary.pendingListingIds)
+            displayedSummary.pendingListingIds
+              ? buildIdxUrl(displayedSummary.pendingListingIds)
               : null
           }
-          averageListPrice={summary.averageListPrice}
-          medianListPrice={summary.medianListPrice}
+          averageListPrice={displayedSummary.averageListPrice}
+          medianListPrice={displayedSummary.medianListPrice}
           averageListPricePerSqft={
-            summary.averageListPricePerSqft
+            displayedSummary.averageListPricePerSqft
           }
           medianListPricePerSqft={
-            summary.medianListPricePerSqft
+            displayedSummary.medianListPricePerSqft
           }
           averageListPricePerSqm={
-            summary.averageListPricePerSqm
+            displayedSummary.averageListPricePerSqm
           }
           medianListPricePerSqm={
-            summary.medianListPricePerSqm
+            displayedSummary.medianListPricePerSqm
           }
         />
 
@@ -296,30 +422,37 @@ export default async function SearchPropertiesPage({
           selectedDir={selectedDir}
         />
 
-        <h2
-          id="filtered-snapshot"
-          className="mt-8 text-2xl font-bold"
-        >
-          {displayMode === "area"
-            ? "Filtered Area Snapshot"
-            : displayMode === "community"
-              ? "Filtered Community Snapshot"
-              : "Filtered Development Snapshot"}
-        </h2>
+        {quickSearch ? (
+          <QuickListingResults
+            preset={quickSearch}
+            listings={quickListings}
+          />
+        ) : (
+          <>
+            <h2
+              id="filtered-snapshot"
+              className="mt-8 text-2xl font-bold"
+            >
+              {displayMode === "area"
+                ? "Filtered Area Snapshot"
+                : displayMode === "community"
+                  ? "Filtered Community Snapshot"
+                  : "Filtered Development Snapshot"}
+            </h2>
 
-        <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500">
           Data Current As Of:{" "}
           {snapshotDate ? formatDateOnly(snapshotDate) : "Unknown"}
-        </p>
+            </p>
 
-        <div className="mt-2 flex items-center justify-between gap-3 text-sm font-medium text-slate-600">
+            <div className="mt-2 flex items-center justify-between gap-3 text-sm font-medium text-slate-600">
           <p>Tap or click any column heading to sort.</p>
 
           <p className="shrink-0 md:hidden">
             ← Swipe for more →
           </p>
-        </div>
-        {displayedRows.length === 0 ? (
+            </div>
+            {displayedRows.length === 0 ? (
           <div className="mt-4 rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
             <h3 className="text-lg font-bold">
               No matching properties
@@ -329,7 +462,7 @@ export default async function SearchPropertiesPage({
               of market, geography, and property filters.
             </p>
           </div>
-        ) : (
+            ) : (
           <div className="mt-1 max-h-[70vh] overflow-auto rounded-xl bg-white shadow md:max-h-[65vh]">
             <table className="min-w-[760px] text-sm">
               <thead className="bg-slate-100 text-slate-700 shadow-sm">
@@ -399,9 +532,156 @@ export default async function SearchPropertiesPage({
               </tbody>
             </table>
           </div>
+            )}
+          </>
         )}
       </section>
     </main>
+  );
+}
+
+function PopularMarketShortcuts() {
+  const affordable = QUICK_SEARCH_PRESETS.filter(
+    (preset) => preset.sort === "price"
+  );
+  const value = QUICK_SEARCH_PRESETS.filter(
+    (preset) => preset.sort === "price_per_sqm"
+  );
+
+  return (
+    <section className="border-b border-slate-200 bg-white px-4 py-5 shadow-sm md:px-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+          Popular Market Shortcuts
+        </div>
+
+        <div className="mt-3 grid gap-5 lg:grid-cols-2 lg:gap-8">
+          <ShortcutGroup
+            title="Most Affordable Condos"
+            description="Active resale condos, sorted by lowest list price"
+            presets={affordable}
+          />
+          <ShortcutGroup
+            title="Best Condo Value per m²"
+            description="Active resale condos, sorted by lowest price per m²"
+            presets={value}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ShortcutGroup({
+  title,
+  description,
+  presets,
+}: {
+  title: string;
+  description: string;
+  presets: QuickSearchPreset[];
+}) {
+  return (
+    <div>
+      <h2 className="text-sm font-bold text-slate-950">{title}</h2>
+      <p className="mt-0.5 text-xs text-slate-500">{description}</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {presets.map((preset) => (
+          <Link
+            key={preset.id}
+            href={buildQuickSearchHref(preset)}
+            className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-800 transition hover:-translate-y-0.5 hover:border-cyan-500 hover:bg-cyan-50 hover:text-cyan-900"
+          >
+            {preset.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function QuickListingResults({
+  preset,
+  listings,
+}: {
+  preset: QuickSearchPreset;
+  listings: QuickListing[];
+}) {
+  return (
+    <section id="property-listings" className="mt-8 scroll-mt-4">
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+        <h2 className="text-xl font-bold text-slate-950">
+          {preset.resultTitle}
+        </h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Active resale condos, ranked by {preset.sort === "price"
+            ? "lowest list price"
+            : "lowest list price per m²"}.
+        </p>
+        <p className="mt-1 text-xs text-slate-500">
+          Rankings use current MLS data. Unusually low values may reflect incomplete or inconsistent listing entries.
+        </p>
+      </div>
+
+      {listings.length === 0 ? (
+        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+          <h3 className="text-lg font-bold">No matching listings</h3>
+          <p className="mt-2 text-sm text-slate-600">
+            No current listings match this shortcut&apos;s criteria.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-4 overflow-x-auto rounded-xl bg-white shadow">
+          <table className="min-w-[880px] text-sm">
+            <thead className="bg-slate-100 text-slate-700">
+              <tr>
+                <Th>Rank</Th>
+                <Th>Property</Th>
+                <Th>MLS</Th>
+                <Th>BR / BA</Th>
+                <Th>Interior</Th>
+                <Th>List Price</Th>
+                <Th>Price / m²</Th>
+                <Th>DOM</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {listings.map((listing, index) => (
+                <tr key={listing.mls} className="border-t">
+                  <Td className="font-bold text-slate-500">#{index + 1}</Td>
+                  <Td>
+                    <div className="font-semibold text-slate-950">
+                      {listing.development_name || listing.address || "Condo"}
+                      {listing.unit_id ? ` · Unit ${listing.unit_id}` : ""}
+                    </div>
+                    <div className="mt-0.5 text-xs text-slate-500">
+                      {[listing.community_name, listing.address]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </div>
+                  </Td>
+                  <Td>
+                    <a
+                      href={buildIdxUrl(String(listing.mls))}
+                      className="font-semibold text-blue-700 hover:underline"
+                    >
+                      {listing.mls}
+                    </a>
+                  </Td>
+                  <Td>{formatBedsBaths(listing.beds, listing.baths)}</Td>
+                  <Td>{formatSquareMeters(listing.sqm)}</Td>
+                  <Td className="font-semibold">{formatMoney(listing.current_price)}</Td>
+                  <Td className={preset.sort === "price_per_sqm" ? "font-bold text-amber-800" : ""}>
+                    {formatMoney(listing.price_per_sqm)}
+                  </Td>
+                  <Td>{formatNumber(listing.dom)}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -719,10 +999,12 @@ function SelectedMarketPanel({
   filters,
   displayMode,
   rowCount,
+  quickSearch,
 }: {
   filters: PropertySearchFilters;
   displayMode: PropertySearchDisplayMode;
   rowCount: number;
+  quickSearch: QuickSearchPreset | null;
 }) {
   const labels = buildSelectedMarketLabels(filters);
 
@@ -744,6 +1026,7 @@ function SelectedMarketPanel({
   const filterSummary = [
     ...locationLabels,
     ...labels,
+    ...(quickSearch ? ["Active", quickSearch.resultTitle] : []),
   ].join(" · ");
 
   return (
@@ -817,9 +1100,31 @@ function SelectedMarketPanel({
         </div>
       )}
 
+      {quickSearch && (
+        <div className="ml-4 mt-2 flex flex-wrap gap-2">
+          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">
+            Active
+          </span>
+          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">
+            {quickSearch.sort === "price"
+              ? "Lowest price first"
+              : "Lowest price per m² first"}
+          </span>
+          {quickSearch.beachfrontOnly && (
+            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">
+              Beachfront only
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="ml-4 mt-2 font-bold text-slate-500">
         {rowCount.toLocaleString()}{" "}
-        {displayMode === "area"
+        {quickSearch
+          ? rowCount === 1
+            ? "listing"
+            : "listings"
+          : displayMode === "area"
           ? "areas"
           : displayMode === "community"
             ? "communities"
@@ -1272,6 +1577,197 @@ function sortFilteredRows(
       ? aNumber - bNumber
       : bNumber - aNumber;
   });
+}
+
+function getQuickSearchPreset(
+  value?: string
+): QuickSearchPreset | null {
+  return (
+    QUICK_SEARCH_PRESETS.find((preset) => preset.id === value) ?? null
+  );
+}
+
+function buildQuickSearchHref(preset: QuickSearchPreset): string {
+  const params = new URLSearchParams({
+    market: "resale",
+    propertyType: "condos",
+    quick: preset.id,
+  });
+
+  if (preset.area) params.set("area", preset.area);
+  if (preset.community) params.set("community", preset.community);
+
+  return `/search-properties?${params.toString()}#property-listings`;
+}
+
+async function getQuickListings(
+  preset: QuickSearchPreset
+): Promise<QuickListing[]> {
+  let query = supabase
+    .from("current_search_listing")
+    .select(
+      "mls,address,development_name,community_name,beds,baths,sqm,current_price,price_per_sqft,price_per_sqm,dom"
+    )
+    .eq("listing_status", "active")
+    .eq("property_type_segment", "condos")
+    .eq("market_segment", "resale")
+    .eq("zone_name", "Puerto Vallarta")
+    .gt("current_price", 0);
+
+  if (preset.area) {
+    query = query.eq("area_name", preset.area);
+  }
+
+  if (preset.community) {
+    query = query.eq(
+      "community_name",
+      preset.community
+    );
+  }
+
+  if (preset.beachfrontOnly) {
+    query = query.eq("beachfront_fl", true);
+  }
+
+  if (preset.sort === "price_per_sqm") {
+    query = query.gt("price_per_sqm", 0);
+  }
+
+  const orderColumn =
+    preset.sort === "price"
+      ? "current_price"
+      : "price_per_sqm";
+
+  const { data, error } = await query
+    .order(orderColumn, {
+      ascending: true,
+      nullsFirst: false,
+    })
+    .limit(500);
+
+  if (error) {
+    throw new Error(
+      `Unable to load market shortcut listings: ${error.message}`
+    );
+  }
+
+  /*
+   * Unit numbers are stored on active_listing but are not
+   * currently exposed by current_search_listing.
+   */
+  const mlsNumbers = (data ?? [])
+    .map((row) => Number(row.mls))
+    .filter(Number.isFinite);
+
+  const { data: unitRows, error: unitError } =
+    mlsNumbers.length > 0
+      ? await supabase
+          .from("active_listing")
+          .select("mls,unit_id")
+          .in("mls", mlsNumbers)
+      : {
+          data: [],
+          error: null,
+        };
+
+  if (unitError) {
+    throw new Error(
+      `Unable to load market shortcut unit numbers: ${unitError.message}`
+    );
+  }
+
+  const unitByMls = new Map(
+    (unitRows ?? []).map((row) => [
+      Number(row.mls),
+      row.unit_id,
+    ])
+  );
+
+  return (data ?? []).map((row) => ({
+    mls: Number(row.mls),
+    address: row.address,
+    development_name: row.development_name,
+    community_name: row.community_name,
+    unit_id:
+      unitByMls.get(Number(row.mls)) ?? null,
+    beds: nullableNumberValue(row.beds),
+    baths: nullableNumberValue(row.baths),
+    sqm: nullableNumberValue(row.sqm),
+    current_price: nullableNumberValue(
+      row.current_price
+    ),
+    price_per_sqft: nullableNumberValue(
+      row.price_per_sqft
+    ),
+    price_per_sqm: nullableNumberValue(
+      row.price_per_sqm
+    ),
+    dom: nullableNumberValue(row.dom),
+  }));
+}
+
+function summarizeQuickListings(listings: QuickListing[]) {
+  const prices = numericListingValues(listings, "current_price");
+  const pricesPerSqft = numericListingValues(listings, "price_per_sqft");
+  const pricesPerSqm = numericListingValues(listings, "price_per_sqm");
+  const domValues = numericListingValues(listings, "dom");
+
+  return {
+    activeCount: listings.length,
+    pendingCount: 0,
+    totalCount: listings.length,
+    averageListPrice: average(prices),
+    medianListPrice: median(prices),
+    averageListPricePerSqft: average(pricesPerSqft),
+    medianListPricePerSqft: median(pricesPerSqft),
+    averageListPricePerSqm: average(pricesPerSqm),
+    medianListPricePerSqm: median(pricesPerSqm),
+    medianActiveDom: median(domValues),
+    activeListingIds: listings.map((listing) => listing.mls).join(",") || null,
+    pendingListingIds: null,
+    allListingIds: listings.map((listing) => listing.mls).join(",") || null,
+    snapshotDate: null,
+  };
+}
+
+function numericListingValues(
+  listings: QuickListing[],
+  key: "current_price" | "price_per_sqft" | "price_per_sqm" | "dom"
+): number[] {
+  return listings
+    .map((listing) => listing[key])
+    .filter((value): value is number => value !== null && value > 0);
+}
+
+function average(values: number[]): number | null {
+  if (values.length === 0) return null;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function median(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function nullableNumberValue(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : null;
+}
+
+function formatBedsBaths(
+  beds: number | null,
+  baths: number | null
+): string {
+  return `${formatNumber(beds)} / ${formatNumber(baths)}`;
+}
+
+function formatSquareMeters(value: number | null): string {
+  return value === null ? "-" : `${formatNumber(value)} m²`;
 }
 
 function getSortKey(value?: string): SortKey {
