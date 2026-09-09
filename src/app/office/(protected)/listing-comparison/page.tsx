@@ -636,6 +636,39 @@ function formatDate(value: string | null) {
   }).format(date);
 }
 
+function formatDistance(value: number | null) {
+  if (
+    value === null ||
+    !Number.isFinite(Number(value))
+  ) {
+    return "Distance unknown";
+  }
+
+  if (value < 1000) {
+    return `${formatNumber(value)} m away`;
+  }
+
+  return `${formatNumber(value / 1000, 1)} km away`;
+}
+
+function formatSizeDifference(value: number) {
+  const amount = Math.abs(Number(value));
+
+  if (amount < 0.05) {
+    return "Same interior size";
+  }
+
+  return `${formatNumber(amount, 1)}% ${
+    Number(value) >= 0 ? "larger" : "smaller"
+  }`;
+}
+
+function formatSigned(value: number) {
+  return value > 0
+    ? `+${formatNumber(value)}`
+    : formatNumber(value);
+}
+
 function sentenceCase(value: string) {
   if (!value) return "";
 
