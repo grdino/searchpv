@@ -83,14 +83,7 @@ export default function HomeDiscoveryBackdrop() {
           </h1>
 
           <div className="mt-6 grid w-full gap-2 sm:grid-cols-2 md:mt-10 md:gap-3">
-            <HomePill
-              href="/atlas/discover"
-              title="Discover the Bay"
-              detail="Take the visual tour"
-              Icon={Compass}
-              tone="cyan"
-            />
-
+            
             <HomePill
               href="/search-properties"
               title="Search Properties"
@@ -102,7 +95,7 @@ export default function HomeDiscoveryBackdrop() {
             <HomePill
               href="/atlas"
               title="Explore the Map"
-              detail="Open Atlas directly"
+              detail="Open Atlas Map"
               Icon={Map}
               tone="sky"
               hardNavigate
@@ -111,9 +104,17 @@ export default function HomeDiscoveryBackdrop() {
             <HomePill
               href="/market-intelligence"
               title="Market Intelligence"
-              detail="Inventory, sales and trends"
+              detail="Active/Pending Inventory, Closed sales and trends"
               Icon={BarChart3}
               tone="indigo"
+            />
+
+            <HomePill
+              href="/atlas/discover"
+              title="Discover the Bay"
+              detail="Take a visual tour"
+              Icon={Compass}
+              tone="cyan"
             />
           </div>
         </section>
