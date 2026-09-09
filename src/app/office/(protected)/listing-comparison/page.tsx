@@ -65,7 +65,7 @@ type SubjectListing = {
   snapshot_date: string;
 };
 
-const TEST_SUBJECTS = [39537, 42019, 42782, 43394, 44568, 44733];
+const TEST_SUBJECTS = [39537, 42019, 42033, 42782, 43394, 44568, 44733];
 
 export default async function ListingComparisonDiagnosticPage({
   searchParams,
@@ -93,7 +93,8 @@ export default async function ListingComparisonDiagnosticPage({
         .maybeSingle(),
       supabase.rpc("internal_listing_comparison_diagnostic", {
         p_mls: selectedMls,
-        p_candidate_limit: 5,
+        /* Match the public page's balanced local/nearby selection pool. */
+        p_candidate_limit: 10,
       }),
     ]);
 
@@ -107,12 +108,8 @@ export default async function ListingComparisonDiagnosticPage({
     }
   }
 
-  const currentRows = rows.filter(
-    (row) => row.comparison_section === "current_competition",
-  );
-  const closedRows = rows.filter(
-    (row) => row.comparison_section === "recent_sales",
-  );
+  const currentRows = selectPublicRows(rows, "current_competition");
+  const closedRows = selectPublicRows(rows, "recent_sales");
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -134,8 +131,8 @@ export default async function ListingComparisonDiagnosticPage({
             Listing Comparison Diagnostic
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
-            Inspect SearchPV&apos;s recommended current competitors and recent
-            sales before the comparison experience is released publicly.
+            Inspect the same comparisons shown publicly, together with the
+            internal scoring details used to validate each selection.
           </p>
 
           <form
@@ -217,9 +214,8 @@ export default async function ListingComparisonDiagnosticPage({
             <h2 className="text-xl font-bold">Choose a subject listing</h2>
             <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-600">
               Enter any current Active or Pending MLS number, or select one of
-              the six validation subjects above. The page returns five ranked
-              candidates per section; the first three represent the proposed
-              public result.
+              the validation subjects above. The page mirrors the public
+              selection while retaining internal scores and limitation details.
             </p>
           </div>
         )}
@@ -232,12 +228,14 @@ export default async function ListingComparisonDiagnosticPage({
               title="Current Competition"
               description="Active and Pending properties competing for buyers now. Pending contract prices are not available."
               rows={currentRows}
+              subjectCommunity={subject.community_name}
             />
 
             <ComparisonSection
               title="Recent Sales"
               description="Closed properties from the normal 12-month pool, expanded to 18 months only when recent good matches are limited."
               rows={closedRows}
+              subjectCommunity={subject.community_name}
             />
 
             <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-600">
@@ -301,12 +299,23 @@ function ComparisonSection({
   title,
   description,
   rows,
+  subjectCommunity,
 }: {
   title: string;
   description: string;
   rows: ComparisonRow[];
+  subjectCommunity: string | null;
 }) {
-  const credibleRows = rows.filter((row) => row.match_quality !== "omit");
+  const hasCloseLocalMatch = rows.some(
+    (row) =>
+      isLocalRow(row) &&
+      row.comp_beds === row.subject_beds &&
+      Math.abs(row.size_difference_pct) <= 20,
+  );
+  const hasLocalContext = rows.some(isLocalRow);
+  const hasNearbyContext = rows.some((row) => !isLocalRow(row));
+  const showMixedContextNotice =
+    !hasCloseLocalMatch && hasLocalContext && hasNearbyContext;
 
   return (
     <section className="mt-10">
@@ -318,10 +327,20 @@ function ComparisonSection({
           </p>
         </div>
         <p className="text-sm font-semibold text-slate-500">
-          {credibleRows.length} credible candidate
-          {credibleRows.length === 1 ? "" : "s"} in the first five
+          {rows.length} public comparison{rows.length === 1 ? "" : "s"}
         </p>
       </div>
+
+      {showMixedContextNotice && (
+        <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+          <p className="font-black">
+            No closely equivalent comparison was found in {subjectCommunity || "the subject community"}.
+          </p>
+          <p className="mt-1">
+            Local-community listings are included to show local pricing, although their bedroom count or interior size differs. Listings from nearby communities are also included because they are closer in size or bedroom count, but prices can differ substantially by community. No pricing adjustments have been made for any of these differences.
+          </p>
+        </div>
+      )}
 
       {rows.length === 0 ? (
         <Notice tone="neutral">
@@ -330,7 +349,7 @@ function ComparisonSection({
       ) : (
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           {rows.map((row) => (
-            <CandidateCard key={`${row.comparison_section}-${row.comp_mls}`} row={row} />
+            <CandidateCard key={`${row.comparison_section}-${row.comp_mls}`} row={row} subjectCommunity={subjectCommunity} />
           ))}
         </div>
       )}
@@ -338,8 +357,8 @@ function ComparisonSection({
   );
 }
 
-function CandidateCard({ row }: { row: ComparisonRow }) {
-  const isDefault = row.diagnostic_rank <= 3 && row.match_quality !== "omit";
+function CandidateCard({ row, subjectCommunity }: { row: ComparisonRow; subjectCommunity: string | null }) {
+  const isDefault = row.match_quality !== "omit";
   const limitations = row.limitation_codes ?? [];
 
   return (
@@ -354,10 +373,11 @@ function CandidateCard({ row }: { row: ComparisonRow }) {
             <span className="rounded-full bg-slate-950 px-2.5 py-1 text-xs font-black text-white">
               #{row.diagnostic_rank}
             </span>
+            <ContextBadge row={row} subjectCommunity={subjectCommunity} />
             <QualityBadge quality={row.match_quality} />
             {isDefault && (
               <span className="text-xs font-bold uppercase tracking-wide text-emerald-700">
-                Default comp
+                Public selection
               </span>
             )}
           </div>
@@ -450,6 +470,77 @@ function QualityBadge({ quality }: { quality: ComparisonRow["match_quality"] }) 
   );
 }
 
+function ContextBadge({
+  row,
+  subjectCommunity,
+}: {
+  row: ComparisonRow;
+  subjectCommunity: string | null;
+}) {
+  const local = isLocalRow(row);
+  const hasPhysicalDifference =
+    row.comp_beds !== row.subject_beds ||
+    Math.abs(row.size_difference_pct) > 20;
+
+  const label = !local
+    ? "Nearby physical context"
+    : hasPhysicalDifference
+      ? `${subjectCommunity || "Local"} pricing context`
+      : "Local comparable";
+
+  const style = !local
+    ? "bg-violet-100 text-violet-800"
+    : hasPhysicalDifference
+      ? "bg-cyan-100 text-cyan-800"
+      : "bg-emerald-100 text-emerald-800";
+
+  return (
+    <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${style}`}>
+      {label}
+    </span>
+  );
+}
+
+function selectPublicRows(
+  rows: ComparisonRow[],
+  section: ComparisonRow["comparison_section"],
+) {
+  const eligible = rows.filter(
+    (row) =>
+      row.comparison_section === section && row.match_quality !== "omit",
+  );
+  const local = eligible.filter(isLocalRow);
+  const nearby = eligible.filter((row) => !isLocalRow(row));
+  const hasCloseLocalMatch = local.some(
+    (row) =>
+      row.comp_beds === row.subject_beds &&
+      Math.abs(row.size_difference_pct) <= 20,
+  );
+
+  if (hasCloseLocalMatch || local.length === 0 || nearby.length === 0) {
+    return eligible.slice(0, 5);
+  }
+
+  const selected = [...local.slice(0, 3), ...nearby.slice(0, 2)];
+  const selectedMls = new Set(selected.map((row) => row.comp_mls));
+
+  for (const row of eligible) {
+    if (selected.length >= 5) break;
+    if (!selectedMls.has(row.comp_mls)) {
+      selected.push(row);
+      selectedMls.add(row.comp_mls);
+    }
+  }
+
+  return selected;
+}
+
+function isLocalRow(row: ComparisonRow) {
+  return !(row.limitation_codes ?? []).includes(
+    "GEOGRAPHY_EXPANDED_BEYOND_COMMUNITY",
+  );
+}
+
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
@@ -492,7 +583,8 @@ function Notice({
 
 function limitationText(code: string) {
   const messages: Record<string, string> = {
-    BEDROOM_COUNT_RELAXED: "Bedroom count was expanded by one.",
+    BEDROOM_COUNT_RELAXED:
+      "Bedroom count was relaxed because closer local matches were limited.",
     SIZE_BAND_RELAXED: "Interior size differs by more than 20%.",
     NOT_SAME_COMPARISON_DEVELOPMENT: "This is not the same development.",
     GEOGRAPHY_EXPANDED_BEYOND_COMMUNITY:
@@ -543,25 +635,3 @@ function formatDate(value: string | null) {
     timeZone: "UTC",
   }).format(date);
 }
-
-function formatDistance(value: number | null) {
-  if (value === null || !Number.isFinite(Number(value))) return "Distance unknown";
-  if (value < 1000) return `${formatNumber(value)} m away`;
-  return `${formatNumber(value / 1000, 1)} km away`;
-}
-
-function formatSizeDifference(value: number) {
-  const amount = Math.abs(Number(value));
-  if (amount < 0.05) return "Same interior size";
-  return `${formatNumber(amount, 1)}% ${Number(value) >= 0 ? "larger" : "smaller"}`;
-}
-
-function formatSigned(value: number) {
-  return value > 0 ? `+${formatNumber(value)}` : formatNumber(value);
-}
-
-function sentenceCase(value: string) {
-  if (!value) return "";
-  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-}
-
