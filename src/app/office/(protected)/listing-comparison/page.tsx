@@ -635,3 +635,12 @@ function formatDate(value: string | null) {
     timeZone: "UTC",
   }).format(date);
 }
+
+function sentenceCase(value: string) {
+  if (!value) return "";
+
+  return (
+    value.charAt(0).toUpperCase() +
+    value.slice(1).toLowerCase()
+  );
+}
