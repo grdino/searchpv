@@ -640,11 +640,15 @@ function QuickListingResults({
             <table className="min-w-[880px] text-sm">
               <thead className="bg-slate-100 text-slate-700">
                 <tr>
-                  <Th className="sticky left-0 z-20 border-r border-slate-200 bg-slate-100">
+                  <Th className="sticky left-0 z-30 border-r border-slate-200 bg-slate-100">
                     Rank
                   </Th>
+
+                  <Th className="sticky left-[78px] z-30 border-r border-slate-200 bg-slate-100">
+                    MLS
+                  </Th>
+
                   <Th>Property</Th>
-                  <Th>MLS</Th>
                   <Th>BR / BA</Th>
                   <Th>Interior</Th>
                   <Th>List Price</Th>
@@ -656,23 +660,11 @@ function QuickListingResults({
               <tbody>
                 {listings.map((listing, index) => (
                   <tr key={listing.mls} className="border-t">
-                    <Td className="sticky left-0 z-10 border-r border-slate-200 bg-white font-bold text-slate-500">
+                    <Td className="sticky left-0 z-20 w-[78px] min-w-[78px] border-r border-slate-200 bg-white font-bold text-slate-500">
                       #{index + 1}
                     </Td>
 
-                    <Td>
-                      <div className="font-semibold text-slate-950">
-                        {listing.development_name || listing.address || "Condo"}
-                        {listing.unit_id ? ` · Unit ${listing.unit_id}` : ""}
-                      </div>
-                      <div className="mt-0.5 text-xs text-slate-500">
-                        {[listing.community_name, listing.address]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </div>
-                    </Td>
-
-                    <Td>
+                    <Td className="sticky left-[78px] z-20 border-r border-slate-200 bg-white">
                       <a
                         href={buildIdxUrl(String(listing.mls))}
                         className="font-semibold text-blue-700 hover:underline"
@@ -681,7 +673,21 @@ function QuickListingResults({
                       </a>
                     </Td>
 
+                    <Td>
+                      <div className="font-semibold text-slate-950">
+                        {listing.development_name || listing.address || "Condo"}
+                        {listing.unit_id ? ` · Unit ${listing.unit_id}` : ""}
+                      </div>
+
+                      <div className="mt-0.5 text-xs text-slate-500">
+                        {[listing.community_name, listing.address]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
+                    </Td>
+
                     <Td>{formatBedsBaths(listing.beds, listing.baths)}</Td>
+
                     <Td>{formatSquareMeters(listing.sqm)}</Td>
 
                     <Td className="font-semibold">
