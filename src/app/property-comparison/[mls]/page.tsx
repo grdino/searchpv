@@ -89,7 +89,8 @@ export default async function PropertyComparisonPage({ params, searchParams }: P
       .maybeSingle(),
     supabase.rpc("internal_listing_comparison_diagnostic", {
       p_mls: mls,
-      p_candidate_limit: 5,
+      /* Fetch enough ranked candidates to balance local and nearby context. */
+      p_candidate_limit: 10,
     }),
   ]);
 
@@ -102,6 +103,8 @@ export default async function PropertyComparisonPage({ params, searchParams }: P
   const rows = (comparisonResponse.data ?? []) as ComparisonRow[];
   const currentRows = credible(rows, "current_competition");
   const closedRows = credible(rows, "recent_sales");
+  const currentPositionRows = localMarketRows(currentRows);
+  const closedPositionRows = localMarketRows(closedRows);
 
   const currentMlsNumbers = [mls, ...currentRows.map((row) => row.comp_mls)];
   const [activeUnitsResponse, pendingUnitsResponse, closedUnitsResponse] = await Promise.all([
@@ -168,9 +171,9 @@ export default async function PropertyComparisonPage({ params, searchParams }: P
 
       <div className="mx-auto max-w-7xl px-4 py-7 md:px-8">
         <SubjectCard subject={subject} unit={unitByMls.get(mls) ?? null} />
-        <MarketPosition subject={subject} currentRows={currentRows} closedRows={closedRows} />
-        <ComparisonSection title="Current Competition" description="Active and Pending listings competing for buyers now. Pending contract prices are not available." rows={currentRows} unitByMls={unitByMls} showUnits={subject.property_type_segment === "condos"} />
-        <ComparisonSection title="Recent Sales" description="Comparable closed sales from the past 12 months, extended to 18 months only when recent evidence is limited." rows={closedRows} unitByMls={unitByMls} showUnits={subject.property_type_segment === "condos"} />
+        <MarketPosition subject={subject} currentRows={currentPositionRows} closedRows={closedPositionRows} />
+        <ComparisonSection title="Current Competition" description="Active and Pending listings competing for buyers now. Pending contract prices are not available." rows={currentRows} unitByMls={unitByMls} showUnits={subject.property_type_segment === "condos"} subjectCommunity={subject.community_name} />
+        <ComparisonSection title="Recent Sales" description="Comparable closed sales from the past 12 months, extended to 18 months only when recent evidence is limited." rows={closedRows} unitByMls={unitByMls} showUnits={subject.property_type_segment === "condos"} subjectCommunity={subject.community_name} />
 
         <section className="mt-10 rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-600">
           <h2 className="font-bold text-slate-950">What this comparison can—and cannot—show</h2>
@@ -239,7 +242,7 @@ function MarketPosition({ subject, currentRows, closedRows }: { subject: Subject
           <p className="text-xs font-black uppercase tracking-[0.15em] text-amber-800">At a glance</p>
           <h2 className="mt-1 text-2xl font-black">Market position</h2>
         </div>
-        <p className="text-xs font-semibold text-slate-500">Medians of the selected credible comparisons</p>
+        <p className="text-xs font-semibold text-slate-500">Medians of selected local comparisons</p>
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <PositionCard label="Asking price" value={relativeText(subject.current_price, currentPrice)} detail={sampleText(currentRows.length, "current listing")} />
@@ -259,32 +262,49 @@ function MarketPosition({ subject, currentRows, closedRows }: { subject: Subject
   );
 }
 
-function ComparisonSection({ title, description, rows, unitByMls, showUnits }: { title: string; description: string; rows: ComparisonRow[]; unitByMls: Map<number, string>; showUnits: boolean }) {
+function ComparisonSection({ title, description, rows, unitByMls, showUnits, subjectCommunity }: { title: string; description: string; rows: ComparisonRow[]; unitByMls: Map<number, string>; showUnits: boolean; subjectCommunity: string | null }) {
+  const hasCloseLocalMatch = rows.some((row) =>
+    isLocalRow(row) &&
+    row.comp_beds === row.subject_beds &&
+    Math.abs(row.size_difference_pct) <= 20
+  );
+  const hasLocalContext = rows.some(isLocalRow);
+  const hasNearbyContext = rows.some((row) => !isLocalRow(row));
+  const showMixedContextNotice = !hasCloseLocalMatch && hasLocalContext && hasNearbyContext;
+
   return (
     <section className="mt-10">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
         <div><h2 className="text-2xl font-black">{title}</h2><p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">{description}</p></div>
         <p className="text-sm font-semibold text-slate-500">{sampleText(rows.length, "credible comparison")}</p>
       </div>
+      {showMixedContextNotice && (
+        <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+          <p className="font-black">No closely equivalent comparison was found in {subjectCommunity || "the subject community"}.</p>
+          <p className="mt-1">
+            Local-community listings are included to show local pricing, although their bedroom count or interior size differs. Listings from nearby communities are also included because they are closer in size or bedroom count, but prices can differ substantially by community. No pricing adjustments have been made for any of these differences.
+          </p>
+        </div>
+      )}
       {rows.length === 0 ? (
         <div className="mt-4 rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600">No sufficiently credible comparisons were found.</div>
       ) : (
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          {rows.map((row) => <CandidateCard key={`${row.comparison_section}-${row.comp_mls}`} row={row} unit={showUnits ? unitByMls.get(row.comp_mls) ?? null : null} />)}
+          {rows.map((row) => <CandidateCard key={`${row.comparison_section}-${row.comp_mls}`} row={row} unit={showUnits ? unitByMls.get(row.comp_mls) ?? null : null} subjectCommunity={subjectCommunity} />)}
         </div>
       )}
     </section>
   );
 }
 
-function CandidateCard({ row, unit }: { row: ComparisonRow; unit: string | null }) {
+function CandidateCard({ row, unit, subjectCommunity }: { row: ComparisonRow; unit: string | null; subjectCommunity: string | null }) {
   const isClosed = row.comparison_section === "recent_sales";
   const href = isClosed ? `/market-intelligence/closed-sales/${row.comp_mls}` : buildIdxUrl(String(row.comp_mls));
   return (
     <article className="break-inside-avoid rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-slate-950 px-2.5 py-1 text-xs font-black text-white">#{row.diagnostic_rank}</span><QualityBadge quality={row.match_quality} /></div>
+          <div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-slate-950 px-2.5 py-1 text-xs font-black text-white">#{row.diagnostic_rank}</span><ContextBadge row={row} subjectCommunity={subjectCommunity} /><QualityBadge quality={row.match_quality} /></div>
           <h3 className="mt-3 text-lg font-black">{row.comp_development_name || `MLS #${row.comp_mls}`}{unit ? ` · Unit ${unit}` : ""}</h3>
           <p className="mt-1 text-sm text-slate-600">
             <Link href={href} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-700 hover:underline">MLS #{row.comp_mls} ↗</Link>
@@ -326,7 +346,60 @@ function CandidateCard({ row, unit }: { row: ComparisonRow; unit: string | null 
 }
 
 function credible(rows: ComparisonRow[], section: ComparisonRow["comparison_section"]) {
-  return rows.filter((row) => row.comparison_section === section && row.match_quality !== "omit").slice(0, 5);
+  const eligible = rows.filter(
+    (row) => row.comparison_section === section && row.match_quality !== "omit"
+  );
+  const local = eligible.filter(isLocalRow);
+  const nearby = eligible.filter((row) => !isLocalRow(row));
+  const hasCloseLocalMatch = local.some(
+    (row) => row.comp_beds === row.subject_beds && Math.abs(row.size_difference_pct) <= 20
+  );
+
+  if (hasCloseLocalMatch || local.length === 0 || nearby.length === 0) {
+    return eligible.slice(0, 5);
+  }
+
+  /*
+   * When the community has no close physical match, show both sides of the
+   * evidence: up to three local pricing references and two nearby physical
+   * references. Neither group is represented as an adjusted valuation.
+   */
+  const selected = [...local.slice(0, 3), ...nearby.slice(0, 2)];
+  const selectedMls = new Set(selected.map((row) => row.comp_mls));
+
+  for (const row of eligible) {
+    if (selected.length >= 5) break;
+    if (!selectedMls.has(row.comp_mls)) {
+      selected.push(row);
+      selectedMls.add(row.comp_mls);
+    }
+  }
+
+  return selected;
+}
+
+function isLocalRow(row: ComparisonRow) {
+  return !(row.limitation_codes ?? []).includes(
+    "GEOGRAPHY_EXPANDED_BEYOND_COMMUNITY"
+  );
+}
+
+/*
+ * Broader geographic fallbacks can still be shown as useful context, but they
+ * must not drive the headline market-position medians. Comparison-development
+ * aliases remain eligible even when their raw MLS community labels differ.
+ */
+function localMarketRows(rows: ComparisonRow[]) {
+  return rows.filter((row) => {
+    const expandedBeyondCommunity = (row.limitation_codes ?? []).includes(
+      "GEOGRAPHY_EXPANDED_BEYOND_COMMUNITY"
+    );
+
+    return (
+      !expandedBeyondCommunity ||
+      row.primary_geography_reason === "same comparison development"
+    );
+  });
 }
 
 function PositionCard({ label, value, detail }: { label: string; value: string; detail: string }) {
@@ -377,6 +450,26 @@ function QualityBadge({ quality }: { quality: ComparisonRow["match_quality"] }) 
   return <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${style}`}>{sentenceCase(quality)} match</span>;
 }
 
+function ContextBadge({ row, subjectCommunity }: { row: ComparisonRow; subjectCommunity: string | null }) {
+  const local = isLocalRow(row);
+  const hasPhysicalDifference =
+    row.comp_beds !== row.subject_beds || Math.abs(row.size_difference_pct) > 20;
+
+  const label = !local
+    ? "Nearby physical context"
+    : hasPhysicalDifference
+      ? `${subjectCommunity || "Local"} pricing context`
+      : "Local comparable";
+
+  const style = !local
+    ? "bg-violet-100 text-violet-800"
+    : hasPhysicalDifference
+      ? "bg-cyan-100 text-cyan-800"
+      : "bg-emerald-100 text-emerald-800";
+
+  return <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${style}`}>{label}</span>;
+}
+
 function median(values: Array<number | null>) {
   const clean = values
     .filter((value): value is number => value !== null && Number.isFinite(Number(value)))
@@ -419,7 +512,7 @@ function cleanUnit(value: string | null) {
 
 function limitationText(code: string) {
   const messages: Record<string, string> = {
-    BEDROOM_COUNT_RELAXED: "Bedroom count was expanded by one because closer matches were limited.",
+    BEDROOM_COUNT_RELAXED: "Bedroom count was relaxed because closer local matches were limited.",
     SIZE_BAND_RELAXED: "Interior size differs by more than 20%.",
     NOT_SAME_COMPARISON_DEVELOPMENT: "This is not the same development.",
     SAME_DEVELOPMENT_LOCATION_CONFLICT: "The MLS development name matches, but the reported locations conflict.",
