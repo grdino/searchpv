@@ -94,8 +94,14 @@ export default function AtlasDiscoverScene() {
       currentIndexRef.current = index;
       setCurrentIndex(index);
       setScene(nextScene);
-      setSceneVisible(false);
-      setArtworkVisible(false);
+      const isInitialWaitingScene =
+        statusRef.current === "waiting" && index === initialIndex;
+
+      if (!isInitialWaitingScene) {
+        setSceneVisible(false);
+        setArtworkVisible(false);
+      }
+
       setMessageVisible(false);
       setTourStatus("running");
 
@@ -103,10 +109,12 @@ export default function AtlasDiscoverScene() {
       // pause, a manual destination jump, or a tour restart.
       window.dispatchEvent(new Event("atlas-discover-resume"));
 
-      later(() => {
-        setSceneVisible(true);
-        revealArtwork();
-      }, timing.artworkDelay);
+      if (!isInitialWaitingScene) {
+        later(() => {
+          setSceneVisible(true);
+          revealArtwork();
+        }, timing.artworkDelay);
+      }
 
       later(() => {
         if (atlasReadyRef.current) {
@@ -213,15 +221,23 @@ export default function AtlasDiscoverScene() {
 
     window.addEventListener("atlas-discover-ready", handleAtlasReady);
 
-    // Discovery is now entered through an intentional user action, so begin
-    // the visual sequence immediately instead of waiting for Mapbox. The
-    // selected Atlas area remains in state and the map can react as it becomes
-    // ready. The ready event above is retained as a fallback and cannot start
-    // the tour twice because startTour only runs from the waiting state.
-    // Use a managed zero-delay timer so React Strict Mode can perform its
-    // development-only setup/cleanup cycle without leaving the tour marked as
-    // running after its scene timers have been cleared.
-    later(startTour, 0);
+    // Show the opening Zona Romántica artwork immediately while Atlas/Mapbox
+    // finishes loading, but do not start the Discovery timing until Atlas
+    // reports that it is ready.
+    setScene(ATLAS_DISCOVER_SEQUENCE[initialIndex]);
+    setSceneVisible(true);
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        setArtworkVisible(true);
+      });
+    });
+
+    // If Atlas was already ready before this component mounted, start now.
+    // Otherwise handleAtlasReady() will start the tour when Mapbox is ready.
+    if (atlasReadyRef.current) {
+      startTour();
+    }
 
     return () => {
       clearTimers();
