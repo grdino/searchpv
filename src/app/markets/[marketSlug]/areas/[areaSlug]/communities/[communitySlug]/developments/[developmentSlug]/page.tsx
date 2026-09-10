@@ -196,13 +196,34 @@ export async function generateMetadata({
 
   const pageUrl = `https://searchpv.com/markets/${routeParams.marketSlug}/areas/${routeParams.areaSlug}/communities/${routeParams.communitySlug}/developments/${routeParams.developmentSlug}`;
 
-  const title = `${developmentName} Real Estate Market | ${communityName}, ${zoneName} | SearchPV`;
-
+  const title = `${developmentName} Real Estate Market | ${communityName}, ${zoneName}`;
   const description = `Current inventory, pricing, sales activity, walkability, nearby amenities, and market trends for ${developmentName} in ${communityName}, ${areaName}, ${zoneName}.`;
+
+  const { data } = await supabase
+    .from("development_snapshot")
+    .select("active_count, pending_count, sales_12mo")
+    .eq("zone_slug", routeParams.marketSlug)
+    .eq("area_slug", routeParams.areaSlug)
+    .eq("community_slug", routeParams.communitySlug)
+    .eq("development_slug", routeParams.developmentSlug)
+    .eq("market_segment", "all")
+    .eq("property_type_segment", "all")
+    .maybeSingle();
+
+  const hasActivity =
+    (data?.active_count ?? 0) > 0 ||
+    (data?.pending_count ?? 0) > 0 ||
+    (data?.sales_12mo ?? 0) > 0;
 
   return {
     title,
     description,
+    robots: hasActivity
+      ? undefined
+      : {
+          index: false,
+          follow: true,
+        },
     alternates: {
       canonical: pageUrl,
     },

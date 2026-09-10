@@ -190,13 +190,32 @@ export async function generateMetadata({
 
   const pageUrl = `https://searchpv.com/markets/${routeParams.marketSlug}/areas/${routeParams.areaSlug}`;
 
-  const title = `${areaName} Real Estate Market | ${zoneName} | SearchPV`;
-
+  const title = `${areaName} Real Estate Market | ${zoneName}`;
   const description = `Current inventory, pricing, sales activity, community snapshots, and market trends for ${areaName} in ${zoneName}.`;
+
+  const { data } = await supabase
+    .from("area_snapshot")
+    .select("active_count, pending_count, sales_12mo")
+    .eq("zone_slug", routeParams.marketSlug)
+    .eq("area_slug", routeParams.areaSlug)
+    .eq("market_segment", "all")
+    .eq("property_type_segment", "all")
+    .maybeSingle();
+
+  const hasActivity =
+    (data?.active_count ?? 0) > 0 ||
+    (data?.pending_count ?? 0) > 0 ||
+    (data?.sales_12mo ?? 0) > 0;
 
   return {
     title,
     description,
+    robots: hasActivity
+      ? undefined
+      : {
+          index: false,
+          follow: true,
+        },
     alternates: {
       canonical: pageUrl,
     },
