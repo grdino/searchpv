@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.searchpv.com"),
+  metadataBase: new URL("https://searchpv.com"),
   title: {
     default: "SearchPV | Puerto Vallarta Real Estate Market Intelligence",
     template: "%s | SearchPV",
