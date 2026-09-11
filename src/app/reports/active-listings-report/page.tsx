@@ -8,10 +8,34 @@ import SPVBranding from "@/app/components/SPVBranding";
 import HamburgerMenu from "@/app/components/HamburgerMenu";
 import ReportSaveActions from "@/app/components/ReportSaveActions";
 
-export const metadata: Metadata = {
-  title: "Active Listings Report",
-  description: "Sortable active listings report for Puerto Vallarta real estate.",
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const hasQueryParams = Object.keys(params).length > 0;
+
+  const pageUrl = "https://searchpv.com/reports/active-listings-report";
+
+  return {
+    title: "Active Listings Report",
+    description:
+      "Sortable active listings report for Puerto Vallarta real estate.",
+    alternates: {
+      canonical: pageUrl,
+    },
+    robots: hasQueryParams
+      ? {
+          index: false,
+          follow: true,
+        }
+      : {
+          index: true,
+          follow: true,
+        },
+  };
+}
 
 type SearchParams = {
   zone?: string;  
@@ -517,6 +541,7 @@ function SortableTh({
     >
       <Link
         href={buildHref(params, { sort: column, dir: nextDir })}
+        rel="nofollow"
         className="text-slate-700 no-underline"
       >
         {label}
@@ -614,6 +639,7 @@ function FilterLink({
   return (
     <Link
       href={buildHref(params, set ?? {})}
+      rel="nofollow"
       className="report-filter-button"
       style={active ? selectedFilterStyle : filterLinkStyle}
     >

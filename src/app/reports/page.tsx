@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Header from "@/app/components/Header";
 import {
   BadgeDollarSign,
@@ -7,6 +8,19 @@ import {
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Puerto Vallarta Real Estate Reports",
+  description:
+    "Access SearchPV real estate reports for Puerto Vallarta and Riviera Nayarit, including active listings and upcoming market reports.",
+  alternates: {
+    canonical: "https://searchpv.com/reports",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 const reports = [
   {

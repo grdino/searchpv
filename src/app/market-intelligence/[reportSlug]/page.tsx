@@ -1,20 +1,31 @@
+import type { Metadata } from "next";
 import Header from "@/app/components/Header";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
-const REPORT_TITLES: Record<string, string> = {
-  "active-listings": "Active Listings",
-  "pending-sales": "Pending Sales",
-  "closed-sales": "Closed Sales",
+const COMING_SOON_REPORTS: Record<string, string> = {
+  "price-changes": "Price Changes",
+  "new-listings": "New Listings",
 };
 
-function formatReportTitle(slug: string) {
-  return (
-    REPORT_TITLES[slug] ??
-    slug
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")
-  );
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ reportSlug: string }>;
+}): Promise<Metadata> {
+  const { reportSlug } = await params;
+
+  if (!COMING_SOON_REPORTS[reportSlug]) {
+    return {};
+  }
+
+  return {
+    title: COMING_SOON_REPORTS[reportSlug],
+    robots: {
+      index: false,
+      follow: true,
+    },
+  };
 }
 
 export default async function ReportComingSoonPage({
@@ -23,7 +34,12 @@ export default async function ReportComingSoonPage({
   params: Promise<{ reportSlug: string }>;
 }) {
   const { reportSlug } = await params;
-  const reportTitle = formatReportTitle(reportSlug);
+
+  const reportTitle = COMING_SOON_REPORTS[reportSlug];
+
+  if (!reportTitle) {
+    notFound();
+  }
 
   return (
     <main style={{ minHeight: "100vh", background: "#f4f7fb" }}>

@@ -76,9 +76,18 @@ type PageProps = {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { mls } = await params;
 
+  const pageUrl = `https://searchpv.com/market-intelligence/closed-sales/${mls}`;
+
   return {
     title: `Closed Listing MLS ${mls}`,
     description: `Closed listing report for MLS ${mls}, including sold price, list price, days on market, and SearchPV market context.`,
+    alternates: {
+      canonical: pageUrl,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
   };
 }
 

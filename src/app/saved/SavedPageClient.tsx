@@ -177,7 +177,7 @@ export default function SavedPageClient() {
                       key={item.id}
                       className="flex items-center gap-3 rounded-2xl border border-white bg-white/85 p-4 shadow-sm"
                     >
-                      <Link href={item.href} className="min-w-0 flex-1">
+                      <Link href={item.href} rel="nofollow" className="min-w-0 flex-1">
                         <span className="block truncate font-black">
                           {item.title}
                         </span>
@@ -203,6 +203,7 @@ export default function SavedPageClient() {
 
                       <Link
                         href={item.href}
+                        rel="nofollow"
                         aria-label={`Open ${item.title}`}
                         className="text-teal-700"
                       >

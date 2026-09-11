@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Header from "@/app/components/Header";
 import {
   BadgeDollarSign,
@@ -9,6 +10,19 @@ import {
   TrendingDown,
 } from "lucide-react";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Puerto Vallarta Market Intelligence",
+  description:
+    "Explore Puerto Vallarta and Riviera Nayarit real estate market intelligence, including active listings, pending sales, closed sales, pricing, and market activity.",
+  alternates: {
+    canonical: "https://searchpv.com/market-intelligence",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 const reports = [
   {

@@ -1,4 +1,13 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Thank You",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function ThanksPage() {
   return (

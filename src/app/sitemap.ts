@@ -35,6 +35,11 @@ type DevelopmentRow = MarketActivityRow & {
   snapshot_date: string | null;
 };
 
+type ClosedSaleRow = {
+  mls: string | number;
+  sold_date: string | null;
+};
+
 function asDate(value: string | null | undefined) {
   return value ? new Date(value) : undefined;
 }
@@ -61,9 +66,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
+      url: `${BASE_URL}/atlas`,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
       url: `${BASE_URL}/contact`,
       changeFrequency: "monthly",
       priority: 0.5,
+    },
+    {
+      url: `${BASE_URL}/about`,
+      changeFrequency: "monthly",
+      priority: 0.4,
+    },
+    {
+      url: `${BASE_URL}/privacy`,
+      changeFrequency: "yearly",
+      priority: 0.2,
     },
 
     // Market Intelligence
@@ -194,6 +214,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           : {}),
         changeFrequency: "weekly",
         priority: 0.8,
+      });
+    });
+
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+
+    const closedSales: ClosedSaleRow[] = [];
+
+    for (let from = 0; ; from += 1000) {
+      const { data } = await supabase
+        .from("closed_listing")
+        .select("mls, sold_date")
+        .gte("sold_date", twelveMonthsAgo.toISOString().slice(0, 10))
+        .not("mls", "is", null)
+        .order("sold_date", { ascending: false })
+        .order("mls", { ascending: true })
+        .range(from, from + 999)
+        .returns<ClosedSaleRow[]>();
+
+      if (!data?.length) break;
+
+      closedSales.push(...data);
+
+      if (data.length < 1000) break;
+    }
+
+    closedSales?.forEach((sale) => {
+      urls.push({
+        url: `${BASE_URL}/market-intelligence/closed-sales/${sale.mls}`,
+        ...(asDate(sale.sold_date)
+          ? { lastModified: asDate(sale.sold_date) }
+          : {}),
+        changeFrequency: "monthly",
+        priority: 0.6,
       });
     });
 
