@@ -362,12 +362,6 @@ const breadcrumbJsonLd = {
     {
       "@type": "ListItem",
       position: 2,
-      name: zoneName,
-      item: `https://searchpv.com/markets/${routeParams.marketSlug}`,
-    },
-    {
-      "@type": "ListItem",
-      position: 3,
       name: areaName,
       item: pageUrl,
     },
@@ -487,15 +481,7 @@ const placeJsonLd = {
 
           {" > "}
 
-          <Link
-            href="/"
-            style={{
-              color: "#ffffff",
-              textDecoration: "underline",
-            }}
-          >
-            {zoneName}
-          </Link>
+          <span>{zoneName}</span>
 
           {" > "}
 
