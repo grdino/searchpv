@@ -361,18 +361,12 @@ const breadcrumbJsonLd = {
     {
       "@type": "ListItem",
       position: 2,
-      name: zoneName,
-      item: `https://searchpv.com/markets/${routeParams.marketSlug}`,
-    },
-    {
-      "@type": "ListItem",
-      position: 3,
       name: areaName,
       item: `https://searchpv.com/markets/${routeParams.marketSlug}/areas/${routeParams.areaSlug}`,
     },
     {
       "@type": "ListItem",
-      position: 4,
+      position: 3,
       name: communityName,
       item: pageUrl,
     },
@@ -484,12 +478,7 @@ const placeJsonLd = {
               textOverflow: "ellipsis",
             }}
           >
-            <Link
-              href="/"
-              style={{ color: "#ffffff", textDecoration: "underline" }}
-            >
-              {row.zone_name}
-            </Link>
+            <span>{row.zone_name}</span>
 
             {" > "}
 

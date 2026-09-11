@@ -387,24 +387,18 @@ const breadcrumbJsonLd = {
     {
       "@type": "ListItem",
       position: 2,
-      name: zoneName,
-      item: `https://searchpv.com/markets/${routeParams.marketSlug}`,
-    },
-    {
-      "@type": "ListItem",
-      position: 3,
       name: areaName,
       item: `https://searchpv.com/markets/${routeParams.marketSlug}/areas/${routeParams.areaSlug}`,
     },
     {
       "@type": "ListItem",
-      position: 4,
+      position: 3,
       name: communityName,
       item: `https://searchpv.com/markets/${routeParams.marketSlug}/areas/${routeParams.areaSlug}/communities/${routeParams.communitySlug}`,
     },
     {
       "@type": "ListItem",
-      position: 5,
+      position: 4,
       name: developmentName,
       item: pageUrl,
     },
@@ -767,9 +761,7 @@ function StickyBreadcrumb({
           textOverflow: "ellipsis",
         }}
       >
-        <Link href="/" style={{ color: "#ffffff", textDecoration: "underline" }}>
-          {zoneName}
-        </Link>
+        <span>{zoneName}</span>
         {" > "}
         <Link
           href={areaHref(
