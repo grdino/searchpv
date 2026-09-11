@@ -101,8 +101,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  const { data: areas } = await supabase
-    .from("area_snapshot")
+  const { data: areaCommunityRows } = await supabase
+    .from("community_snapshot")
     .select(
       "zone_slug, area_slug, snapshot_date, active_count, pending_count, sales_12mo"
     )
@@ -110,18 +110,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .eq("property_type_segment", "all")
     .returns<AreaRow[]>();
 
-  areas
-    ?.filter(hasMarketActivity)
-    .forEach((area) => {
-      urls.push({
-        url: `${BASE_URL}/markets/${area.zone_slug}/areas/${area.area_slug}`,
-        ...(asDate(area.snapshot_date)
-          ? { lastModified: asDate(area.snapshot_date) }
-          : {}),
-        changeFrequency: "weekly",
-        priority: 0.9,
-      });
+  const activeAreas = new Map<string, AreaRow>();
+
+  for (const row of areaCommunityRows ?? []) {
+    if (!hasMarketActivity(row)) continue;
+
+    const key = `${row.zone_slug}|${row.area_slug}`;
+    const existing = activeAreas.get(key);
+
+    if (
+      !existing ||
+      (row.snapshot_date ?? "") > (existing.snapshot_date ?? "")
+    ) {
+      activeAreas.set(key, row);
+    }
+  }
+
+  for (const area of activeAreas.values()) {
+    urls.push({
+      url: `${BASE_URL}/markets/${area.zone_slug}/areas/${area.area_slug}`,
+      ...(asDate(area.snapshot_date)
+        ? { lastModified: asDate(area.snapshot_date) }
+        : {}),
+      changeFrequency: "weekly",
+      priority: 0.9,
     });
+  }
 
   const { data: communities } = await supabase
     .from("community_snapshot")

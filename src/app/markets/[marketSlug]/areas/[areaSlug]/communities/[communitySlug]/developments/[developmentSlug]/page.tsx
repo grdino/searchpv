@@ -179,6 +179,7 @@ type DevelopmentProfile = {
 */
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{
     marketSlug: string;
@@ -186,8 +187,14 @@ export async function generateMetadata({
     communitySlug: string;
     developmentSlug: string;
   }>;
+  searchParams: Promise<{
+    market?: string;
+    propertyType?: string;
+  }>;
 }): Promise<Metadata> {
   const routeParams = await params;
+  const queryParams = await searchParams;
+  const hasQueryParams = Object.keys(queryParams).length > 0;
 
   const developmentName = formatSlugTitle(routeParams.developmentSlug);
   const communityName = formatSlugTitle(routeParams.communitySlug);
@@ -218,12 +225,13 @@ export async function generateMetadata({
   return {
     title,
     description,
-    robots: hasActivity
-      ? undefined
-      : {
-          index: false,
-          follow: true,
-        },
+    robots:
+      hasActivity && !hasQueryParams
+        ? undefined
+        : {
+            index: false,
+            follow: true,
+          },
     alternates: {
       canonical: pageUrl,
     },
@@ -770,6 +778,7 @@ function StickyBreadcrumb({
             selectedMarket,
             selectedPropertyType
           )}
+          rel="nofollow"
           style={{ color: "#ffffff", textDecoration: "underline" }}
         >
           {areaName}
@@ -783,6 +792,7 @@ function StickyBreadcrumb({
             selectedMarket,
             selectedPropertyType
           )}
+          rel="nofollow"
           style={{ color: "#ffffff", textDecoration: "underline" }}
         >
           {communityName}

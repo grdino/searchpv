@@ -1,7 +1,36 @@
+import type { Metadata } from "next";
 import ContactForm from "@/app/contact/ContactForm";
-import Link from "next/link";
 import SPVBranding from "@/app/components/SPVBranding";
 import HamburgerMenu from "@/app/components/HamburgerMenu";
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const queryParams = await searchParams;
+  const hasQueryParams = Object.keys(queryParams).length > 0;
+
+  const pageUrl = "https://searchpv.com/contact";
+
+  return {
+    title: "Contact SearchPV",
+    description:
+      "Contact SearchPV for help with Puerto Vallarta and Riviera Nayarit real estate, listings, neighborhoods, and market information.",
+    alternates: {
+      canonical: pageUrl,
+    },
+    robots: hasQueryParams
+      ? {
+          index: false,
+          follow: true,
+        }
+      : {
+          index: true,
+          follow: true,
+        },
+  };
+}
 
 export default function ContactPage() {
 

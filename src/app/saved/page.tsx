@@ -4,8 +4,12 @@ import Header from "@/app/components/Header";
 import SavedPageClient from "./SavedPageClient";
 
 export const metadata: Metadata = {
-  title: "Saved | SearchPV",
+  title: "Saved Properties & Searches",
   description: "Your saved SearchPV properties, Atlas areas, and market searches.",
+  robots: {
+    index: false,
+    follow: true,
+  },
 };
 
 export default function SavedPage() {

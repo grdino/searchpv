@@ -70,7 +70,7 @@ type UnitRow = { mls: number; unit_id?: string | null; unit?: string | null };
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { mls } = await params;
   return {
-    title: `How MLS ${mls} Compares | SearchPV`,
+    title: `How MLS ${mls} Compares`,
     description: `A factual comparison of MLS ${mls} with similar current listings and recent sales.`,
     robots: { index: false, follow: true },
   };

@@ -4,7 +4,7 @@ import Header from "@/app/components/Header";
 import SavedListImport from "./SavedListImport";
 
 export const metadata: Metadata = {
-  title: "Save Property List | SearchPV",
+  title: "Save Property",
   robots: {
     index: false,
     follow: false,

@@ -82,6 +82,11 @@ export default function HomeDiscoveryBackdrop() {
             How would you like to explore?
           </h1>
 
+          <p className="mt-4 max-w-xl text-sm font-medium leading-6 text-slate-600 md:text-base">
+            Search Puerto Vallarta and Riviera Nayarit real estate, explore neighborhoods,
+            or dive into local market data.
+          </p>
+
           <div className="mt-6 grid w-full gap-2 sm:grid-cols-2 md:mt-10 md:gap-3">
             
             <HomePill

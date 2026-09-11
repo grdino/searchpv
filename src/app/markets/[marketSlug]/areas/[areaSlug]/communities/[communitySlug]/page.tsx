@@ -156,14 +156,23 @@ type DevelopmentSnapshot = {
 */
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{
     marketSlug: string;
     areaSlug: string;
     communitySlug: string;
   }>;
+  searchParams: Promise<{
+    market?: string;
+    propertyType?: string;
+    sort?: string;
+    dir?: string;
+  }>;
 }): Promise<Metadata> {
   const routeParams = await params;
+  const queryParams = await searchParams;
+  const hasQueryParams = Object.keys(queryParams).length > 0;
 
   const communityName = formatSlugTitle(routeParams.communitySlug);
   const areaName = formatSlugTitle(routeParams.areaSlug);
@@ -181,23 +190,26 @@ export async function generateMetadata({
     .eq("area_slug", routeParams.areaSlug)
     .eq("community_slug", routeParams.communitySlug)
     .eq("market_segment", "all")
-    .eq("property_type_segment", "all")
-    .maybeSingle();
+    .eq("property_type_segment", "all");
 
   const hasActivity =
-    (data?.active_count ?? 0) > 0 ||
-    (data?.pending_count ?? 0) > 0 ||
-    (data?.sales_12mo ?? 0) > 0;
+    (data ?? []).some(
+      (row) =>
+        (row.active_count ?? 0) > 0 ||
+        (row.pending_count ?? 0) > 0 ||
+        (row.sales_12mo ?? 0) > 0
+    );
 
   return {
     title,
     description,
-    robots: hasActivity
-      ? undefined
-      : {
-          index: false,
-          follow: true,
-        },
+    robots:
+      hasActivity && !hasQueryParams
+        ? undefined
+        : {
+            index: false,
+            follow: true,
+          },
     alternates: {
       canonical: pageUrl,
     },
@@ -489,6 +501,7 @@ const placeJsonLd = {
                 selectedMarket,
                 selectedPropertyType
               )}
+              rel="nofollow"
               style={{ color: "#ffffff", textDecoration: "underline" }}
             >
               {row.area_name}
@@ -832,6 +845,7 @@ const placeJsonLd = {
                                   selectedMarket,
                                   selectedPropertyType
                                 )}
+                                rel="nofollow"
                                 className="font-semibold text-blue-700 hover:underline"
                               >
                                 {development.development_name}
@@ -1105,6 +1119,7 @@ function ClosedSalesListingLink({
   return (
     <Link
       href={`/market-intelligence/closed-sales/search-results?mls=${listingIds}`}
+      rel="nofollow"
       className="font-semibold text-blue-700 hover:underline"
     >
       {children}

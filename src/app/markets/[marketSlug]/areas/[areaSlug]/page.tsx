@@ -177,13 +177,22 @@ type SortDir = "asc" | "desc";
 */
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{
     marketSlug: string;
     areaSlug: string;
   }>;
+  searchParams: Promise<{
+    market?: string;
+    propertyType?: string;
+    sort?: string;
+    dir?: string;
+  }>;
 }): Promise<Metadata> {
   const routeParams = await params;
+  const queryParams = await searchParams;
+  const hasQueryParams = Object.keys(queryParams).length > 0;
 
   const areaName = formatSlugTitle(routeParams.areaSlug);
   const zoneName = formatSlugTitle(routeParams.marketSlug);
@@ -194,28 +203,31 @@ export async function generateMetadata({
   const description = `Current inventory, pricing, sales activity, community snapshots, and market trends for ${areaName} in ${zoneName}.`;
 
   const { data } = await supabase
-    .from("area_snapshot")
+    .from("community_snapshot")
     .select("active_count, pending_count, sales_12mo")
     .eq("zone_slug", routeParams.marketSlug)
     .eq("area_slug", routeParams.areaSlug)
     .eq("market_segment", "all")
-    .eq("property_type_segment", "all")
-    .maybeSingle();
+    .eq("property_type_segment", "all");
 
   const hasActivity =
-    (data?.active_count ?? 0) > 0 ||
-    (data?.pending_count ?? 0) > 0 ||
-    (data?.sales_12mo ?? 0) > 0;
+    (data ?? []).some(
+      (row) =>
+        (row.active_count ?? 0) > 0 ||
+        (row.pending_count ?? 0) > 0 ||
+        (row.sales_12mo ?? 0) > 0
+    );
 
   return {
     title,
     description,
-    robots: hasActivity
-      ? undefined
-      : {
-          index: false,
-          follow: true,
-        },
+    robots:
+      hasActivity && !hasQueryParams
+        ? undefined
+        : {
+            index: false,
+            follow: true,
+          },
     alternates: {
       canonical: pageUrl,
     },
@@ -246,6 +258,7 @@ export default async function AreaPage({
 }) {
   const routeParams = await params;
   const queryParams = await searchParams;
+  const hasQueryParams = Object.keys(queryParams).length > 0;
 
   const selectedMarket = getMarketSegment(queryParams.market);
   const selectedPropertyType = getPropertyTypeSegment(queryParams.propertyType);
@@ -836,6 +849,7 @@ const placeJsonLd = {
                               selectedMarket,
                               selectedPropertyType
                             )}
+                            rel="nofollow"
                             className="font-semibold text-blue-700 hover:underline"
                           >
                             {community.community_name}
@@ -1119,6 +1133,7 @@ function ClosedSalesListingLink({
   return (
     <Link
       href={`/market-intelligence/closed-sales/search-results?mls=${listingIds}`}
+      rel="nofollow"
       className="font-semibold text-blue-700 hover:underline"
     >
       {children}
