@@ -68,7 +68,9 @@ export async function GET() {
           row.footprint_key,
 
         displayName:
-          row.display_name,
+        row.display_name === "Emiliano Zapata"
+          ? "Zona Romántica"
+          : row.display_name,
 
         boundaryKys:
           row.boundary_kys.map(

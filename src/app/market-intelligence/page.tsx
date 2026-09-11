@@ -30,6 +30,8 @@ const reports = [
     description: "Current inventory with pricing, DOM, and listing details.",
     href: "/market-intelligence/active-listings",
     Icon: ClipboardList,
+    iconBackground: "#dcfce7",
+    iconColor: "#166534",
     inDevelopment: false,
   },
   {
@@ -37,6 +39,8 @@ const reports = [
     description: "Listings currently under contract across selected markets.",
     href: "/market-intelligence/pending-sales",
     Icon: Clock3,
+    iconBackground: "#fef3c7",
+    iconColor: "#e8be04",
     inDevelopment: false,
   },
   {
@@ -44,6 +48,8 @@ const reports = [
     description: "Historical sales activity, sold pricing, and market results.",
     href: "/market-intelligence/closed-sales",
     Icon: BadgeDollarSign,
+    iconBackground: "#dbeafe",
+    iconColor: "#1e40af",
     inDevelopment: false,
   },
 /*
@@ -177,96 +183,106 @@ export default function ReportsPage() {
             gap: "18px",
           }}
         >
-          {reports.map(({ title, description, href, Icon, inDevelopment }) => (
-            <Link
-              key={title}
-              href={href}
-              style={{
-                display: "block",
-                textDecoration: "none",
-                color: "inherit",
-              }}
-            >
-              <article
+          {reports.map(
+            ({
+              title,
+              description,
+              href,
+              Icon,
+              iconBackground,
+              iconColor,
+              inDevelopment,
+            }) => (
+              <Link
+                key={title}
+                href={href}
                 style={{
-                  minHeight: "180px",
-                  background: "white",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "18px",
-                  padding: "22px",
-                  boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
+                  display: "block",
+                  textDecoration: "none",
+                  color: "inherit",
                 }}
               >
-                <div
+                <article
                   style={{
-                    width: "42px",
-                    height: "42px",
-                    borderRadius: "14px",
-                    background: "#eaf2ff",
-                    color: "#1e3a8a",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: "18px",
+                    minHeight: "180px",
+                    background: "white",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "18px",
+                    padding: "22px",
+                    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
                   }}
                 >
-                  <Icon size={22} strokeWidth={2} />
-                </div>
-
-                <h3
-                  style={{
-                    margin: 0,
-                    fontSize: "1.3rem",
-                    fontWeight: 900,
-                    lineHeight: 1.15,
-                    color: "#0f172a",
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  {title}
-                </h3>
-
-                {inDevelopment && (
-                  <span
+                  <div
                     style={{
-                      display: "inline-block",
-                      background: "#f59e0b",
-                      color: "#111827",
-                      fontWeight: 800,
-                      fontSize: "0.72rem",
-                      letterSpacing: "0.04em",
-                      padding: "4px 10px",
-                      borderRadius: "999px",
-                      marginTop: "10px",
+                      width: "42px",
+                      height: "42px",
+                      borderRadius: "14px",
+                      background: iconBackground,
+                      color: iconColor,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: "18px",
                     }}
                   >
-                    🚧 IN DEVELOPMENT
+                    <Icon size={22} strokeWidth={2} />
+                  </div>
+
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: "1.3rem",
+                      fontWeight: 900,
+                      lineHeight: 1.15,
+                      color: iconColor,
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    {title}
+                  </h3>
+
+                  {inDevelopment && (
+                    <span
+                      style={{
+                        display: "inline-block",
+                        background: "#f59e0b",
+                        color: "#111827",
+                        fontWeight: 800,
+                        fontSize: "0.72rem",
+                        letterSpacing: "0.04em",
+                        padding: "4px 10px",
+                        borderRadius: "999px",
+                        marginTop: "10px",
+                      }}
+                    >
+                      🚧 IN DEVELOPMENT
+                    </span>
+                  )}
+
+                  <p
+                    style={{
+                      margin: "10px 0 18px",
+                      fontSize: "0.95rem",
+                      lineHeight: 1.5,
+                      color: "#475569",
+                    }}
+                  >
+                    {description}
+                  </p>
+
+                  <span
+                    style={{
+                      fontSize: "0.9rem",
+                      fontWeight: 700,
+                      color: "#1e3a8a",
+                    }}
+                  >
+                    Explore →
                   </span>
-                )}
-
-                <p
-                  style={{
-                    margin: "10px 0 18px",
-                    fontSize: "0.95rem",
-                    lineHeight: 1.5,
-                    color: "#475569",
-                  }}
-                >
-                  {description}
-                </p>
-
-                <span
-                  style={{
-                    fontSize: "0.9rem",
-                    fontWeight: 700,
-                    color: "#1e3a8a",
-                  }}
-                >
-                  Explore →
-                </span>
-              </article>
-            </Link>
-          ))}
+                </article>
+              </Link>
+            ),
+          )}
         </div>
       </section>
     </main>
