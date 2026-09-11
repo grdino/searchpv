@@ -22,7 +22,7 @@ import Image from "next/image";
 import HamburgerMenu from "@/app/components/HamburgerMenu";
 
 export const metadata: Metadata = {
-  title: "About SearchPV | Puerto Vallarta Market Intelligence",
+  title: "About | Puerto Vallarta Market Intelligence",
   description:
     "SearchPV organizes available Puerto Vallarta and Riviera Nayarit MLS market data into clear, interactive real estate reports supported by local professionals.",
 };

@@ -393,6 +393,7 @@ function FilterLink({
   return (
     <a
       href={href}
+      rel="nofollow"
       style={selected ? selectedStyle : unselectedStyle}
     >
       {children}

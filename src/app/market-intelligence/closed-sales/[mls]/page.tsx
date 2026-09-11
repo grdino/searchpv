@@ -77,7 +77,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { mls } = await params;
 
   return {
-    title: `Closed Listing MLS ${mls} | SearchPV`,
+    title: `Closed Listing MLS ${mls}`,
     description: `Closed listing report for MLS ${mls}, including sold price, list price, days on market, and SearchPV market context.`,
   };
 }

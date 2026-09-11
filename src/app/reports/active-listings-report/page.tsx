@@ -9,7 +9,7 @@ import HamburgerMenu from "@/app/components/HamburgerMenu";
 import ReportSaveActions from "@/app/components/ReportSaveActions";
 
 export const metadata: Metadata = {
-  title: "Active Listings Report | SearchPV",
+  title: "Active Listings Report",
   description: "Sortable active listings report for Puerto Vallarta real estate.",
 };
 

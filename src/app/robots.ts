@@ -10,6 +10,7 @@ export default function robots(): MetadataRoute.Robots {
         "/market-intelligence/pending-sales/search-results",
         "/market-intelligence/closed-sales/search-results",
         "/contact-listing",
+        "/ask-searchpv",
       ],
     },
     sitemap: "https://searchpv.com/sitemap.xml",

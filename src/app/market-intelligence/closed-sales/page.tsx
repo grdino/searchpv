@@ -46,11 +46,18 @@ export async function generateMetadata({
   searchParams: Promise<{
     market?: string;
     propertyType?: string;
+    sort?: string;
+    dir?: string;
     zone?: string;
     area?: string;
     community?: string;
     development?: string;
     range?: string;
+    startDate?: string;
+    endDate?: string;
+    priceMode?: string;
+    areaMode?: string;
+    areaUnit?: string;
   }>;
 }): Promise<Metadata> {
   const params = await searchParams;
@@ -67,7 +74,20 @@ export async function generateMetadata({
     canonicalPath: "/market-intelligence/closed-sales",
   });
 
-  return seo;
+  const hasQueryParams = Object.keys(params).length > 0;
+
+  return {
+    ...seo,
+    robots: hasQueryParams
+      ? {
+          index: false,
+          follow: true,
+        }
+      : {
+          index: true,
+          follow: true,
+        },
+  };
 }
 
 export default async function ClosedSalesPage({
@@ -862,6 +882,7 @@ function ToggleLinks({
         <Link
           key={option.label}
           href={option.href}
+          rel="nofollow"
           className={`px-2 py-1 ${
             option.selected
               ? "bg-slate-900 text-white"
@@ -1063,7 +1084,7 @@ function SortableTh({
         stickyLeft ? "left-0 z-40 shadow-[2px_0_0_#e2e8f0]" : ""
       }`}
     >
-      <Link href={href} className="hover:underline">
+      <Link href={href} rel="nofollow" className="hover:underline">
         {label}
         {arrow}
       </Link>

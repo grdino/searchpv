@@ -4,7 +4,7 @@ import Link from "next/link";
 import Header from "@/app/components/Header";
 
 export const metadata: Metadata = {
-  title: "Privacy Notice | SearchPV",
+  title: "Privacy Notice",
   description:
     "Learn how SearchPV handles contact information, saved items, and website usage data.",
   alternates: {

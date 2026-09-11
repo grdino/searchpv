@@ -77,6 +77,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.85,
     },
+    {
+      url: `${BASE_URL}/market-intelligence/active-listings`,
+      changeFrequency: "daily",
+      priority: 0.85,
+    },
+    {
+      url: `${BASE_URL}/market-intelligence/pending-sales`,
+      changeFrequency: "daily",
+      priority: 0.85,
+    },
 
     // Reports
     {

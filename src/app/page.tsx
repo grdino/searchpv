@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     canonical: "https://searchpv.com/",
   },
   openGraph: {
-    title: "Puerto Vallarta Real Estate | SearchPV",
+    title: "Puerto Vallarta Real Estate",
     description:
       "Discover Puerto Vallarta and Riviera Nayarit through properties, places, maps, and market intelligence.",
     url: "https://searchpv.com/",

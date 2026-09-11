@@ -12,11 +12,39 @@ import { supabase } from "@/lib/supabase";
 import ActiveListingMetricsSection from "@/app/components/market-listings/ActiveListingMetricsSection";
 import ReportSaveActions from "@/app/components/ReportSaveActions";
 
-export const metadata: Metadata = {
-  title: "Pending Sales | SearchPV Market Intelligence",
-  description:
-    "Explore pending Puerto Vallarta real estate listings, inventory value, list prices, price per square foot, and days on market.",
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+
+  const title = "Pending Sales | Market Intelligence";
+  const description =
+    "Explore pending Puerto Vallarta real estate listings, inventory value, list prices, price per square foot, and days on market.";
+
+  const pageUrl =
+    "https://searchpv.com/market-intelligence/pending-sales";
+
+  const hasQueryParams = Object.keys(params).length > 0;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: pageUrl,
+    },
+    robots: hasQueryParams
+      ? {
+          index: false,
+          follow: true,
+        }
+      : {
+          index: true,
+          follow: true,
+        },
+  };
+}
 
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
@@ -1212,6 +1240,7 @@ function SortableTh({
     >
       <Link
         href={href}
+        rel="nofollow"
         className="hover:underline"
       >
         {label}

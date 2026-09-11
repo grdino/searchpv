@@ -60,7 +60,6 @@ export function buildMarketSeo(params: MarketSeoParams): Metadata {
     propertyLabel,
     pageLabel,
     rangeLabel,
-    "| SearchPV",
   ]
     .filter(Boolean)
     .join(" ");

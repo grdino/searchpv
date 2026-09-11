@@ -77,7 +77,14 @@ interface AskSearchPVApiError {
  *
  * It contains no SQL and performs no market calculations.
  */
-export async function POST(
+export async function POST() {
+  return NextResponse.json(
+    { error: "Not found" },
+    { status: 404 }
+  );
+}
+
+async function disabledPOST(
   request: Request,
 ): Promise<
   NextResponse<
