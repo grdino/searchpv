@@ -232,7 +232,15 @@ function parseUrlDate(value: string) {
 }
 
 function FilterLink({ href, selected, children }: { href: string; selected: boolean; children: React.ReactNode }) {
-  return <a href={href} style={selected ? selectedStyle : unselectedStyle}>{children}</a>;
+  return (
+    <a
+      href={href}
+      rel="nofollow"
+      style={selected ? selectedStyle : unselectedStyle}
+    >
+      {children}
+    </a>
+  );
 }
 
 function closedSalesHref(

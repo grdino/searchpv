@@ -9,7 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         "/market-intelligence/active-listings/search-results",
         "/market-intelligence/pending-sales/search-results",
         "/market-intelligence/closed-sales/search-results",
-        "/search-properties",
         "/contact-listing",
       ],
     },

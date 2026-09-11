@@ -964,6 +964,7 @@ function CommunitySelectors({
       <div style={rowStyle}>
         <a
           href={communityHref(marketSlug, areaSlug, communitySlug, selectedMarket, "all")}
+          rel="nofollow"
           style={selectedPropertyType === "all" ? selectedStyle : unselectedStyle}
         >
           All
@@ -971,6 +972,7 @@ function CommunitySelectors({
 
         <a
           href={communityHref(marketSlug, areaSlug, communitySlug, selectedMarket, "condos")}
+          rel="nofollow"
           style={selectedPropertyType === "condos" ? selectedStyle : unselectedStyle}
         >
           Condos
@@ -978,6 +980,7 @@ function CommunitySelectors({
 
         <a
           href={communityHref(marketSlug, areaSlug, communitySlug, selectedMarket, "houses")}
+          rel="nofollow"
           style={selectedPropertyType === "houses" ? selectedStyle : unselectedStyle}
         >
           Houses
@@ -987,6 +990,7 @@ function CommunitySelectors({
       <div style={{ ...rowStyle, marginTop: "10px" }}>
         <a
           href={communityHref(marketSlug, areaSlug, communitySlug, "all", selectedPropertyType)}
+          rel="nofollow"
           style={selectedMarket === "all" ? selectedStyle : unselectedStyle}
         >
           All
@@ -1000,6 +1004,7 @@ function CommunitySelectors({
             "pre_construction",
             selectedPropertyType
           )}
+          rel="nofollow"
           style={selectedMarket === "pre_construction" ? selectedStyle : unselectedStyle}
         >
           Pre-Construction
@@ -1007,6 +1012,7 @@ function CommunitySelectors({
 
         <a
           href={communityHref(marketSlug, areaSlug, communitySlug, "resale", selectedPropertyType)}
+          rel="nofollow"
           style={selectedMarket === "resale" ? selectedStyle : unselectedStyle}
         >
           Resale
@@ -1371,7 +1377,11 @@ function SortableTh({
         boxShadow: stickyLeft ? "2px 0 0 #e2e8f0" : undefined,
       }}
     >
-      <Link href={href} className="text-slate-700 hover:text-blue-700">
+      <Link 
+        href={href} 
+        rel="nofollow"
+        className="text-slate-700 hover:text-blue-700"
+      >
         {label}
         {arrow}
       </Link>
@@ -1397,7 +1407,11 @@ function SortableThRight(props: Omit<Parameters<typeof SortableTh>[0], "stickyLe
         borderBottom: "1px solid #e2e8f0",
       }}
     >
-      <Link href={props.href} className="text-slate-700 hover:text-blue-700">
+      <Link 
+        href={props.href} 
+        rel="nofollow"
+        className="text-slate-700 hover:text-blue-700"
+      >
         {props.label}
         {arrow}
       </Link>

@@ -1208,6 +1208,7 @@ function DevelopmentSelectors({
             selectedMarket,
             "all"
           )}
+          rel="nofollow"
           style={
             selectedPropertyType === "all" ? selectedStyle : unselectedStyle
           }
@@ -1224,6 +1225,7 @@ function DevelopmentSelectors({
             selectedMarket,
             "condos"
           )}
+          rel="nofollow"
           style={
             selectedPropertyType === "condos" ? selectedStyle : unselectedStyle
           }
@@ -1240,6 +1242,7 @@ function DevelopmentSelectors({
             selectedMarket,
             "houses"
           )}
+          rel="nofollow"
           style={
             selectedPropertyType === "houses" ? selectedStyle : unselectedStyle
           }
@@ -1258,6 +1261,7 @@ function DevelopmentSelectors({
             "all",
             selectedPropertyType
           )}
+          rel="nofollow"
           style={selectedMarket === "all" ? selectedStyle : unselectedStyle}
         >
           All
@@ -1272,6 +1276,7 @@ function DevelopmentSelectors({
             "pre_construction",
             selectedPropertyType
           )}
+          rel="nofollow"
           style={
             selectedMarket === "pre_construction"
               ? selectedStyle
@@ -1290,6 +1295,7 @@ function DevelopmentSelectors({
             "resale",
             selectedPropertyType
           )}
+          rel="nofollow"
           style={selectedMarket === "resale" ? selectedStyle : unselectedStyle}
         >
           Resale
@@ -1335,6 +1341,7 @@ function ClosedSalesListingLink({
   return (
     <Link
       href={`/market-intelligence/closed-sales/search-results?mls=${listingIds}`}
+      rel="nofollow"
       className="font-semibold text-blue-700 hover:underline"
     >
       {children}

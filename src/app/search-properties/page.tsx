@@ -147,14 +147,22 @@ const QUICK_SEARCH_PRESETS: QuickSearchPreset[] = [
   },
 ];
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<PropertySearchParams>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+
   const title =
-    "Search Puerto Vallarta & Riviera Nayarit Properties | SearchPV";
+    "Search Puerto Vallarta & Riviera Nayarit Properties";
 
   const description =
     "Search current active and pending properties across Puerto Vallarta and Riviera Nayarit by market, property type, geography, price, bedrooms, bathrooms, and property attributes.";
 
   const pageUrl = "https://searchpv.com/search-properties";
+
+  const hasFilters = Object.keys(params).length > 0;
 
   return {
     title,
@@ -162,6 +170,15 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: pageUrl,
     },
+    robots: hasFilters
+      ? {
+          index: false,
+          follow: true,
+        }
+      : {
+          index: true,
+          follow: true,
+        },
     openGraph: {
       title,
       description,
@@ -590,6 +607,7 @@ function ShortcutGroup({
           <Link
             key={preset.id}
             href={buildQuickSearchHref(preset)}
+            rel="nofollow"
             className="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-900 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-500 hover:bg-emerald-100"
           >
             {preset.label}
@@ -1019,6 +1037,7 @@ function SelectorPill({
   return (
     <a
       href={href}
+      rel="nofollow"
       style={selected ? selectedStyle : unselectedStyle}
     >
       {label}
@@ -1087,6 +1106,7 @@ function SelectedMarketPanel({
                   development: null,
                 })
               )}
+              rel="nofollow"
               className="font-semibold text-blue-700 hover:underline"
             >
               {filters.area}
@@ -1103,6 +1123,7 @@ function SelectedMarketPanel({
                   development: null,
                 })
               )}
+              rel="nofollow"
               className="font-semibold text-blue-700 hover:underline"
             >
               {filters.community}
@@ -1217,6 +1238,7 @@ function BedroomQuickFilters({
             <Link
               key={option.label}
               href={href}
+              rel="nofollow"
               className={
                 selected
                   ? "rounded-full bg-slate-950 px-3 py-1.5 text-xs font-bold text-white"
@@ -1259,6 +1281,7 @@ function FilteredSnapshotTableRow({
         {href ? (
           <Link
             href={href}
+            rel="nofollow"
             className="font-semibold text-blue-700 hover:underline"
           >
             {row.group_name ?? "-"}
@@ -1327,6 +1350,7 @@ function SortableTh({
           nextDir,
           "filtered-snapshot"
         )}
+        rel="nofollow"
         className="hover:underline"
       >
         {label}

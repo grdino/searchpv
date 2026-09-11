@@ -961,6 +961,7 @@ function AreaSelectors({
       <div style={rowStyle}>
         <a
           href={areaHref(marketSlug, areaSlug, selectedMarket, "all")}
+          rel="nofollow"
           style={
             selectedPropertyType === "all" ? selectedStyle : unselectedStyle
           }
@@ -970,6 +971,7 @@ function AreaSelectors({
 
         <a
           href={areaHref(marketSlug, areaSlug, selectedMarket, "condos")}
+          rel="nofollow"
           style={
             selectedPropertyType === "condos" ? selectedStyle : unselectedStyle
           }
@@ -979,6 +981,7 @@ function AreaSelectors({
 
         <a
           href={areaHref(marketSlug, areaSlug, selectedMarket, "houses")}
+          rel="nofollow"
           style={
             selectedPropertyType === "houses" ? selectedStyle : unselectedStyle
           }
@@ -990,6 +993,7 @@ function AreaSelectors({
       <div style={{ ...rowStyle, marginTop: "10px" }}>
         <a
           href={areaHref(marketSlug, areaSlug, "all", selectedPropertyType)}
+          rel="nofollow"
           style={selectedMarket === "all" ? selectedStyle : unselectedStyle}
         >
           All
@@ -1002,6 +1006,7 @@ function AreaSelectors({
             "pre_construction",
             selectedPropertyType
           )}
+          rel="nofollow"
           style={
             selectedMarket === "pre_construction"
               ? selectedStyle
@@ -1013,6 +1018,7 @@ function AreaSelectors({
 
         <a
           href={areaHref(marketSlug, areaSlug, "resale", selectedPropertyType)}
+          rel="nofollow"
           style={selectedMarket === "resale" ? selectedStyle : unselectedStyle}
         >
           Resale
@@ -1462,7 +1468,11 @@ function SortableTh({
         boxShadow: stickyLeft ? "2px 0 0 #e2e8f0" : undefined,
       }}
     >
-      <Link href={href} className="text-slate-700 hover:text-blue-700">
+      <Link
+        href={href}
+        rel="nofollow"
+        className="text-slate-700 hover:text-blue-700"
+      >
         {label}
         {arrow}
       </Link>
@@ -1488,7 +1498,11 @@ function SortableThRight(props: Omit<Parameters<typeof SortableTh>[0], "stickyLe
         borderBottom: "1px solid #e2e8f0",
       }}
     >
-      <Link href={props.href} className="text-slate-700 hover:text-blue-700">
+      <Link
+        href={props.href}
+        rel="nofollow"
+        className="text-slate-700 hover:text-blue-700"
+      >
         {props.label}
         {arrow}
       </Link>
