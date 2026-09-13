@@ -352,7 +352,7 @@ function buildAgentDetailHref(row: AgentReportRow) {
         </div>
       </section>
 
-      <div className="sticky top-0 z-40 border-b border-slate-800 bg-slate-700 px-4 py-3">
+      <div className="sticky top-0 z-[60] border-b border-slate-800 bg-slate-700 px-4 py-3">
         <div className="mx-auto max-w-7xl text-center text-sm font-bold text-white">
           <div className="truncate">
             <Link
@@ -424,7 +424,7 @@ function buildAgentDetailHref(row: AgentReportRow) {
             column heading to sort.
           </p>
 
-          <div id="ranking-table" className="mt-3 max-h-[72vh] scroll-mt-16 overflow-auto rounded-xl bg-white shadow">
+          <div id="ranking-table" className="mt-3 max-h-[72vh] scroll-mt-[180px] md:scroll-mt-[110px] overflow-auto rounded-xl bg-white shadow">
             <table className="min-w-[1950px] border-separate border-spacing-0 text-sm">
               <thead className="bg-slate-100 text-slate-700">
                 <tr>

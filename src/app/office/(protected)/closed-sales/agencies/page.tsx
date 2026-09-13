@@ -145,7 +145,7 @@ export default async function ClosedSalesByAgencyPage({
         </div>
       </section>
 
-      <div className="sticky top-0 z-40 border-b border-slate-800 bg-slate-700 px-4 py-3">
+      <div className="sticky top-0 z-[60] border-b border-slate-800 bg-slate-700 px-4 py-3">
         <div className="mx-auto max-w-7xl text-center text-sm font-bold text-white">
           <div className="truncate">
             <Link href="/" className="underline hover:text-sky-200">SearchPV</Link>
