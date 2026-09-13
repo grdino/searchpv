@@ -391,9 +391,18 @@ export default async function AgentClosedSalesDetailPage({
                   {rows.map((row) => (
                     <tr key={row.clsd_sale_ky}>
                       <Td stickyLeft>
-                        <span className="font-semibold text-slate-950">
-                          {row.lstng_nb || "—"}
-                        </span>
+                        {row.lstng_nb ? (
+                          <Link
+                            href={`/market-intelligence/closed-sales/${encodeURIComponent(
+                              row.lstng_nb,
+                            )}`}
+                            className="font-semibold text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+                          >
+                            {row.lstng_nb}
+                          </Link>
+                        ) : (
+                          <span className="font-semibold text-slate-950">—</span>
+                        )}
                       </Td>
 
                       <Td>
