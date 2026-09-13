@@ -424,11 +424,15 @@ function buildAgentDetailHref(row: AgentReportRow) {
             column heading to sort.
           </p>
 
-          <div className="mt-3 max-h-[72vh] overflow-auto rounded-xl bg-white shadow">
+          <div id="ranking-table" className="mt-3 max-h-[72vh] scroll-mt-16 overflow-auto rounded-xl bg-white shadow">
             <table className="min-w-[1950px] border-separate border-spacing-0 text-sm">
               <thead className="bg-slate-100 text-slate-700">
                 <tr>
-                  <Th rankColumn>Rank</Th>
+                  <SortableTh
+                    label="Rank"
+                    sortKey="rank"
+                    rankColumn
+                  />
 
                   <SortableTh
                     label="Agent"
@@ -680,19 +684,24 @@ function buildAgentDetailHref(row: AgentReportRow) {
     label,
     sortKey,
     stickyLeft = false,
+    rankColumn = false,
   }: {
     label: string;
     sortKey: AgentSortKey;
     stickyLeft?: boolean;
+    rankColumn?: boolean;
   }) {
     const isSelected =
       selectedSort === sortKey;
 
-    const nextDir: SortDir =
-      isSelected &&
-      selectedDir === "desc"
+    const defaultDir: SortDir =
+      sortKey === "rank" ? "asc" : "desc";
+
+    const nextDir: SortDir = isSelected
+      ? selectedDir === "desc"
         ? "asc"
-        : "desc";
+        : "desc"
+      : defaultDir;
 
     const href = buildReportHref({
       market: selectedMarket,
@@ -719,16 +728,18 @@ function buildAgentDetailHref(row: AgentReportRow) {
         : " ▼"
       : "";
 
-    const className = stickyLeft
-      ? "sticky left-[52px] top-0 z-40 w-[160px] min-w-[160px] max-w-[160px] whitespace-normal break-words bg-slate-100 px-3 py-3 text-left font-semibold leading-tight shadow-[2px_0_0_#e2e8f0] md:w-[240px] md:min-w-[240px] md:max-w-[240px]"
-      : "sticky top-0 z-20 whitespace-nowrap bg-slate-100 px-4 py-3 text-left font-semibold";
+    const className = rankColumn
+      ? "sticky left-0 top-0 z-50 w-[52px] min-w-[52px] max-w-[52px] bg-slate-100 px-2 py-3 text-center font-semibold"
+      : stickyLeft
+        ? "sticky left-[52px] top-0 z-40 w-[160px] min-w-[160px] max-w-[160px] whitespace-normal break-words bg-slate-100 px-3 py-3 text-left font-semibold leading-tight shadow-[2px_0_0_#e2e8f0] md:w-[240px] md:min-w-[240px] md:max-w-[240px]"
+        : "sticky top-0 z-20 whitespace-nowrap bg-slate-100 px-4 py-3 text-left font-semibold";
 
     return (
       <th
         className={className}
       >
         <Link
-          href={href}
+          href={`${href}#ranking-table`}
           className="hover:underline"
         >
           {label}

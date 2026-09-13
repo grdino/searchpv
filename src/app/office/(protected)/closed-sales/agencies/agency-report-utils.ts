@@ -3,6 +3,7 @@ export type PropertyTypeSegment = "all" | "condos" | "houses";
 export type RangeKey = "this_year" | "last_year" | "this_month" | "last_year_month" | "all" | "custom";
 export type SortDir = "asc" | "desc";
 export type AgencySortKey =
+  | "rank"
   | "agency_nm"
   | "closed_transactions"
   | "transaction_volume_usd"
@@ -67,7 +68,7 @@ export function getRangeKey(value?: string): RangeKey {
 
 export function getSortKey(value?: string): AgencySortKey {
   const allowed: AgencySortKey[] = [
-    "agency_nm", "closed_transactions", "transaction_volume_usd",
+    "rank", "agency_nm", "closed_transactions", "transaction_volume_usd",
     "listing_sides", "listing_volume_usd", "selling_sides",
     "selling_volume_usd", "both_sides", "total_sides",
     "total_side_volume_usd", "side_capture_pc", "both_sides_pc",
@@ -110,6 +111,20 @@ export function toRpcPropertyType(value: PropertyTypeSegment) {
 
 export function sortRows(rows: AgencyReportRow[], key: AgencySortKey, dir: SortDir) {
   return [...rows].sort((a, b) => {
+    // Rank is defined by transaction volume: rank 1 is the highest volume.
+    // Therefore ascending rank means descending transaction volume.
+    if (key === "rank") {
+      const result =
+        toNumber(b.transaction_volume_usd) -
+        toNumber(a.transaction_volume_usd);
+
+      if (result !== 0) {
+        return dir === "asc" ? result : -result;
+      }
+
+      return a.agency_nm.localeCompare(b.agency_nm);
+    }
+
     const av = a[key];
     const bv = b[key];
     const result = key === "agency_nm"

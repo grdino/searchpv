@@ -19,6 +19,7 @@ export type RangeKey =
 export type SortDir = "asc" | "desc";
 
 export type AgentSortKey =
+  | "rank"
   | "agent_nm"
   | "agency_nm"
   | "closed_transactions"
@@ -137,6 +138,7 @@ const VALID_RANGE_KEYS: RangeKey[] = [
 ];
 
 const VALID_SORT_KEYS: AgentSortKey[] = [
+  "rank",
   "agent_nm",
   "agency_nm",
   "closed_transactions",
@@ -370,6 +372,22 @@ export function sortRows(
   sortDir: SortDir,
 ) {
   return [...rows].sort((a, b) => {
+    // Rank is defined by total side volume: rank 1 is the highest volume.
+    // Therefore ascending rank means descending total side volume.
+    if (sortKey === "rank") {
+      const leftRankValue = a.total_side_volume_usd ?? 0;
+      const rightRankValue = b.total_side_volume_usd ?? 0;
+      const comparison = rightRankValue - leftRankValue;
+
+      if (comparison !== 0) {
+        return sortDir === "asc"
+          ? comparison
+          : -comparison;
+      }
+
+      return compareAgentRows(a, b);
+    }
+
     const left = a[sortKey];
     const right = b[sortKey];
 
