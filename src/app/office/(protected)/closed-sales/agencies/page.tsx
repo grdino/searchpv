@@ -172,7 +172,7 @@ export default async function ClosedSalesByAgencyPage({
           <h2 className="text-2xl font-bold">Agency Ranking</h2>
           <p className="mt-1 text-sm text-slate-500">{rows.length.toLocaleString()} agencies match the selected filters. Click a column heading to sort.</p>
 
-          <div id="ranking-table" className="mt-3 max-h-[72vh] scroll-mt-16 overflow-auto rounded-xl bg-white shadow">
+          <div id="ranking-table" className="mt-3 max-h-[72vh] scroll-mt-[180px] md:scroll-mt-[110px]  overflow-auto rounded-xl bg-white shadow">
             <table className="min-w-[1800px] border-separate border-spacing-0 text-sm">
               <thead className="bg-slate-100 text-slate-700">
                 <tr>
