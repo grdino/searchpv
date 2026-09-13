@@ -97,7 +97,13 @@ export default async function ClosedSalesByAgencyPage({
     );
   }
 
-  const rows = sortRows((agencyResponse.data ?? []) as AgencyReportRow[], selectedSort, selectedDir);
+  const agencyRows = (agencyResponse.data ?? []) as AgencyReportRow[];
+  const rows = sortRows(agencyRows, selectedSort, selectedDir);
+  const rankByAgency = new Map(
+    sortRows(agencyRows, "transaction_volume_usd", "desc").map(
+      (row, index) => [row.agency_nm, index + 1],
+    ),
+  );
   const summary = (((summaryResponse.data ?? [])[0] as AgencyReportSummary | undefined) ?? null);
   const optionRows = optionResponse.rows;
 
@@ -170,7 +176,7 @@ export default async function ClosedSalesByAgencyPage({
             <table className="min-w-[1800px] border-separate border-spacing-0 text-sm">
               <thead className="bg-slate-100 text-slate-700">
                 <tr>
-                  <Th>Rank</Th>
+                  <Th rankColumn>Rank</Th>
                   <SortableTh label="Agency" sortKey="agency_nm" stickyLeft />
                   <SortableTh label="Transactions" sortKey="closed_transactions" />
                   <SortableTh label="Transaction Volume" sortKey="transaction_volume_usd" />
@@ -191,7 +197,7 @@ export default async function ClosedSalesByAgencyPage({
               <tbody>
                 {rows.map((row, index) => (
                   <tr key={row.agency_nm}>
-                    <Td>{index + 1}</Td>
+                    <Td rankColumn>{rankByAgency.get(row.agency_nm) ?? index + 1}</Td>
                     <Td stickyLeft><span className="font-semibold text-slate-950">{row.agency_nm}</span></Td>
                     <Td>{formatNumber(row.closed_transactions)}</Td>
                     <Td>{formatMoney(row.transaction_volume_usd)}</Td>
@@ -228,7 +234,11 @@ export default async function ClosedSalesByAgencyPage({
     const nextDir: SortDir = isSelected && selectedDir === "desc" ? "asc" : "desc";
     const href = buildReportHref({ market: selectedMarket, propertyType: selectedPropertyType, zone: selectedZone, area: selectedArea, community: selectedCommunity, development: selectedDevelopment, range: selectedRange, startDate: selectedStartDate, endDate: selectedEndDate, sort: sortKey, dir: nextDir });
     const arrow = isSelected ? (selectedDir === "asc" ? " ▲" : " ▼") : "";
-    return <th className={`sticky top-0 z-20 whitespace-nowrap bg-slate-100 px-4 py-3 text-left font-semibold ${stickyLeft ? "left-0 z-40 shadow-[2px_0_0_#e2e8f0]" : ""}`}><Link href={href} className="hover:underline">{label}{arrow}</Link></th>;
+    const className = stickyLeft
+      ? "sticky left-[52px] top-0 z-40 w-[160px] min-w-[160px] max-w-[160px] whitespace-normal break-words bg-slate-100 px-3 py-3 text-left font-semibold leading-tight shadow-[2px_0_0_#e2e8f0] md:w-[240px] md:min-w-[240px] md:max-w-[240px]"
+      : "sticky top-0 z-20 whitespace-nowrap bg-slate-100 px-4 py-3 text-left font-semibold";
+
+    return <th className={className}><Link href={href} className="hover:underline">{label}{arrow}</Link></th>;
   }
 }
 
@@ -245,15 +255,23 @@ function KpiGrid({ summary }: { summary: AgencyReportSummary | null }) {
     ["Median DOM", formatNumber(summary?.median_dom, 1), `Average ${formatNumber(summary?.average_dom, 1)}`],
     ["Median Sold/List", formatPercent(summary?.median_sold_to_list_pc), `Average ${formatPercent(summary?.average_sold_to_list_pc)}`],
   ];
-  return <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">{cards.map(([label, value, note]) => <div key={label} className="rounded-xl bg-white p-4 shadow"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-2xl font-bold text-slate-950">{value}</p><p className="mt-1 text-xs text-slate-500">{note}</p></div>)}</div>;
+  return <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">{cards.map(([label, value, note]) => <div key={label} className="min-w-0 overflow-hidden rounded-xl bg-white p-4 shadow"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 whitespace-nowrap text-[clamp(0.75rem,4vw,1.5rem)] font-bold leading-tight tracking-tight text-slate-950">{value}</p><p className="mt-1 text-xs text-slate-500">{note}</p></div>)}</div>;
 }
 
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="sticky top-0 z-20 whitespace-nowrap bg-slate-100 px-4 py-3 text-left font-semibold">{children}</th>;
+function Th({ children, rankColumn = false }: { children: React.ReactNode; rankColumn?: boolean }) {
+  return <th className={rankColumn ? "sticky left-0 top-0 z-50 w-[52px] min-w-[52px] max-w-[52px] bg-slate-100 px-2 py-3 text-center font-semibold" : "sticky top-0 z-20 whitespace-nowrap bg-slate-100 px-4 py-3 text-left font-semibold"}>{children}</th>;
 }
 
-function Td({ children, stickyLeft = false }: { children: React.ReactNode; stickyLeft?: boolean }) {
-  return <td className={`whitespace-nowrap border-t border-slate-100 px-4 py-3 ${stickyLeft ? "sticky left-0 z-10 bg-white shadow-[2px_0_0_#e2e8f0]" : "bg-white"}`}>{children}</td>;
+function Td({ children, stickyLeft = false, rankColumn = false }: { children: React.ReactNode; stickyLeft?: boolean; rankColumn?: boolean }) {
+  if (rankColumn) {
+    return <td className="sticky left-0 z-30 w-[52px] min-w-[52px] max-w-[52px] border-t border-slate-100 bg-white px-2 py-3 text-center font-semibold tabular-nums">{children}</td>;
+  }
+
+  if (stickyLeft) {
+    return <td className="sticky left-[52px] z-20 w-[160px] min-w-[160px] max-w-[160px] whitespace-normal break-words border-t border-slate-100 bg-white px-3 py-3 leading-tight shadow-[2px_0_0_#e2e8f0] md:w-[240px] md:min-w-[240px] md:max-w-[240px]">{children}</td>;
+  }
+
+  return <td className="whitespace-nowrap border-t border-slate-100 bg-white px-4 py-3">{children}</td>;
 }
 
 async function loadFilterOptions({

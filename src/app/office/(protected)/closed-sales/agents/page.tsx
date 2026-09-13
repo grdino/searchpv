@@ -177,11 +177,23 @@ function buildAgentDetailHref(row: AgentReportRow) {
     );
   }
 
+  const agentRows = (agentResponse.data ?? []) as AgentReportRow[];
+
   const rows = sortRows(
-    (agentResponse.data ??
-      []) as AgentReportRow[],
+    agentRows,
     selectedSort,
     selectedDir,
+  );
+
+  const rankByAgent = new Map(
+    sortRows(
+      agentRows,
+      "total_side_volume_usd",
+      "desc",
+    ).map((row, index) => [
+      `${row.agent_nm}::${row.agency_nm ?? ""}`,
+      index + 1,
+    ]),
   );
 
   const summary =
@@ -416,7 +428,7 @@ function buildAgentDetailHref(row: AgentReportRow) {
             <table className="min-w-[1950px] border-separate border-spacing-0 text-sm">
               <thead className="bg-slate-100 text-slate-700">
                 <tr>
-                  <Th>Rank</Th>
+                  <Th rankColumn>Rank</Th>
 
                   <SortableTh
                     label="Agent"
@@ -507,8 +519,10 @@ function buildAgentDetailHref(row: AgentReportRow) {
                     <tr
                       key={`${row.agent_nm}::${row.agency_nm ?? ""}`}
                     >
-                      <Td>
-                        {index + 1}
+                      <Td rankColumn>
+                        {rankByAgent.get(
+                          `${row.agent_nm}::${row.agency_nm ?? ""}`,
+                        ) ?? index + 1}
                       </Td>
 
                       <Td stickyLeft>
@@ -705,13 +719,13 @@ function buildAgentDetailHref(row: AgentReportRow) {
         : " ▼"
       : "";
 
+    const className = stickyLeft
+      ? "sticky left-[52px] top-0 z-40 w-[160px] min-w-[160px] max-w-[160px] whitespace-normal break-words bg-slate-100 px-3 py-3 text-left font-semibold leading-tight shadow-[2px_0_0_#e2e8f0] md:w-[240px] md:min-w-[240px] md:max-w-[240px]"
+      : "sticky top-0 z-20 whitespace-nowrap bg-slate-100 px-4 py-3 text-left font-semibold";
+
     return (
       <th
-        className={`sticky top-0 z-20 whitespace-nowrap bg-slate-100 px-4 py-3 text-left font-semibold ${
-          stickyLeft
-            ? "left-0 z-40 shadow-[2px_0_0_#e2e8f0]"
-            : ""
-        }`}
+        className={className}
       >
         <Link
           href={href}
@@ -825,13 +839,13 @@ function KpiGrid({
         ([label, value, note]) => (
           <div
             key={label}
-            className="rounded-xl bg-white p-4 shadow"
+            className="min-w-0 overflow-hidden rounded-xl bg-white p-4 shadow"
           >
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               {label}
             </p>
 
-            <p className="mt-2 text-2xl font-bold text-slate-950">
+            <p className="mt-2 whitespace-nowrap text-[clamp(0.75rem,4vw,1.5rem)] font-bold leading-tight tracking-tight text-slate-950">
               {value}
             </p>
 
@@ -847,11 +861,19 @@ function KpiGrid({
 
 function Th({
   children,
+  rankColumn = false,
 }: {
   children: React.ReactNode;
+  rankColumn?: boolean;
 }) {
   return (
-    <th className="sticky top-0 z-20 whitespace-nowrap bg-slate-100 px-4 py-3 text-left font-semibold">
+    <th
+      className={
+        rankColumn
+          ? "sticky left-0 top-0 z-50 w-[52px] min-w-[52px] max-w-[52px] bg-slate-100 px-2 py-3 text-center font-semibold"
+          : "sticky top-0 z-20 whitespace-nowrap bg-slate-100 px-4 py-3 text-left font-semibold"
+      }
+    >
       {children}
     </th>
   );
@@ -860,18 +882,30 @@ function Th({
 function Td({
   children,
   stickyLeft = false,
+  rankColumn = false,
 }: {
   children: React.ReactNode;
   stickyLeft?: boolean;
+  rankColumn?: boolean;
 }) {
+  if (rankColumn) {
+    return (
+      <td className="sticky left-0 z-30 w-[52px] min-w-[52px] max-w-[52px] border-t border-slate-100 bg-white px-2 py-3 text-center font-semibold tabular-nums">
+        {children}
+      </td>
+    );
+  }
+
+  if (stickyLeft) {
+    return (
+      <td className="sticky left-[52px] z-20 w-[160px] min-w-[160px] max-w-[160px] whitespace-normal break-words border-t border-slate-100 bg-white px-3 py-3 leading-tight shadow-[2px_0_0_#e2e8f0] md:w-[240px] md:min-w-[240px] md:max-w-[240px]">
+        {children}
+      </td>
+    );
+  }
+
   return (
-    <td
-      className={`whitespace-nowrap border-t border-slate-100 px-4 py-3 ${
-        stickyLeft
-          ? "sticky left-0 z-10 bg-white shadow-[2px_0_0_#e2e8f0]"
-          : "bg-white"
-      }`}
-    >
+    <td className="whitespace-nowrap border-t border-slate-100 bg-white px-4 py-3">
       {children}
     </td>
   );

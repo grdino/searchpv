@@ -115,7 +115,12 @@ export function sortRows(rows: AgencyReportRow[], key: AgencySortKey, dir: SortD
     const result = key === "agency_nm"
       ? String(av ?? "").localeCompare(String(bv ?? ""))
       : toNumber(av) - toNumber(bv);
-    return dir === "asc" ? result : -result;
+
+    if (result !== 0) {
+      return dir === "asc" ? result : -result;
+    }
+
+    return a.agency_nm.localeCompare(b.agency_nm);
   });
 }
 
