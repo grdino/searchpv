@@ -284,7 +284,7 @@ function buildAgentDetailHref(row: AgentReportRow) {
           <div className="relative">
             <Header />
 
-            <div className="absolute right-0 top-0 z-50">
+            <div className="absolute right-0 top-0 z-[80]">
               <HamburgerMenu />
             </div>
           </div>

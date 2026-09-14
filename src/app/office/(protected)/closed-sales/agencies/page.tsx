@@ -118,7 +118,7 @@ export default async function ClosedSalesByAgencyPage({
         <div className="mx-auto max-w-7xl">
           <div className="relative">
             <Header />
-            <div className="absolute right-0 top-0 z-50"><HamburgerMenu /></div>
+            <div className="absolute right-0 top-0 z-[80]"><HamburgerMenu /></div>
           </div>
           <MainSloganBranding />
           <p className="mt-3 text-xs font-bold uppercase tracking-[0.18em] text-sky-300">Office Analytics</p>
