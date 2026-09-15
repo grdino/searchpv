@@ -254,19 +254,83 @@ function MarketPosition({ subject, currentRows, closedRows }: { subject: Subject
         <p className="text-xs font-semibold text-slate-500">Medians of selected local comparisons</p>
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <PositionCard label="Asking price" value={relativeText(subject.current_price, currentPrice)} detail={sampleText(currentRows.length, "current listing")} />
-        <PositionCard label="Price per m²" value={relativeText(subject.price_per_sqm, currentPsm)} detail={currentPsm === null ? "Insufficient current data" : `${formatMoney(currentPsm)}/m² competitor median`} />
-        <PositionCard label="Interior size" value={relativeText(subject.sqm, currentSqm)} detail={currentSqm === null ? "Insufficient current data" : `${formatNumber(currentSqm)} m² competitor median`} />
-        <PositionCard label="Days on market" value={dayDifferenceText(subject.dom, currentDom)} detail={currentDom === null ? "Insufficient current data" : `${formatNumber(currentDom)} day competitor median`} />
-      </div>
-      <div className="mt-5 border-t border-amber-200 pt-5">
-        <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">Recent-sale context</h3>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          <PositionCard label="Subject ask vs sold prices" value={relativeText(subject.current_price, soldPrice)} detail={sampleText(closedRows.length, "recent sale")} />
-          <PositionCard label="Subject $/m² vs sold" value={relativeText(subject.price_per_sqm, soldPsm)} detail={soldPsm === null ? "Insufficient sold data" : `${formatMoney(soldPsm)}/m² sold median`} />
-          <PositionCard label="Sold vs final asking" value={soldRatio === null ? "Insufficient data" : `${formatNumber(soldRatio, 1)}% median`} detail="Accepted pending prices are unavailable" />
-        </div>
-      </div>
+  <PositionCard
+    label="Asking price"
+    value={relativeText(subject.current_price, currentPrice)}
+    detail={sampleText(currentRows.length, "current listing")}
+    info="Compares this property's current asking price with the median asking price of the selected local Active and Pending listings. Price is not used to select or rank the comparable listings."
+  />
+
+  <PositionCard
+    label="Price per m²"
+    value={relativeText(subject.price_per_sqm, currentPsm)}
+    detail={
+      currentPsm === null
+        ? "Insufficient current data"
+        : `${formatMoney(currentPsm)}/m² competitor median`
+    }
+    info="Compares this property's asking price per square meter of interior area with the median price per m² of the selected local Active and Pending listings."
+  />
+
+  <PositionCard
+    label="Interior size"
+    value={relativeText(subject.sqm, currentSqm)}
+    detail={
+      currentSqm === null
+        ? "Insufficient current data"
+        : `${formatNumber(currentSqm)} m² competitor median`
+    }
+    info="Compares this property's interior area with the median interior area of the selected local Active and Pending listings."
+  />
+
+  <PositionCard
+    label="Days on market"
+    value={dayDifferenceText(subject.dom, currentDom)}
+    detail={
+      currentDom === null
+        ? "Insufficient current data"
+        : `${formatNumber(currentDom)} day competitor median`
+    }
+    info="Compares this listing's current days on market with the median days on market of the selected local Active and Pending listings."
+  />
+</div>
+
+<div className="mt-5 border-t border-amber-200 pt-5">
+  <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">
+    Recent-sale context
+  </h3>
+
+  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+    <PositionCard
+      label="Subject ask vs sold prices"
+      value={relativeText(subject.current_price, soldPrice)}
+      detail={sampleText(closedRows.length, "recent sale")}
+      info="Compares this property's current asking price with the median sold price of the selected local recent sales. This is a direct comparison only; no adjustments are made for differences between properties."
+    />
+
+    <PositionCard
+      label="Subject $/m² vs sold"
+      value={relativeText(subject.price_per_sqm, soldPsm)}
+      detail={
+        soldPsm === null
+          ? "Insufficient sold data"
+          : `${formatMoney(soldPsm)}/m² sold median`
+      }
+      info="Compares this property's current asking price per square meter with the median sold price per m² of the selected local recent sales."
+    />
+
+    <PositionCard
+      label="Sold vs final asking"
+      value={
+        soldRatio === null
+          ? "Insufficient data"
+          : `${formatNumber(soldRatio, 1)}% median`
+      }
+      detail="Accepted pending prices are unavailable"
+      info="Shows the median sold price as a percentage of each comparable property's final asking price. For example, 97% means the properties sold for a median of 97% of their final asking prices. This is not the same as the original asking price."
+    />
+  </div>
+</div>
     </section>
   );
 }
@@ -411,8 +475,48 @@ function localMarketRows(rows: ComparisonRow[]) {
   });
 }
 
-function PositionCard({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return <div className="rounded-xl border border-amber-200 bg-white p-4"><p className="text-[11px] font-black uppercase tracking-wide text-slate-500">{label}</p><p className="mt-1 text-lg font-black text-slate-950">{value}</p><p className="mt-1 text-xs leading-5 text-slate-500">{detail}</p></div>;
+function PositionCard({
+  label,
+  value,
+  detail,
+  info,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  info: string;
+}) {
+  return (
+    <div className="relative rounded-xl border border-amber-200 bg-white p-4">
+      <div className="flex items-center gap-2">
+        <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+          {label}
+        </p>
+
+        <details className="searchpv-info relative print:hidden">
+          <summary
+            className="searchpv-info-button"
+            aria-label={`About ${label}`}
+            title={`About ${label}`}
+          >
+            i
+          </summary>
+
+          <div className="searchpv-info-popup">
+            {info}
+          </div>
+        </details>
+      </div>
+
+      <p className="mt-1 text-lg font-black text-slate-950">
+        {value}
+      </p>
+
+      <p className="mt-1 text-xs leading-5 text-slate-500">
+        {detail}
+      </p>
+    </div>
+  );
 }
 
 function Fact({

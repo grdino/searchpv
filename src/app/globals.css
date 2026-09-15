@@ -167,18 +167,91 @@ body {
   }
 }
 
-/* Hide native details marker */
-.searchpv-info summary::-webkit-details-marker {
+/* ============================================================
+   PROPERTY COMPARISON — INFO POPUPS
+   ============================================================ */
+
+.searchpv-info {
+  position: relative;
+  display: inline-block;
+}
+
+.searchpv-info-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 18px;
+  height: 18px;
+  padding: 0;
+
+  border: 1px solid #94a3b8;
+  border-radius: 50%;
+
+  background: #ffffff;
+  color: #475569;
+
+  font-size: 11px;
+  font-weight: 800;
+  font-style: normal;
+  line-height: 1;
+
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.searchpv-info-button::-webkit-details-marker {
   display: none;
 }
 
-/* Desktop: also reveal explanation on hover */
-@media (hover: hover) and (pointer: fine) {
-  .searchpv-info:not([open]) .searchpv-info-popup {
-    display: none;
-  }
+.searchpv-info-button::marker {
+  display: none;
+  content: "";
+}
 
-  .searchpv-info:hover .searchpv-info-popup {
-    display: block;
+.searchpv-info-button:hover {
+  border-color: #d97706;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.searchpv-info-popup {
+  position: absolute;
+  z-index: 100;
+
+  top: 26px;
+  left: 0;
+
+  width: 280px;
+  padding: 12px 14px;
+
+  border: 1px solid #334155;
+  border-radius: 10px;
+
+  background: #0f172a;
+  color: #ffffff;
+
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-transform: none;
+  letter-spacing: normal;
+
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
+}
+
+@media (max-width: 640px) {
+  .searchpv-info-popup {
+    position: fixed;
+    top: auto;
+    left: 16px;
+    right: 16px;
+    bottom: 20px;
+
+    width: auto;
+
+    font-size: 14px;
+    line-height: 1.5;
   }
 }
