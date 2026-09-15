@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import Header from "@/app/components/Header";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createOfficeClient } from "@/lib/supabase/office-server";
 
 export const metadata: Metadata = {
   title: "Saved-Item Analytics | SearchPV Office",
@@ -21,6 +21,8 @@ type RangeKey = "7d" | "30d" | "90d" | "all";
 type SavedEvent = {
   event_ky: number;
   anonymous_visitor_id: string;
+  user_id: string | null;
+  email: string | null;
   event_type: "save" | "remove";
   item_type: "area" | "property" | "search";
   reference_id: string;
@@ -28,6 +30,30 @@ type SavedEvent = {
   source_path: string | null;
   device_type: "mobile" | "tablet" | "desktop" | null;
   created_at: string;
+};
+
+type ConnectedSavedItem = {
+  user_id: string;
+  email: string;
+  item_id: string;
+  item_type: "area" | "property" | "search";
+  reference_id: string;
+  title: string;
+  subtitle: string | null;
+  href: string;
+  metadata: Record<string, unknown> | null;
+  saved_at: string;
+  updated_at: string;
+};
+
+type ConnectedSaver = {
+  userId: string;
+  email: string;
+  total: number;
+  properties: number;
+  searches: number;
+  areas: number;
+  lastSave: string;
 };
 
 type SearchParams = {
@@ -52,9 +78,14 @@ export default async function SavedAnalyticsPage({
   const params = await searchParams;
   const selectedRange = parseRange(params.range);
 
-  const supabase = createAdminClient();
-  const { events, truncated } =
-    await loadSavedEvents(supabase);
+  const officeSupabase = await createOfficeClient();
+
+  const [{ events, truncated }, connectedItems] = await Promise.all([
+    loadSavedEvents(officeSupabase),
+    loadConnectedSavedItems(officeSupabase),
+  ]);
+
+  const connectedSavers = buildConnectedSavers(connectedItems);
 
   const filteredEvents = filterByRange(
     events,
@@ -114,9 +145,8 @@ export default async function SavedAnalyticsPage({
               </h1>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-                Anonymous usage of Save features across
-                SearchPV. No email address is required or
-                displayed here.
+                Save activity across SearchPV, including anonymous usage and
+                verified users who choose to keep their saves across devices.
               </p>
             </div>
 
@@ -157,6 +187,146 @@ export default async function SavedAnalyticsPage({
             recent 20,000.
           </div>
         ) : null}
+
+        <section className="mt-6 grid gap-4 sm:grid-cols-2">
+          <StatCard
+            label="Connected Savers"
+            value={connectedSavers.length}
+            detail="Verified emails with current saves"
+          />
+
+          <StatCard
+            label="Connected Saved Items"
+            value={connectedItems.length}
+            detail="Current saves kept across devices"
+          />
+        </section>
+
+        <section className="mt-6">
+          <DataCard title="Connected Savers">
+            {connectedSavers.length ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-[760px] w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                      <th className="px-3 py-3">Email</th>
+                      <th className="px-3 py-3 text-right">Saves</th>
+                      <th className="px-3 py-3 text-right">Properties</th>
+                      <th className="px-3 py-3 text-right">Searches</th>
+                      <th className="px-3 py-3 text-right">Areas</th>
+                      <th className="px-3 py-3">Last Save</th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-100">
+                    {connectedSavers.map((saver) => (
+                      <tr key={saver.userId}>
+                        <td className="px-3 py-3 font-bold text-slate-900">
+                          <a
+                            href={`mailto:${saver.email}`}
+                            className="text-emerald-800 underline decoration-emerald-300 underline-offset-2 hover:text-emerald-950"
+                          >
+                            {saver.email}
+                          </a>
+                        </td>
+                        <td className="px-3 py-3 text-right font-black text-slate-950">
+                          {saver.total}
+                        </td>
+                        <td className="px-3 py-3 text-right text-slate-700">
+                          {saver.properties}
+                        </td>
+                        <td className="px-3 py-3 text-right text-slate-700">
+                          {saver.searches}
+                        </td>
+                        <td className="px-3 py-3 text-right text-slate-700">
+                          {saver.areas}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-slate-600">
+                          {formatDateTime(saver.lastSave)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="py-6 text-sm text-slate-500">
+                No verified users currently have synchronized saves.
+              </p>
+            )}
+          </DataCard>
+        </section>
+
+        <section className="mt-6">
+          <DataCard title="Connected Saved Items">
+            {connectedItems.length ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-[900px] w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                      <th className="px-3 py-3">Email</th>
+                      <th className="px-3 py-3">Type</th>
+                      <th className="px-3 py-3">Saved Item</th>
+                      <th className="px-3 py-3">Saved</th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-100">
+                    {connectedItems.map((item) => (
+                      <tr key={`${item.user_id}:${item.item_id}`}>
+                        <td className="px-3 py-3 font-semibold text-slate-700">
+                          <a
+                            href={`mailto:${item.email}`}
+                            className="text-emerald-800 underline decoration-emerald-300 underline-offset-2 hover:text-emerald-950"
+                          >
+                            {item.email}
+                          </a>
+                        </td>
+                        <td className="px-3 py-3 font-semibold text-slate-700">
+                          {formatItemType(item.item_type)}
+                        </td>
+                        <td className="max-w-[420px] px-3 py-3">
+                          <Link
+                            href={item.href}
+                            className="font-bold text-slate-900 hover:text-emerald-800"
+                          >
+                            {item.title}
+                          </Link>
+                          {item.subtitle ? (
+                            <p className="mt-0.5 text-xs text-slate-500">
+                              {item.subtitle}
+                            </p>
+                          ) : null}
+                          <p className="mt-0.5 break-all text-xs text-slate-400">
+                            {item.reference_id}
+                          </p>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3 text-slate-600">
+                          {formatDateTime(item.saved_at)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="py-6 text-sm text-slate-500">
+                No synchronized saved items are currently stored.
+              </p>
+            )}
+          </DataCard>
+        </section>
+
+        <section className="mt-8 border-t border-slate-300 pt-8">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+              Anonymous Activity
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              Save and remove behavior from all visitors, including people who have not connected an email.
+            </p>
+          </div>
+        </section>
 
         <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
@@ -350,13 +520,20 @@ export default async function SavedAnalyticsPage({
                           </td>
 
                           <td
-                            className="px-3 py-3 font-mono text-xs text-slate-500"
-                            title={
-                              event.anonymous_visitor_id
-                            }
+                            className="px-3 py-3 text-xs text-slate-600"
+                            title={`Visitor ID: ${event.anonymous_visitor_id}`}
                           >
-                            {shortVisitorId(
-                              event.anonymous_visitor_id,
+                            {event.email ? (
+                              <a
+                                href={`mailto:${event.email}`}
+                                className="font-semibold text-emerald-800 underline decoration-emerald-300 underline-offset-2 hover:text-emerald-950"
+                              >
+                                {event.email}
+                              </a>
+                            ) : (
+                              <span className="font-semibold text-slate-500">
+                                Anonymous
+                              </span>
                             )}
                           </td>
                         </tr>
@@ -374,56 +551,75 @@ export default async function SavedAnalyticsPage({
   );
 }
 
+async function loadConnectedSavedItems(
+  supabase: SupabaseClient,
+): Promise<ConnectedSavedItem[]> {
+  const { data, error } = await supabase.rpc(
+    "office_saved_items",
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []) as ConnectedSavedItem[];
+}
+
+function buildConnectedSavers(
+  items: ConnectedSavedItem[],
+): ConnectedSaver[] {
+  const grouped = new Map<string, ConnectedSaver>();
+
+  for (const item of items) {
+    const current = grouped.get(item.user_id) ?? {
+      userId: item.user_id,
+      email: item.email,
+      total: 0,
+      properties: 0,
+      searches: 0,
+      areas: 0,
+      lastSave: item.saved_at,
+    };
+
+    current.total += 1;
+
+    if (item.item_type === "property") current.properties += 1;
+    if (item.item_type === "search") current.searches += 1;
+    if (item.item_type === "area") current.areas += 1;
+
+    if (item.saved_at > current.lastSave) {
+      current.lastSave = item.saved_at;
+    }
+
+    grouped.set(item.user_id, current);
+  }
+
+  return [...grouped.values()].sort(
+    (a, b) =>
+      b.lastSave.localeCompare(a.lastSave) ||
+      a.email.localeCompare(b.email),
+  );
+}
+
 async function loadSavedEvents(
   supabase: SupabaseClient,
 ) {
-  const pageSize = 1000;
   const maximumEvents = 20_000;
-  const events: SavedEvent[] = [];
 
-  for (
-    let start = 0;
-    start < maximumEvents;
-    start += pageSize
-  ) {
-    const { data, error } = await supabase
-      .from("saved_item_event")
-      .select(
-        `
-          event_ky,
-          anonymous_visitor_id,
-          event_type,
-          item_type,
-          reference_id,
-          item_title,
-          source_path,
-          device_type,
-          created_at
-        `,
-      )
-      .order("created_at", {
-        ascending: false,
-      })
-      .range(start, start + pageSize - 1);
+  const { data, error } = await supabase.rpc(
+    "office_saved_item_events",
+  );
 
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    const page = (data ?? []) as SavedEvent[];
-    events.push(...page);
-
-    if (page.length < pageSize) {
-      return {
-        events,
-        truncated: false,
-      };
-    }
+  if (error) {
+    throw new Error(error.message);
   }
 
+  const allEvents = (data ?? []) as SavedEvent[];
+  const truncated = allEvents.length > maximumEvents;
+
   return {
-    events,
-    truncated: true,
+    events: allEvents.slice(0, maximumEvents),
+    truncated,
   };
 }
 
@@ -611,10 +807,6 @@ function formatDay(value: string) {
     day: "numeric",
     year: "numeric",
   }).format(new Date(`${value}T12:00:00Z`));
-}
-
-function shortVisitorId(value: string) {
-  return `${value.slice(0, 8)}…`;
 }
 
 function StatCard({

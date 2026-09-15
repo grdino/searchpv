@@ -1,5 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+
+import { createClient } from "@/lib/supabase/server";
 
 const VALID_EVENT_TYPES = new Set(["save", "remove"]);
 const VALID_ITEM_TYPES = new Set([
@@ -130,6 +132,24 @@ export async function POST(request: Request) {
       );
     }
 
+    /*
+     * Read the normal SearchPV Supabase session.
+     *
+     * This is the public/Saved session, not the
+     * independently namespaced Office session.
+     *
+     * Anonymous visitors simply produce a null userId.
+     */
+    const sessionClient = await createClient();
+
+    const { data: claimsData } =
+      await sessionClient.auth.getClaims();
+
+    const userId =
+      typeof claimsData?.claims?.sub === "string"
+        ? claimsData.claims.sub
+        : null;
+
     const supabaseUrl =
       process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -147,7 +167,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabaseAdmin = createClient(
+    const supabaseAdmin = createAdminClient(
       supabaseUrl,
       supabaseSecretKey,
       {
@@ -163,6 +183,7 @@ export async function POST(request: Request) {
       .insert({
         anonymous_visitor_id:
           anonymousVisitorId,
+        user_id: userId,
         event_type: eventType,
         item_type: itemType,
         reference_id: referenceId,

@@ -166,3 +166,19 @@ body {
     transform: none;
   }
 }
+
+/* Hide native details marker */
+.searchpv-info summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Desktop: also reveal explanation on hover */
+@media (hover: hover) and (pointer: fine) {
+  .searchpv-info:not([open]) .searchpv-info-popup {
+    display: none;
+  }
+
+  .searchpv-info:hover .searchpv-info-popup {
+    display: block;
+  }
+}
