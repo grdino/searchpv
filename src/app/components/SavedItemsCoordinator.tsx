@@ -256,12 +256,12 @@ export default function SavedItemsCoordinator() {
 
       {dialogOpen ? (
         <div
-          className="fixed inset-0 z-[11000] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[11000] flex items-start justify-center overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm sm:items-center"
           role="dialog"
           aria-modal="true"
           aria-labelledby="save-email-title"
         >
-          <div className="w-full max-w-md rounded-[24px] border border-white/80 bg-white p-6 shadow-2xl">
+          <div className="my-auto min-w-0 w-full max-w-[calc(100vw-2rem)] rounded-[24px] border border-white/80 bg-white p-5 shadow-2xl sm:max-w-md sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-emerald-800">
                 <Mail size={21} />
@@ -303,7 +303,7 @@ export default function SavedItemsCoordinator() {
                       autoComplete="email"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
-                      className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                      className="mt-2 min-w-0 w-full max-w-full rounded-xl border border-slate-300 px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
                     />
                   </label>
 
@@ -327,12 +327,11 @@ export default function SavedItemsCoordinator() {
 
       {accountAction ? (
         <div
-          className="fixed inset-0 z-[12000] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm"
-          role="dialog"
+          className="fixed inset-0 z-[12000] flex items-start justify-center overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm sm:items-center"
           aria-modal="true"
           aria-labelledby="saved-account-action-title"
         >
-          <div className="w-full max-w-md rounded-[24px] border border-white/80 bg-white p-6 shadow-2xl">
+          <div className="my-auto min-w-0 w-full max-w-[calc(100vw-2rem)] rounded-[24px] border border-white/80 bg-white p-5 shadow-2xl sm:max-w-md sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-emerald-800">
                 <Mail size={21} />
@@ -377,8 +376,7 @@ export default function SavedItemsCoordinator() {
             </p>
 
             <p className="mt-3 text-xs leading-5 text-slate-500">
-              This changes the SearchPV account used in this browser and may also
-              sign you out of other private SearchPV sections.
+              This only changes the account used for Saved on this device.
             </p>
 
             {errorMessage ? (

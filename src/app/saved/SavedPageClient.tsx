@@ -78,7 +78,7 @@ export default function SavedPageClient() {
   }
 
   return (
-    <section className="mx-auto mt-10 max-w-4xl">
+    <section className="mx-auto mt-10 min-w-0 max-w-4xl">
       <p className="text-xs font-black uppercase tracking-[0.22em] text-teal-700">
         Your SearchPV
       </p>
@@ -147,7 +147,7 @@ export default function SavedPageClient() {
         </div>
       </div>
 
-      <div className="mt-8 space-y-8">
+      <div className="mt-8 min-w-0 space-y-8">
         {sections.map((section) => {
           const sectionItems = items.filter(
             (item) => item.type === section.type,
@@ -175,40 +175,46 @@ export default function SavedPageClient() {
                   {sectionItems.map((item) => (
                     <article
                       key={item.id}
-                      className="flex items-center gap-3 rounded-2xl border border-white bg-white/85 p-4 shadow-sm"
+                      className="flex min-w-0 items-center gap-3 rounded-2xl border border-white bg-white/85 p-4 shadow-sm"
                     >
-                      <Link href={item.href} rel="nofollow" className="min-w-0 flex-1">
-                        <span className="block truncate font-black">
+                      <Link
+                        href={item.href}
+                        rel="nofollow"
+                        className="min-w-0 flex-1"
+                      >
+                        <span className="block break-words font-black">
                           {item.title}
                         </span>
 
                         {item.subtitle ? (
-                          <span className="mt-1 block text-xs font-semibold text-slate-500">
+                          <span className="mt-1 block break-words text-xs font-semibold text-slate-500">
                             {item.subtitle}
                           </span>
                         ) : null}
                       </Link>
 
-                      <button
-                        type="button"
-                        aria-label={`Remove ${item.title}`}
-                        onClick={() => {
-                          removeSavedItem(item.id);
-                          refresh();
-                        }}
-                        className="rounded-full p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
-                      >
-                        <Trash2 size={17} />
-                      </button>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button
+                          type="button"
+                          aria-label={`Remove ${item.title}`}
+                          onClick={() => {
+                            removeSavedItem(item.id);
+                            refresh();
+                          }}
+                          className="rounded-full p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                        >
+                          <Trash2 size={17} />
+                        </button>
 
-                      <Link
-                        href={item.href}
-                        rel="nofollow"
-                        aria-label={`Open ${item.title}`}
-                        className="text-teal-700"
-                      >
-                        <ChevronRight size={18} />
-                      </Link>
+                        <Link
+                          href={item.href}
+                          rel="nofollow"
+                          aria-label={`Open ${item.title}`}
+                          className="rounded-full p-2 text-teal-700 transition hover:bg-teal-50"
+                        >
+                          <ChevronRight size={18} />
+                        </Link>
+                      </div>
                     </article>
                   ))}
                 </div>
