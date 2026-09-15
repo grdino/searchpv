@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
-import { isAuthorizedOfficeEmail } from "@/lib/office-auth";
-import { createClient } from "@/lib/supabase/server";
+import { requireOfficeUser } from "@/lib/office-auth";
 
 export const metadata: Metadata = {
   title: "Office",
@@ -20,16 +18,6 @@ export default async function ProtectedOfficeLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-
-  const email =
-    typeof data?.claims?.email === "string"
-      ? data.claims.email.toLowerCase()
-      : null;
-
-  if (!email) redirect("/office/login");
-  if (!isAuthorizedOfficeEmail(email)) redirect("/");
-
+  await requireOfficeUser();
   return <>{children}</>;
 }

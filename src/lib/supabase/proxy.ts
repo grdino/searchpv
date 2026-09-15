@@ -4,14 +4,23 @@ import {
   type NextRequest,
 } from "next/server";
 
-import { isAuthorizedOfficeEmail } from "@/lib/office-auth";
+import { OFFICE_AUTH_COOKIE_NAME } from "@/lib/supabase/office-cookie";
+
+function isOfficeAuthCookie(name: string) {
+  return (
+    name === OFFICE_AUTH_COOKIE_NAME ||
+    name.startsWith(`${OFFICE_AUTH_COOKIE_NAME}.`)
+  );
+}
 
 function copyCookies(
   source: NextResponse,
   destination: NextResponse,
 ) {
   source.cookies.getAll().forEach((cookie) => {
-    destination.cookies.set(cookie);
+    if (isOfficeAuthCookie(cookie.name)) {
+      destination.cookies.set(cookie);
+    }
   });
 
   return destination;
@@ -20,9 +29,7 @@ function copyCookies(
 export async function updateSession(
   request: NextRequest,
 ) {
-  let response = NextResponse.next({
-    request,
-  });
+  let response = NextResponse.next({ request });
 
   const supabaseUrl =
     process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -41,21 +48,40 @@ export async function updateSession(
     supabaseUrl,
     supabasePublishableKey,
     {
+      cookieOptions: {
+        name: OFFICE_AUTH_COOKIE_NAME,
+      },
+
       cookies: {
         getAll() {
-          return request.cookies.getAll();
+          /*
+           * The Office client must never see the normal
+           * public Supabase authentication cookies.
+           */
+          return request.cookies
+            .getAll()
+            .filter(({ name }) =>
+              isOfficeAuthCookie(name),
+            );
         },
 
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => {
-            request.cookies.set(name, value);
-          });
+          const officeCookies = cookiesToSet.filter(
+            ({ name }) =>
+              isOfficeAuthCookie(name),
+          );
+
+          officeCookies.forEach(
+            ({ name, value }) => {
+              request.cookies.set(name, value);
+            },
+          );
 
           response = NextResponse.next({
             request,
           });
 
-          cookiesToSet.forEach(
+          officeCookies.forEach(
             ({ name, value, options }) => {
               response.cookies.set(
                 name,
@@ -69,15 +95,18 @@ export async function updateSession(
     },
   );
 
-  const { data } = await supabase.auth.getClaims();
+  const { data } =
+    await supabase.auth.getClaims();
 
   const claims = data?.claims;
 
   const pathname = request.nextUrl.pathname;
-  const isLoginPage = pathname === "/office/login";
+  const isLoginPage =
+    pathname === "/office/login";
 
   if (!claims && !isLoginPage) {
-    const loginUrl = request.nextUrl.clone();
+    const loginUrl =
+      request.nextUrl.clone();
 
     loginUrl.pathname = "/office/login";
     loginUrl.search = "";
@@ -101,12 +130,9 @@ export async function updateSession(
     );
   }
 
-  if (
-    claims &&
-    isLoginPage &&
-    isAuthorizedOfficeEmail(claims.email)
-  ) {
-    const officeUrl = request.nextUrl.clone();
+  if (claims && isLoginPage) {
+    const officeUrl =
+      request.nextUrl.clone();
 
     officeUrl.pathname = "/office";
     officeUrl.search = "";

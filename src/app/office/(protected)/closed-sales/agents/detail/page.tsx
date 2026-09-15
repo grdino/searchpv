@@ -4,7 +4,7 @@ import Link from "next/link";
 import Header from "@/app/components/Header";
 import HamburgerMenu from "@/app/components/HamburgerMenu";
 import MainSloganBranding from "@/app/components/MainSloganBranding";
-import { createClient } from "@/lib/supabase/server";
+import { createOfficeClient } from "@/lib/supabase/office-server";
 
 import AgentDetailExportButtons from "./AgentDetailExportButtons";
 
@@ -105,7 +105,7 @@ export async function generateMetadata({
 export default async function AgentClosedSalesDetailPage({
   searchParams,
 }: PageProps) {
-  const supabase = await createClient();
+  const supabase = await createOfficeClient();
   const queryParams = await searchParams;
 
   const agentName = queryParams.agent?.trim() ?? "";

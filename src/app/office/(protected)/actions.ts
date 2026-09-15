@@ -2,12 +2,14 @@
 
 import { redirect } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/server";
+import { createOfficeClient } from "@/lib/supabase/office-server";
 
 export async function logout() {
-  const supabase = await createClient();
+  const supabase = await createOfficeClient();
 
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({
+    scope: "local",
+  });
 
   redirect("/office/login");
 }

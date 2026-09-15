@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/server";
+import { createOfficeClient } from "@/lib/supabase/office-server";
 
 function getSafeDestination(value: FormDataEntryValue | null) {
   if (typeof value !== "string") {
@@ -40,7 +40,7 @@ export async function login(formData: FormData) {
     );
   }
 
-  const supabase = await createClient();
+  const supabase = await createOfficeClient();
 
   const { error } = await supabase.auth.signInWithPassword({
     email,

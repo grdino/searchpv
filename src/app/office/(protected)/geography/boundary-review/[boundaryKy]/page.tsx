@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/server";
+import { createOfficeClient } from "@/lib/supabase/office-server";
 
 import {
   approveBoundaryMatch,
@@ -389,7 +389,7 @@ export default async function BoundaryReviewDetailPage({
       ? requestedQueuePage
       : 1;
 
-  const supabase = await createClient();
+  const supabase = await createOfficeClient();
 
   const { data, error } = await supabase
     .schema("geo")

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/server";
+import { createOfficeClient } from "@/lib/supabase/office-server";
 
 const QUEUE_PATH = "/office/geography/boundary-review";
 
@@ -71,7 +71,7 @@ export async function approveBoundaryMatch(
   const reviewNote = optionalText(formData, "reviewNote");
   const nextHref = safeRedirectPath(formData.get("nextHref"));
 
-  const supabase = await createClient();
+  const supabase = await createOfficeClient();
 
   const { error } = await supabase.schema("geo").rpc(
     "approve_boundary_match",
@@ -103,7 +103,7 @@ export async function markBoundaryNonCommunity(
   const reviewNote = optionalText(formData, "reviewNote");
   const nextHref = safeRedirectPath(formData.get("nextHref"));
 
-  const supabase = await createClient();
+  const supabase = await createOfficeClient();
 
   const { error } = await supabase.schema("geo").rpc(
     "mark_boundary_non_community",

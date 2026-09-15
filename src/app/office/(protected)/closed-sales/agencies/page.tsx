@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { createClient } from "@/lib/supabase/server";
+import { createOfficeClient } from "@/lib/supabase/office-server";
 import Header from "@/app/components/Header";
 import HamburgerMenu from "@/app/components/HamburgerMenu";
 import MainSloganBranding from "@/app/components/MainSloganBranding";
@@ -52,7 +52,7 @@ export default async function ClosedSalesByAgencyPage({
     dir?: string;
   }>;
 }) {
-  const supabase = await createClient();
+  const supabase = await createOfficeClient();
 
   const params = await searchParams;
 

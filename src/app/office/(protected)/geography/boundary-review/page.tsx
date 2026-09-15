@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { createClient } from "@/lib/supabase/server";
+import { createOfficeClient } from "@/lib/supabase/office-server";
 
 import ZoneFilterSelect from "./ZoneFilterSelect";
 
@@ -202,7 +202,7 @@ export default async function BoundaryReviewPage({
   const rangeStart = (currentPage - 1) * PAGE_SIZE;
   const rangeEnd = rangeStart + PAGE_SIZE - 1;
 
-  const supabase = await createClient();
+  const supabase = await createOfficeClient();
 
   const { data: summaryData, error: summaryError } = await supabase
     .schema("geo")

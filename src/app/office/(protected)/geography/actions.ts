@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/server";
+import { createOfficeClient } from "@/lib/supabase/office-server";
 
 const GEOGRAPHY_PATH = "/office/geography";
 
@@ -61,7 +61,7 @@ function redirectToEntity(
 }
 
 export async function saveEntity(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createOfficeClient();
 
   const { data, error } = await supabase.rpc(
     "geography_entity_save",
@@ -119,7 +119,7 @@ export async function saveVariant(formData: FormData) {
     throw new Error("Entity key is required.");
   }
 
-  const supabase = await createClient();
+  const supabase = await createOfficeClient();
 
   const { error } = await supabase.rpc(
     "geography_variant_save",
@@ -164,7 +164,7 @@ export async function deleteVariant(formData: FormData) {
     throw new Error("Entity and variant keys are required.");
   }
 
-  const supabase = await createClient();
+  const supabase = await createOfficeClient();
 
   const { error } = await supabase.rpc(
     "geography_variant_delete",
@@ -188,7 +188,7 @@ export async function deleteEntity(formData: FormData) {
     throw new Error("Entity key is required.");
   }
 
-  const supabase = await createClient();
+  const supabase = await createOfficeClient();
 
   const { error } = await supabase.rpc(
     "geography_entity_delete",
@@ -225,7 +225,7 @@ export async function saveBoundaryFootprint(
         value > 0,
     );
 
-  const supabase = await createClient();
+  const supabase = await createOfficeClient();
 
   const { error } = await supabase.rpc(
     "geography_entity_boundary_save",

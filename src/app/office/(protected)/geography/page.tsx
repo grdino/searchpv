@@ -3,7 +3,7 @@ import Link from "next/link";
 import Header from "@/app/components/Header";
 import HamburgerMenu from "@/app/components/HamburgerMenu";
 import MainSloganBranding from "@/app/components/MainSloganBranding";
-import { createClient } from "@/lib/supabase/server";
+import { createOfficeClient } from "@/lib/supabase/office-server";
 
 import BoundaryFootprintEditor from "./BoundaryFootprintEditor";
 import AreaFootprintViewer from "./AreaFootprintViewer";
@@ -81,7 +81,7 @@ export default async function GeographyPage({
   }>;
 }) {
   const params = await searchParams;
-  const supabase = await createClient();
+  const supabase = await createOfficeClient();
 
   const selectedSearch = params.q?.trim() ?? "";
   const selectedType = params.type?.trim() ?? "";
