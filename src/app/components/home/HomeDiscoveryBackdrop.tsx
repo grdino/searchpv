@@ -8,51 +8,11 @@ import {
   Map,
   Search,
 } from "lucide-react";
-import {
-  useEffect,
-  useState,
-  type ComponentType,
-} from "react";
+import { type ComponentType } from "react";
 
 import Header from "@/app/components/Header";
-import {
-  ATLAS_DISCOVER_SEQUENCE,
-  type AtlasDiscoverSceneConfig,
-} from "@/app/components/atlas/AtlasDiscoverConfig";
-
-const ROTATION_MS = 7000;
 
 export default function HomeDiscoveryBackdrop() {
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-
-    if (
-      reducedMotion ||
-      ATLAS_DISCOVER_SEQUENCE.length < 2
-    ) {
-      return;
-    }
-
-    const timer = window.setInterval(() => {
-      if (!document.hidden) {
-        setActiveIndex(
-          (current) =>
-            (current + 1) %
-            ATLAS_DISCOVER_SEQUENCE.length,
-        );
-      }
-    }, ROTATION_MS);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const activeScene =
-    ATLAS_DISCOVER_SEQUENCE[activeIndex];
-
   return (
     <main className="relative min-h-dvh overflow-x-hidden bg-[#edf7f8] text-slate-950">
       <div
@@ -67,11 +27,8 @@ export default function HomeDiscoveryBackdrop() {
         <Header />
 
         <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-start pb-4 text-center md:pb-16">
-          <div className="mb-3 w-full max-w-[190px] md:mb-5 md:max-w-[280px]">
-            <DiscoveryPreview
-              activeIndex={activeIndex}
-              activeScene={activeScene}
-            />
+          <div className="mb-4 w-full md:mb-6">
+            <DiscoveryBanner />
           </div>
 
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-teal-700 md:text-xs md:tracking-[0.24em]">
@@ -87,8 +44,46 @@ export default function HomeDiscoveryBackdrop() {
             or dive into local market data.
           </p>
 
-          <div className="mt-6 grid w-full gap-2 sm:grid-cols-2 md:mt-10 md:gap-3">
-            
+          <Link
+            href="/buyer-explorer"
+            className="group mt-6 flex w-full items-center gap-4 rounded-[24px] border border-teal-200/90 bg-white/90 px-5 py-4 text-left shadow-[0_14px_40px_rgba(15,23,42,.10)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-[0_18px_48px_rgba(15,23,42,.14)] md:mt-8 md:px-6 md:py-5"
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-800 md:h-12 md:w-12">
+              <Compass size={22} strokeWidth={2.25} />
+            </span>
+
+            <span className="min-w-0 flex-1">
+              <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-teal-700 md:text-xs">
+                Not sure where to start?
+              </span>
+              <span className="mt-1 block text-lg font-black tracking-[-0.02em] text-slate-950 md:text-xl">
+                Where Does Your Budget Fit?
+              </span>
+              <span className="mt-1 block text-xs font-semibold leading-5 text-slate-600 md:text-sm">
+                See which communities offer the most options for your budget and basic needs.
+              </span>
+            </span>
+
+            <span className="hidden shrink-0 items-center gap-1 text-sm font-black text-teal-800 sm:flex">
+              Show Me Where
+              <ChevronRight
+                aria-hidden="true"
+                size={18}
+                className="transition-transform group-hover:translate-x-0.5"
+              />
+            </span>
+            <ChevronRight
+              aria-hidden="true"
+              size={19}
+              className="shrink-0 text-teal-700 transition-transform group-hover:translate-x-0.5 sm:hidden"
+            />
+          </Link>
+
+          <p className="mt-5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400 md:mt-7 md:text-xs">
+            Or explore SearchPV your way
+          </p>
+
+          <div className="mt-3 grid w-full gap-2 sm:grid-cols-2 md:gap-3">
             <HomePill
               href="/search-properties"
               title="Search Properties"
@@ -128,52 +123,18 @@ export default function HomeDiscoveryBackdrop() {
   );
 }
 
-function DiscoveryPreview({
-  activeIndex,
-  activeScene,
-}: {
-  activeIndex: number;
-  activeScene: AtlasDiscoverSceneConfig;
-}) {
+function DiscoveryBanner() {
   return (
-    <Link
-      href={`/atlas/discover?scene=${encodeURIComponent(
-        activeScene.id,
-      )}`}
-      aria-label={`Discover ${activeScene.menuLabel}`}
-      className="group block overflow-hidden rounded-[18px] border border-white/90 bg-white/70 shadow-[0_12px_35px_rgba(15,23,42,.12)] backdrop-blur-md transition hover:-translate-y-0.5 hover:shadow-[0_16px_42px_rgba(15,23,42,.16)] md:rounded-[22px]"
+    <div
+      aria-hidden="true"
+      className="relative w-full overflow-hidden rounded-[20px] border border-white/90 bg-white/70 shadow-[0_10px_30px_rgba(15,23,42,.10)] md:rounded-[24px]"
     >
-      <div className="relative aspect-[3/2] overflow-hidden bg-white/40">
-        {ATLAS_DISCOVER_SEQUENCE.map(
-          (scene, index) => (
-            <img
-              key={scene.id}
-              src={scene.image}
-              alt=""
-              className="absolute inset-0 h-full w-full object-contain transition-opacity duration-[1800ms] ease-in-out motion-reduce:transition-none"
-              style={{
-                opacity:
-                  index === activeIndex ? 0.82 : 0,
-              }}
-            />
-          ),
-        )}
-
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/45 via-transparent to-white/5" />
-
-        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 px-3 py-2 text-left text-white md:gap-3 md:px-4 md:py-3">
-          <span className="min-w-0 truncate text-[11px] font-black drop-shadow-md sm:text-sm">
-            {activeScene.menuLabel}
-          </span>
-
-          <ChevronRight
-            aria-hidden="true"
-            size={15}
-            className="shrink-0 drop-shadow-md transition-transform group-hover:translate-x-0.5"
-          />
-        </div>
-      </div>
-    </Link>
+      <img
+        src="/homepage-hero.jpg"
+        alt=""
+        className="block h-auto w-full"
+      />
+    </div>
   );
 }
 

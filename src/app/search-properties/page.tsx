@@ -25,6 +25,8 @@ import PropertySearchMarketStatistics from "@/app/components/PropertySearchMarke
 import AreaGuideModal from "@/app/components/AreaGuideModal";
 
 import PropertySearchSaveActions from "@/app/components/PropertySearchSaveActions";
+import CommunityLocator from "@/app/components/CommunityLocator";
+import { getCommunityProfile, type CommunityProfile } from "@/lib/community-profile";
 import { supabase } from "@/lib/supabase";
 
 type SortKey =
@@ -261,6 +263,15 @@ export default async function SearchPropertiesPage({
       option.slug === selectedDevelopment
   );
 
+  let communityProfile: CommunityProfile | null = null;
+  if (selectedCommunity) {
+    communityProfile = await getCommunityProfile(
+      selectedCommunityOption?.name ?? selectedCommunity,
+      selectedCommunityOption?.areaName ?? selectedArea,
+      selectedCommunityOption?.zoneName ?? selectedZone
+    );
+  }
+
   const communityOptions =
     !selectedArea
       ? []
@@ -397,12 +408,21 @@ export default async function SearchPropertiesPage({
       <PopularMarketShortcuts />
 
       <section className="mx-auto max-w-6xl px-4 pb-6 pt-0 md:px-8 md:pb-10 md:pt-2">
-        <SelectedMarketPanel
-          filters={filters}
-          displayMode={displayMode}
-          rowCount={quickSearch ? quickListings.length : displayedRows.length}
-          quickSearch={quickSearch}
-        />
+        <div id="selected-market" className="scroll-mt-4">
+          {communityProfile && (
+            <CommunityIdentity
+              profile={communityProfile}
+              areaName={selectedCommunityOption?.areaName ?? selectedArea}
+              zoneName={selectedCommunityOption?.zoneName ?? selectedZone}
+            />
+          )}
+          <SelectedMarketPanel
+            filters={filters}
+            displayMode={displayMode}
+            rowCount={quickSearch ? quickListings.length : displayedRows.length}
+            quickSearch={quickSearch}
+          />
+        </div>
 
         <PropertySearchMarketStatistics
           activeCount={displayedSummary.activeCount}
@@ -1042,6 +1062,41 @@ function SelectorPill({
     >
       {label}
     </a>
+  );
+}
+
+function CommunityIdentity({
+  profile,
+  areaName,
+  zoneName,
+}: {
+  profile: CommunityProfile;
+  areaName: string | null;
+  zoneName: string | null;
+}) {
+  const context = [areaName, zoneName].filter(Boolean).join(" · ");
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className={profile.longitude !== null && profile.latitude !== null ? "grid items-stretch md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]" : "grid items-stretch"}>
+        {profile.longitude !== null && profile.latitude !== null && (
+          <div className="p-3 md:p-4">
+            <CommunityLocator
+              name={profile.canonicalName}
+              longitude={profile.longitude}
+              latitude={profile.latitude}
+            />
+          </div>
+        )}
+
+        <div className="flex flex-col justify-center px-5 pb-5 pt-2 md:px-6 md:py-5">
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-teal-700">Community</div>
+          <h2 className="mt-1 text-2xl font-black tracking-[-0.03em] text-slate-950">{profile.canonicalName}</h2>
+          {context && <div className="mt-1 text-sm font-semibold text-slate-500">{context}</div>}
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">{profile.description}</p>
+        </div>
+      </div>
+    </div>
   );
 }
 

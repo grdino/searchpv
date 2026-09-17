@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { useSearchParams } from "next/navigation";
 
 import {
   useAtlasState,
@@ -44,6 +45,9 @@ type PopularAreasResponse = {
 };
 
 export default function AtlasSearch() {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q")?.trim() ?? "";
+
   const {
     selectEntity,
     selectPopularArea,
@@ -54,7 +58,7 @@ export default function AtlasSearch() {
   const [
     query,
     setQuery,
-  ] = useState("");
+  ] = useState(initialQuery);
 
   const [
     results,

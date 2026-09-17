@@ -191,8 +191,10 @@ function formatWholeNumber(
 
 export default function AtlasBottomSheet({
   discoveryMode = false,
+  suppressEmptyState = false,
 }: {
   discoveryMode?: boolean;
+  suppressEmptyState?: boolean;
 }) {
   const {
     contextEntity,
@@ -1358,9 +1360,18 @@ export default function AtlasBottomSheet({
     }
   }
 
+  const hideEmptyDeepLinkSheet =
+    suppressEmptyState &&
+    !selectedEntity &&
+    !selectedBoundary &&
+    !popularAreaSelection &&
+    customBoundaries.length === 0;
+
   return (
     <section
       style={{
+        display: hideEmptyDeepLinkSheet ? "none" : undefined,
+
         position:
           "absolute",
 

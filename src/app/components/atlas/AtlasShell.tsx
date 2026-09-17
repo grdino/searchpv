@@ -12,8 +12,10 @@ import { AtlasStateProvider } from "@/lib/atlas/state/AtlasState";
 
 export default function AtlasShell({
   discoveryMode = false,
+  suppressEmptySheet = false,
 }: {
   discoveryMode?: boolean;
+  suppressEmptySheet?: boolean;
 }) {
   return (
     <main
@@ -36,7 +38,10 @@ export default function AtlasShell({
 
           <AtlasBranding />
           {!discoveryMode ? <AtlasSearch /> : null}
-          <AtlasBottomSheet discoveryMode={discoveryMode} />
+          <AtlasBottomSheet
+            discoveryMode={discoveryMode}
+            suppressEmptyState={suppressEmptySheet}
+          />
         </AtlasOverlay>
       </AtlasStateProvider>
     </main>

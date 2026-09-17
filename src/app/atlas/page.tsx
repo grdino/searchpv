@@ -30,6 +30,13 @@ export async function generateMetadata({
   };
 }
 
-export default function AtlasPage() {
-  return <AtlasShell />;
+export default async function AtlasPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
+  const query = Array.isArray(params.q) ? params.q[0] : params.q;
+
+  return <AtlasShell suppressEmptySheet={Boolean(query?.trim())} />;
 }
