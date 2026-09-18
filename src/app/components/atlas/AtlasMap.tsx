@@ -23,6 +23,8 @@ export default function AtlasMap({
   const mapRef =
     useRef<mapboxgl.Map | null>(null);
 
+  const discoverSpeedRef = useRef(1);
+
   const listingMarkerRef =
     useRef<mapboxgl.Marker | null>(null);
 
@@ -3321,7 +3323,7 @@ const pendingListingsUrl =
               discoverScene.camera.curve,
 
             duration:
-              discoverScene.camera.duration,
+              Math.round(discoverScene.camera.duration / discoverSpeedRef.current),
 
             essential: true,
           });
@@ -3367,6 +3369,13 @@ const pendingListingsUrl =
    * live position and selection.
    */
   useEffect(() => {
+    const handleDiscoverSpeed = (event: Event) => {
+      const nextSpeed = Number((event as CustomEvent<number>).detail);
+      if (nextSpeed === 1 || nextSpeed === 1.5 || nextSpeed === 2) {
+        discoverSpeedRef.current = nextSpeed;
+      }
+    };
+
     const stopDiscoverFlight = () => {
       mapRef.current?.stop();
     };
@@ -3391,6 +3400,10 @@ const pendingListingsUrl =
       "atlas-discover-cancel",
       stopDiscoverFlight,
     );
+    window.addEventListener(
+      "atlas-discover-speed",
+      handleDiscoverSpeed,
+    );
 
     window.addEventListener(
       "atlas-reset-view",
@@ -3401,6 +3414,10 @@ const pendingListingsUrl =
       window.removeEventListener(
         "atlas-discover-cancel",
         stopDiscoverFlight,
+      );
+      window.removeEventListener(
+        "atlas-discover-speed",
+        handleDiscoverSpeed,
       );
 
       window.removeEventListener(

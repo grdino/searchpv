@@ -4,6 +4,7 @@ import { ArrowRight, Lightbulb } from "lucide-react";
 
 import Header from "@/app/components/Header";
 import BearingsDialog from "./BearingsDialog";
+import ResultsAutoScroll from "./ResultsAutoScroll";
 import { buildPropertySearchUrl, DEFAULT_PROPERTY_SEARCH_FILTERS } from "@/lib/property-search/filters";
 import {
   getBuyerExplorerResult,
@@ -80,7 +81,8 @@ export default async function BuyerExplorerPage({ searchParams }: { searchParams
           {error && <div className="mt-8 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800">{error}</div>}
 
           {result && (
-            <section className="mt-10">
+            <section id="buyer-explorer-results" className="mt-10 scroll-mt-5 md:scroll-mt-6">
+              <ResultsAutoScroll />
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-sm font-bold text-teal-700">📍 Here&apos;s where your budget fits</p>

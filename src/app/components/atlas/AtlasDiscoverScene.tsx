@@ -1,6 +1,6 @@
 "use client";
 
-import { Pause, Play, X } from "lucide-react";
+import { Home, Pause, Play, Gauge } from "lucide-react";
 import {
   useEffect,
   useRef,
@@ -26,6 +26,8 @@ export default function AtlasDiscoverScene() {
   const [sceneVisible, setSceneVisible] = useState(false);
   const [artworkVisible, setArtworkVisible] = useState(false);
   const [messageVisible, setMessageVisible] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [artworkFadeMs, setArtworkFadeMs] = useState(3200);
   const sceneRef = useRef(scene);
 
   const timersRef = useRef<number[]>([]);
@@ -36,6 +38,7 @@ export default function AtlasDiscoverScene() {
   const pauseRef = useRef<() => void>(() => undefined);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const leavingDiscoveryRef = useRef(false);
+  const speedRef = useRef(1);
   const atlasReadyRef = useRef(false);
   const pendingPopularAreaRef = useRef<
     AtlasDiscoverSceneConfig["popularArea"] | null
@@ -89,6 +92,9 @@ export default function AtlasDiscoverScene() {
       );
       const nextScene = ATLAS_DISCOVER_SEQUENCE[index];
       const timing = nextScene.timing;
+      const tourSpeed = speedRef.current;
+      const scaled = (ms: number) => Math.round(ms / tourSpeed);
+      const cameraDuration = scaled(nextScene.camera.duration);
 
       clearTimers();
       currentIndexRef.current = index;
@@ -103,6 +109,7 @@ export default function AtlasDiscoverScene() {
       }
 
       setMessageVisible(false);
+      setArtworkFadeMs(Math.max(1600, Math.round(cameraDuration * 0.82)));
       setTourStatus("running");
 
       // Allow the Bottom Sheet to re-enter its cinematic timing after a
@@ -113,7 +120,7 @@ export default function AtlasDiscoverScene() {
         later(() => {
           setSceneVisible(true);
           revealArtwork();
-        }, timing.artworkDelay);
+        }, scaled(timing.artworkDelay));
       }
 
       later(() => {
@@ -122,23 +129,30 @@ export default function AtlasDiscoverScene() {
         } else {
           pendingPopularAreaRef.current = nextScene.popularArea;
         }
-      }, timing.selectionDelay);
+      }, scaled(timing.selectionDelay));
 
-      later(() => setMessageVisible(true), timing.messageDelay);
-      later(() => setArtworkVisible(false), timing.artworkFadeDelay);
-      later(() => setMessageVisible(false), timing.messageFadeDelay);
+      later(() => setMessageVisible(true), scaled(timing.messageDelay));
+
+      // Begin dissolving the illustration shortly after the camera starts.
+      // The long fade runs alongside the Mapbox flight, revealing the real map
+      // progressively instead of dropping the artwork at the end.
+      later(
+        () => setArtworkVisible(false),
+        scaled(timing.selectionDelay) + Math.max(250, scaled(1800)),
+      );
+      later(() => setMessageVisible(false), scaled(timing.messageFadeDelay));
 
       if (timing.nextSceneDelay !== null) {
         later(() => {
           window.dispatchEvent(new Event("atlas-discover-hide-sheet"));
-        }, Math.max(0, timing.nextSceneDelay - 900));
+        }, Math.max(0, scaled(timing.nextSceneDelay - 900)));
 
-        later(() => runScene(index + 1), timing.nextSceneDelay);
+        later(() => runScene(index + 1), scaled(timing.nextSceneDelay));
       } else {
         later(() => {
           setSceneVisible(false);
           setTourStatus("complete");
-        }, timing.messageFadeDelay + 1200);
+        }, scaled(timing.messageFadeDelay + 1200));
       }
     };
 
@@ -154,29 +168,12 @@ export default function AtlasDiscoverScene() {
       );
     };
 
-    const enterAtlas = () => {
-      if (leavingDiscoveryRef.current) return;
-
-      leavingDiscoveryRef.current = true;
-      pauseTour();
-
-      window.location.assign(
-        `/atlas?discoverScene=${encodeURIComponent(sceneRef.current.id)}`,
-      );
-    };
-
     const handleInteraction = (event: Event) => {
       if (isTourControl(event)) return;
 
-      if (
-        event.type === "pointerdown" ||
-        event.type === "touchstart" ||
-        event.type === "wheel"
-      ) {
-        enterAtlas();
-        return;
-      }
-
+      // Discover V2 never treats a map gesture as navigation. A touch, drag,
+      // wheel or key simply pauses the guided tour at the current view. Atlas
+      // deep-link support remains elsewhere for a future explicit Atlas button.
       pauseTour();
     };
 
@@ -356,9 +353,9 @@ export default function AtlasDiscoverScene() {
             alt=""
             className="atlas-discover-artwork"
             style={{
-              opacity: artworkVisible ? 0.34 : 0,
-              transition: "opacity 2100ms ease-in-out",
-              filter: "saturate(0.88) contrast(0.94)",
+              opacity: artworkVisible ? 0.72 : 0,
+              transition: `opacity ${artworkFadeMs}ms cubic-bezier(0.22, 0.61, 0.36, 1)`,
+              filter: "saturate(0.96) contrast(0.98)",
             }}
           />
 
@@ -461,15 +458,15 @@ export default function AtlasDiscoverScene() {
 
       <div
         data-atlas-discover-control
-        className="absolute left-[124px] right-2 top-[76px] w-auto gap-1.5 p-1.5 md:left-1/2 md:right-auto md:top-4 md:w-[calc(100vw-132px)] md:max-w-[620px] md:-translate-x-1/2 md:gap-2 md:p-[7px]"
+        className="absolute left-3 right-3 top-[76px] w-auto gap-1.5 p-2 md:left-1/2 md:right-auto md:top-4 md:w-[calc(100vw-80px)] md:max-w-[720px] md:-translate-x-1/2 md:gap-2 md:p-2"
         style={{
           zIndex: 40,
           display: "flex",
           alignItems: "center",
-          border: "1px solid rgba(255,255,255,.84)",
+          border: "1px solid rgba(255,255,255,.94)",
           borderRadius: 18,
-          background: "rgba(255,255,255,.88)",
-          boxShadow: "0 12px 36px rgba(15,23,42,.16)",
+          background: "rgba(255,255,255,.94)",
+          boxShadow: "0 16px 42px rgba(15,23,42,.22)",
           backdropFilter: "blur(18px)",
           pointerEvents: "auto",
         }}
@@ -529,13 +526,33 @@ export default function AtlasDiscoverScene() {
 
         <button
           type="button"
+          onClick={() => {
+            const nextSpeed = speed === 1 ? 1.5 : speed === 1.5 ? 2 : 1;
+            speedRef.current = nextSpeed;
+            setSpeed(nextSpeed);
+            window.dispatchEvent(
+              new CustomEvent("atlas-discover-speed", { detail: nextSpeed }),
+            );
+            if (status === "running") runSceneRef.current(currentIndexRef.current);
+          }}
+          aria-label={`Tour speed ${speed} times. Change speed`}
+          title="Change tour speed"
+          className="h-9 px-2 md:h-10 md:px-3"
+          style={secondaryControlButtonStyle}
+        >
+          <Gauge size={17} />
+          <span>{speed}×</span>
+        </button>
+
+        <button
+          type="button"
           onClick={exitTour}
-          aria-label="Exit tour and return home"
+          aria-label="Return to SearchPV home"
           className="h-9 px-2 md:h-10 md:px-3"
           style={controlButtonStyle}
         >
-          <X size={17} />
-          <span className="hidden md:inline">Exit</span>
+          <Home size={17} />
+          <span className="hidden md:inline">Home</span>
         </button>
       </div>
     </>
@@ -554,4 +571,11 @@ const controlButtonStyle: CSSProperties = {
   fontSize: 12,
   fontWeight: 850,
   cursor: "pointer",
+};
+
+
+const secondaryControlButtonStyle: CSSProperties = {
+  ...controlButtonStyle,
+  background: "#e2e8f0",
+  color: "#0f172a",
 };

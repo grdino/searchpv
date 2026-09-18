@@ -123,6 +123,9 @@ export default function HamburgerMenu() {
   const reportsOpen = expandedSection === "reports";
 
   const isHomeActive = pathname === "/";
+  const isBuyerExplorerActive =
+    pathname === "/buyer-explorer" ||
+    pathname.startsWith("/buyer-explorer/");
   const isSearchPropertiesActive =
     pathname === "/search-properties" ||
     pathname.startsWith("/search-properties/");
@@ -158,6 +161,19 @@ export default function HamburgerMenu() {
             }}
           >
             Home
+          </Link>
+
+          <Link
+            href="/buyer-explorer"
+            onClick={closeMenu}
+            aria-current={isBuyerExplorerActive ? "page" : undefined}
+            style={{
+              ...menuLinkStyle,
+              ...(isBuyerExplorerActive ? activeTopLevelLinkStyle : {}),
+            }}
+          >
+            <span style={buyerExplorerLabelStyle}>Buyer Explorer</span>
+            <span style={buyerExplorerSubtitleStyle}>Where does my budget fit?</span>
           </Link>
 
           <Link
@@ -204,28 +220,7 @@ export default function HamburgerMenu() {
             Take a Tour
           </Link>
 
-          <Link
-            href="/saved"
-            onClick={closeMenu}
-            aria-current={
-              pathname === "/saved" || pathname.startsWith("/saved/")
-                ? "page"
-                : undefined
-            }
-            style={{
-              ...menuLinkStyle,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "12px",
-              ...(pathname === "/saved" || pathname.startsWith("/saved/")
-                ? activeTopLevelLinkStyle
-                : {}),
-            }}
-          >
-            <span>My Saved</span>
-            {savedCount > 0 ? <span style={savedCountStyle}>{savedCount}</span> : null}
-          </Link>
+
 
 {/*
           <Link
@@ -388,6 +383,29 @@ export default function HamburgerMenu() {
           </div>
 
           <Link
+            href="/saved"
+            onClick={closeMenu}
+            aria-current={
+              pathname === "/saved" || pathname.startsWith("/saved/")
+                ? "page"
+                : undefined
+            }
+            style={{
+              ...menuLinkStyle,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              ...(pathname === "/saved" || pathname.startsWith("/saved/")
+                ? activeTopLevelLinkStyle
+                : {}),
+            }}
+          >
+            <span>My Saved</span>
+            {savedCount > 0 ? <span style={savedCountStyle}>{savedCount}</span> : null}
+          </Link>
+
+          <Link
             href="/about"
             onClick={closeMenu}
             aria-current={
@@ -517,6 +535,20 @@ const menuLinkStyle: CSSProperties = {
   textDecoration: "none",
   fontWeight: 900,
   fontSize: "1.12rem",
+};
+
+
+const buyerExplorerLabelStyle: CSSProperties = {
+  display: "block",
+};
+
+const buyerExplorerSubtitleStyle: CSSProperties = {
+  display: "block",
+  marginTop: "2px",
+  color: "#64748b",
+  fontSize: "0.78rem",
+  fontWeight: 700,
+  lineHeight: 1.25,
 };
 
 const activeTopLevelLinkStyle: CSSProperties = {
