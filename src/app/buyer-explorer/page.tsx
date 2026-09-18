@@ -12,7 +12,7 @@ import {
 } from "@/lib/buyer-explorer/service";
 
 export const metadata: Metadata = {
-  title: "Where Does Your Budget Fit? | SearchPV",
+  title: "Where Does My Budget Fit? | SearchPV",
   description: "See where your budget and basic requirements have the most current real estate options across Puerto Vallarta and Riviera Nayarit.",
   robots: { index: false, follow: true },
 };
@@ -42,7 +42,7 @@ export default async function BuyerExplorerPage({ searchParams }: { searchParams
         <section className="mx-auto mt-10 max-w-4xl md:mt-16">
           <div className="text-center">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-teal-700">Buyer Explorer</p>
-            <h1 className="mt-3 text-4xl font-black tracking-[-0.04em] sm:text-5xl">Where Does Your Budget Fit?</h1>
+            <h1 className="mt-3 text-4xl font-black tracking-[-0.04em] sm:text-5xl">Where Does My Budget Fit?</h1>
             <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600">See where your budget and basic requirements have the most options in today&apos;s Puerto Vallarta and Riviera Nayarit market.</p>
           </div>
 

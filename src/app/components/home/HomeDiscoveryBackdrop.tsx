@@ -8,11 +8,47 @@ import {
   Map,
   Search,
 } from "lucide-react";
-import { type ComponentType } from "react";
+import {
+  useEffect,
+  useState,
+  type ComponentType,
+} from "react";
 
 import Header from "@/app/components/Header";
+import {
+  ATLAS_DISCOVER_SEQUENCE,
+} from "@/app/components/atlas/AtlasDiscoverConfig";
+
+const ROTATION_MS = 7000;
 
 export default function HomeDiscoveryBackdrop() {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    if (
+      reducedMotion ||
+      ATLAS_DISCOVER_SEQUENCE.length < 2
+    ) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      if (!document.hidden) {
+        setActiveIndex(
+          (current) =>
+            (current + 1) %
+            ATLAS_DISCOVER_SEQUENCE.length,
+        );
+      }
+    }, ROTATION_MS);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <main className="relative min-h-dvh overflow-x-hidden bg-[#edf7f8] text-slate-950">
       <div
@@ -28,7 +64,9 @@ export default function HomeDiscoveryBackdrop() {
 
         <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-start pb-4 text-center md:pb-16">
           <div className="mb-4 w-full md:mb-6">
-            <DiscoveryBanner />
+            <DiscoveryBanner
+              activeIndex={activeIndex}
+            />
           </div>
 
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-teal-700 md:text-xs md:tracking-[0.24em]">
@@ -57,7 +95,7 @@ export default function HomeDiscoveryBackdrop() {
                 Not sure where to start?
               </span>
               <span className="mt-1 block text-lg font-black tracking-[-0.02em] text-slate-950 md:text-xl">
-                Where Does Your Budget Fit?
+                Where Does My Budget Fit?
               </span>
               <span className="mt-1 block text-xs font-semibold leading-5 text-slate-600 md:text-sm">
                 See which communities offer the most options for your budget and basic needs.
@@ -123,17 +161,27 @@ export default function HomeDiscoveryBackdrop() {
   );
 }
 
-function DiscoveryBanner() {
+function DiscoveryBanner({
+  activeIndex,
+}: {
+  activeIndex: number;
+}) {
   return (
     <div
       aria-hidden="true"
-      className="relative w-full overflow-hidden rounded-[20px] border border-white/90 bg-white/70 shadow-[0_10px_30px_rgba(15,23,42,.10)] md:rounded-[24px]"
+      className="relative aspect-[3/2] w-full overflow-hidden rounded-[24px] border border-white/90 bg-white/70 shadow-[0_12px_36px_rgba(15,23,42,.12)] md:rounded-[28px]"
     >
-      <img
-        src="/homepage-hero.jpg"
-        alt=""
-        className="block h-auto w-full"
-      />
+      {ATLAS_DISCOVER_SEQUENCE.map((scene, index) => (
+        <img
+          key={scene.id}
+          src={scene.image}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-[1800ms] ease-in-out motion-reduce:transition-none"
+          style={{ opacity: index === activeIndex ? 0.9 : 0 }}
+        />
+      ))}
+
+      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-slate-950/5" />
     </div>
   );
 }
