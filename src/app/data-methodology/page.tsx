@@ -126,7 +126,7 @@ const limitations = [
 export default function DataMethodologyPage() {
   return (
     <main className="min-h-screen bg-white text-slate-950">
-      <section className="relative overflow-hidden bg-slate-950">
+      <section className="relative bg-slate-950">
         <header className="relative z-50 border-b border-white/10 bg-black">
           <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 md:px-8">
             <Link href="/" className="flex items-center gap-3">

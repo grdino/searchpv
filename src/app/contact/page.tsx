@@ -29,7 +29,7 @@ export async function generateMetadata({
 export default function ContactPage() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
-      <section className="bg-slate-950 text-white">
+      <section className="relative z-50 bg-slate-950 text-white">
         <header className="relative z-50 border-b border-white/10">
           <div className="mx-auto max-w-6xl px-4 md:px-8">
             <div className="flex h-28 items-center justify-between">
@@ -56,7 +56,7 @@ export default function ContactPage() {
         </header>
       </section>
 
-      <section className="mx-auto w-full max-w-4xl px-4 py-10 md:px-8 md:py-14">
+      <section className="relative z-0 mx-auto w-full max-w-4xl px-4 py-10 md:px-8 md:py-14">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
           <ContactForm />
         </div>
