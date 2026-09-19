@@ -44,7 +44,6 @@ export default async function BuyerExplorerPage({ searchParams }: { searchParams
           <div className="text-center">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-teal-700">Buyer Explorer</p>
             <h1 className="mt-3 text-4xl font-black tracking-[-0.04em] sm:text-5xl">Where Does My Budget Fit?</h1>
-            <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600">See where your budget and basic requirements have the most options in today&apos;s Puerto Vallarta and Riviera Nayarit market.</p>
           </div>
 
           <form className="mt-8 grid gap-3 rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_18px_55px_rgba(15,23,42,.08)] sm:grid-cols-2 md:grid-cols-4 md:p-5">
