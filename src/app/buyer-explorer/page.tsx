@@ -46,7 +46,7 @@ export default async function BuyerExplorerPage({ searchParams }: { searchParams
             <h1 className="mt-3 text-4xl font-black tracking-[-0.04em] sm:text-5xl">Where Does My Budget Fit?</h1>
           </div>
 
-          <form className="mt-5 grid gap-3 rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_18px_55px_rgba(15,23,42,.08)] sm:grid-cols-2 md:grid-cols-4 md:p-5">
+          <form className="mt-3 grid gap-3 rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_18px_55px_rgba(15,23,42,.08)] sm:grid-cols-2 md:grid-cols-4 md:p-5">
             <Field label="Budget">
               <select name="maxPrice" defaultValue={String(criteria.maxPrice)} className={controlClass}>
                 {[250000,300000,350000,400000,450000,500000,600000,750000,1000000,1500000,2000000].map((value) => <option key={value} value={value}>Up to {money(value)}</option>)}
