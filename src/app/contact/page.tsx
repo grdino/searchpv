@@ -21,19 +21,12 @@ export async function generateMetadata({
       canonical: pageUrl,
     },
     robots: hasQueryParams
-      ? {
-          index: false,
-          follow: true,
-        }
-      : {
-          index: true,
-          follow: true,
-        },
+      ? { index: false, follow: true }
+      : { index: true, follow: true },
   };
 }
 
 export default function ContactPage() {
-
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <section className="bg-slate-950 text-white">
@@ -43,28 +36,29 @@ export default function ContactPage() {
               <div className="text-white">
                 <SPVBranding />
               </div>
-
               <div className="text-white">
                 <HamburgerMenu />
               </div>
             </div>
 
-            <div className="pb-10">
-              <p className="text-s font-bold uppercase tracking-[0.28em] text-sky-300">
+            <div className="max-w-3xl pb-12">
+              <p className="text-sm font-bold uppercase tracking-[0.28em] text-sky-300">
                 Contact SearchPV
               </p>
-
-              {/* Continue with your h1 here */}
+              <h1 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">
+                Have a question?
+              </h1>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 md:text-lg">
+                Ask about a property, an area, the market, or anything you found on SearchPV.
+              </p>
             </div>
           </div>
         </header>
       </section>
 
-      <section className="mx-auto w-full max-w-6xl px-4 py-10 md:px-8">
-        <div className="rounded-2xl bg-white p-6 shadow md:p-8">
-          <h2 className="text-2xl font-bold">Request</h2>
-
-            <ContactForm />
+      <section className="mx-auto w-full max-w-4xl px-4 py-10 md:px-8 md:py-14">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+          <ContactForm />
         </div>
       </section>
     </main>
