@@ -222,21 +222,18 @@ export default function InteractiveMarketDashboard() {
     : "";
 
   const marketBrief = useMemo(() => {
-    if (!data) return "";
-    const propertyWord = propertyType === "Condo" ? "condominium" : "house";
-    const selection = bedrooms === "All" ? propertyWord : `${bedrooms.toLowerCase()} ${propertyWord}`;
-    const segmentText = segment === "Both" ? "resale and pre-construction" : segment.toLowerCase();
-    const inventorySentence = data.current.active
-      ? `${data.current.active} ${selection}${data.current.active === 1 ? " is" : "s are"} currently available in the selected ${segmentText} market.`
-      : `No active ${selection}s are currently recorded for this selection.`;
-    const salesSentence = data.current.sold12m
-      ? `Over the trailing 12 months, ${data.current.sold12m} sale${data.current.sold12m === 1 ? " was" : "s were"} recorded, with a median sold price of ${money(data.current.medianSold12m)}.`
-      : `No closed sales are recorded for this selection in the trailing 12 months.`;
-    const historySentence = inventoryFirst && inventoryLast
-      ? `SearchPV has observed active inventory for this selection since ${longDate(inventoryFirst.snapshot_date)}; the instruments below separate that shorter inventory history from the longer closed-sale record.`
-      : `The instruments below separate current inventory from the longer closed-sale record.`;
-    return `${inventorySentence} ${salesSentence} ${historySentence}`;
-  }, [data, propertyType, bedrooms, segment, inventoryFirst, inventoryLast]);
+    if (!data) return null;
+    const propertyWord = propertyType === "Condo" ? "condos" : "houses";
+    const selection = bedrooms === "All" ? propertyWord : `${bedrooms} ${propertyWord}`;
+    const segmentText = segment === "Both" ? "Resale + pre-construction" : segment;
+    return {
+      active: data.current.active ?? 0,
+      sold: data.current.sold12m ?? 0,
+      median: money(data.current.medianSold12m),
+      selection: `${segmentText} · ${selection}`,
+      observedSince: inventoryFirst ? shortDate(inventoryFirst.snapshot_date) : null,
+    };
+  }, [data, propertyType, bedrooms, segment, inventoryFirst]);
 
   return (
     <main className={styles.page}>
@@ -253,7 +250,14 @@ export default function InteractiveMarketDashboard() {
         <section className={styles.marketBrief}>
           <div>
             <span>MARKET BRIEF</span>
-            <p>{marketBrief || "Loading the current market picture…"}</p>
+            {marketBrief ? <>
+              <div className={styles.briefMetrics}>
+                <b>{marketBrief.active}<small>available</small></b>
+                <b>{marketBrief.sold}<small>sold · 12M</small></b>
+                <b>{marketBrief.median}<small>median sold</small></b>
+              </div>
+              <p className={styles.briefContext}>{marketBrief.selection}{marketBrief.observedSince ? <> · Inventory observed since {marketBrief.observedSince}</> : null}</p>
+            </> : <p className={styles.briefContext}>Loading the current market picture…</p>}
           </div>
         </section>
         {error ? <div className={styles.dataError}>{error}</div> : null}
@@ -385,13 +389,26 @@ function Filter({ label, values, value, setValue }: { label: string; values: str
 }
 
 function SlotStat({ value, label, order }: { value: string | null; label: string; order: number }) {
+  const statRef = useRef<HTMLDivElement | null>(null);
+  const [inView, setInView] = useState(false);
   const hasIgnited = useRef(false);
   const previousValue = useRef<string | null>(null);
   const [settled, setSettled] = useState(false);
   const [swap, setSwap] = useState<{ oldValue: string; newValue: string } | null>(null);
 
   useEffect(() => {
-    if (value === null) return;
+    const node = statRef.current;
+    if (!node) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setInView(true); return; }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setInView(true); observer.disconnect(); }
+    }, { threshold: 0.35 });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (value === null || !inView) return;
 
     if (!hasIgnited.current) {
       hasIgnited.current = true;
@@ -411,13 +428,13 @@ function SlotStat({ value, label, order }: { value: string | null; label: string
     }
 
     previousValue.current = value;
-  }, [order, value]);
+  }, [inView, order, value]);
 
   const display = value ?? "";
   const sizeClass = display.length >= 8 ? styles.valueXL : display.length >= 7 ? styles.valueLong : "";
 
   return (
-    <div className={styles.stat}>
+    <div ref={statRef} className={styles.stat}>
       <b className={`${styles.slotValue} ${sizeClass} ${settled ? styles.slotSettled : ""}`} aria-label={display || label}>
         {value === null
           ? <span className={styles.slotPlaceholder} aria-hidden="true">&nbsp;</span>

@@ -511,3 +511,28 @@ html{scroll-behavior:smooth}
 @media(prefers-reduced-motion:reduce){
   .miniInventory svg{clip-path:none!important;animation:none!important}
 }
+
+/* V2.3 — scan-first market brief + true on-entry mobile ignition */
+.briefMetrics{display:flex;align-items:stretch;gap:0;margin-top:8px;max-width:720px}
+.briefMetrics>b{display:flex;align-items:baseline;gap:7px;padding:0 18px;border-left:1px solid #2a3b42;color:#e8d3ae;font-size:20px;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.briefMetrics>b:first-child{padding-left:0;border-left:0}
+.briefMetrics small{color:#8fa1a9;font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
+.briefContext{margin:7px 0 0!important;color:#8fa1a9!important;font-size:10px!important;line-height:1.35!important;letter-spacing:.02em}
+
+/* The detail instruments own their ignition. Nothing inside a not-yet-visible
+   instrument is allowed to consume its animation while it is below the fold. */
+.animatedInstrument:not(.instrumentVisible) .barTrack i,
+.animatedInstrument:not(.instrumentVisible) .yoyBars i,
+.animatedInstrument:not(.instrumentVisible) .miniDots i,
+.animatedInstrument:not(.instrumentVisible) .composition i,
+.animatedInstrument:not(.instrumentVisible) .inventoryChart path,
+.animatedInstrument:not(.instrumentVisible) .inventoryChart circle{animation-play-state:paused!important}
+
+@media(max-width:720px){
+  .hero .marketBrief>div{padding:12px 14px!important}
+  .briefMetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:9px}
+  .briefMetrics>b{display:block;padding:0 10px;font-size:20px;line-height:1.05}
+  .briefMetrics>b:first-child{padding-left:0}
+  .briefMetrics small{display:block;margin-top:5px;font-size:7px;line-height:1.15;white-space:normal}
+  .briefContext{margin-top:9px!important;font-size:9px!important;line-height:1.35!important}
+}

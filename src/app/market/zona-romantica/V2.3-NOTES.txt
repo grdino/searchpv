@@ -1,0 +1,6 @@
+SearchPV IMD V2.3
+- Market Brief changed from paragraph to scan-first metrics + one compact context line on desktop/mobile.
+- Slot-stat ignition now waits for the actual stat to enter the viewport, so mobile Market Snapshot reels do not finish off-screen.
+- Existing AnimatedArticle viewport gating retained and reinforced for Price Range, Market Trends, Current Inventory, Seller Behavior and Market Composition.
+- Filter-change behavior remains intact after first ignition.
+- No API/data calculation changes.
