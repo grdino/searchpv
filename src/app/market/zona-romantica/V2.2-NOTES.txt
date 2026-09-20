@@ -1,0 +1,18 @@
+SearchPV IMD V2.2 desktop cockpit prototype
+
+UI-only restructuring from supplied sanitized source. API/data logic unchanged.
+
+Changes:
+- Market Brief moved directly below market identity.
+- Large duplicate filters removed; compact control strip is the single sticky selector.
+- Sticky identity now shows Data through <as-of date> instead of duplicate selection breadcrumb.
+- Six consistently named instruments: Market Snapshot, Active Listings by Price Range, Market Trends, Current Inventory, Seller Behavior, Market Composition.
+- Desktop (>900px): animated 2x3 cockpit; each instrument links to its full detail section.
+- Mobile/tablet: cockpit becomes horizontal instrument navigator; full instruments remain vertical.
+- Current Inventory split into its own full panel and line draws on first viewport entry.
+- Added first-entry animations to Price Range, Market Trends, Current Inventory, Seller Behavior; Market Composition retains/coordinates its fill animation.
+- Added pre-construction inventory footnote.
+- prefers-reduced-motion respected.
+
+Validation note:
+The supplied sanitized ZIP did not include installed node_modules. npm install could not complete in the artifact environment, so npm run build could not be executed here. Run npm run build after merging locally.

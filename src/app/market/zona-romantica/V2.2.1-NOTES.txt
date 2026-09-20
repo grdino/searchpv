@@ -1,0 +1,13 @@
+SearchPV IMD V2.2.1
+
+Focused visual correction based on first V2.2 desktop render.
+
+Changes:
+- Compresses desktop hero/opening so the cockpit arrives much sooner.
+- Cockpit animations now wait until the cockpit itself enters the viewport instead of firing off-screen.
+- Market Snapshot cockpit card now uses the same dark instrument treatment as the other five cards; the warm reel bank is retained in a new full-size focused Market Snapshot instrument.
+- Clicking Snapshot now targets the full-size Market Snapshot, consistent with the other five instruments.
+- Detailed instrument anchors clear the sticky selector via scroll-margin.
+- Current Inventory path animation now uses SVG pathLength=1 and a normalized dash animation so the line draws continuously through the full history, including sharp OFRENDA status-event drops/rebounds.
+- Carries forward the TypeScript nullability/comparisonYears fixes discovered during V2.2 local build.
+- No API/data calculation changes.

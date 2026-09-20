@@ -1,0 +1,3 @@
+V2 adds a route handler at src/app/api/market-dashboard/zona-romantica/route.ts.
+It uses the existing public active_listing, pending_listing and closed_listing views plus
+active_listing_history_summary() and pending_sales_history_summary().

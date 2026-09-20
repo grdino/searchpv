@@ -1,0 +1,9 @@
+SearchPV IMD V2.2.2
+
+Focused cockpit/animation correction from V2.2.1.
+
+- Desktop cockpit is now 3 columns x 2 rows and substantially more compact.
+- Dark cockpit Market Snapshot reel glyphs remain champagne/gold during the spin.
+- Current Inventory no longer animates SVG stroke-dash length. The complete correct line is rendered and revealed left-to-right with a clip-path, avoiding failures at sharp MLS inventory discontinuities such as OFRENDA.
+- The reveal applies to both compact cockpit and full analytical Current Inventory views.
+- No API or market-data calculation changes.

@@ -1,0 +1,8 @@
+SearchPV IMD V2.2.3
+
+Focused cockpit polish only; no API or market-data logic changes.
+
+- Compact Seller Behavior now shows each bucket count and range label beneath its dots.
+- Median transaction remains exclusive to the focused Seller Behavior instrument.
+- Compact Current Inventory now reveals the complete SVG viewport left-to-right rather than animating the path itself.
+- Full Current Inventory reveal remains unchanged.

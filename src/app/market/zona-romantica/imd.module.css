@@ -1,0 +1,513 @@
+.page{--ink:#eaf1f5;--muted:#91a4ae;--panel:#101a20;--line:#23343d;--accent:#d7a94b;--cyan:#69c6c9;min-height:100vh;background:#071014;color:var(--ink);font-family:Arial,Helvetica,sans-serif}.topbar{height:68px;display:flex;align-items:center;padding:0 clamp(18px,4vw,64px);border-bottom:1px solid #1d2b31;position:relative;z-index:20}.brand{font-size:25px;font-weight:800;color:#fff;text-decoration:none;letter-spacing:-1px}.brand span{color:var(--accent)}.brandSub{font-size:9px;letter-spacing:2px;color:#758992;margin-left:12px}.home{margin-left:auto;color:#9fb0b7;text-decoration:none;font-size:13px}.hero{padding:clamp(45px,7vw,88px) clamp(18px,6vw,90px) 34px;overflow:hidden;background:radial-gradient(circle at 70% 10%,#16323a 0,transparent 33%),linear-gradient(180deg,#09171c,#071014)}.eyebrow,.panelHead>span,.next>div>span,.cta>span{font-size:10px;letter-spacing:2.1px;color:var(--accent);font-weight:800}.hero h1{font-size:clamp(42px,7vw,92px);line-height:.92;letter-spacing:-4px;margin:15px 0 12px;max-width:1000px}.hero h1 span{display:block;font-size:.52em;letter-spacing:-1.5px;color:#b6c6cd;font-weight:500;margin-top:10px}.snapshot{color:var(--muted);font-size:13px}.filters{display:flex;gap:18px;flex-wrap:wrap;margin-top:38px}.filter>span{display:block;font-size:9px;letter-spacing:1.4px;color:#748991;text-transform:uppercase;margin:0 0 7px 4px}.filter>div{display:flex;background:#0d1a20;border:1px solid #22353e;border-radius:12px;padding:4px;overflow:auto}.filter button,.pulseControls button{border:0;background:transparent;color:#8ea1a9;padding:9px 13px;border-radius:8px;white-space:nowrap;cursor:pointer;font-size:12px}.filter button.selected,.pulseControls button.on{background:#d7a94b;color:#111;font-weight:800}.selection{margin-top:18px;color:#d2dde1;font-size:13px}.stateRow{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#203139;border:1px solid #203139;margin-top:40px;max-width:980px}.stat{background:#0b171c;padding:22px 25px;opacity:0;transform:translateY(15px);animation:rise .65s .5s forwards}.stat b{display:block;font-size:clamp(28px,4vw,50px);font-weight:500;letter-spacing:-2px}.stat span{display:block;color:#7f959e;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;margin-top:5px}.dashboard{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px clamp(14px,4vw,58px) 50px}.panel{background:linear-gradient(145deg,#101c22,#0b151a);border:1px solid #1e3038;border-radius:18px;padding:clamp(20px,3vw,34px);min-height:420px;position:relative;overflow:hidden}.wide{grid-column:1/-1}.panelHead h2{font-size:clamp(26px,3vw,40px);letter-spacing:-1.5px;margin:8px 0}.panelHead p{color:#8499a2;max-width:600px;font-size:13px;line-height:1.5;margin:0}.statusLabels{display:flex;gap:20px;margin-top:24px;color:#758b94;font-size:9px;letter-spacing:1px}.statusLabels b{color:#dbe5e8;margin-left:4px}.dotField{height:245px;position:relative;margin-top:8px;border-radius:12px;background:radial-gradient(circle at center,#14262d,transparent 65%)}.dot{position:absolute;left:var(--x);top:var(--y);width:6px;height:6px;border-radius:50%;opacity:0;transform:scale(0);animation:pop .45s calc(.45s + var(--delay)) forwards;transition:left .6s cubic-bezier(.2,.8,.2,1),top .6s,opacity .35s}.dot.active,.legend .active{background:#69c6c9;box-shadow:0 0 8px #69c6c977}.dot.pending,.legend .pending{background:#d7a94b}.dot.sold,.legend .sold{background:#71818a}.legend{display:flex;gap:18px;color:#83969e;font-size:11px}.legend span{display:flex;align-items:center;gap:6px}.legend i{width:7px;height:7px;border-radius:50%}.priceHero{margin:34px 0 8px}.priceHero span{display:block;color:#7f929b;font-size:11px;text-transform:uppercase;letter-spacing:1px}.priceHero b{font-size:clamp(44px,7vw,82px);font-weight:400;letter-spacing:-4px}.bands{height:190px;display:flex;gap:10px;align-items:flex-end;margin-top:15px}.band{flex:1;text-align:center;min-width:0}.barTrack{height:125px;display:flex;align-items:flex-end;justify-content:center;border-bottom:1px solid #2b3d45}.barTrack i{display:block;width:min(45px,75%);background:linear-gradient(#d7a94b,#6f5828);border-radius:5px 5px 0 0;transition:height .7s}.band b{display:block;font-size:16px;margin-top:7px}.band span{font-size:9px;color:#81949c;white-space:nowrap}.pulseControls{display:flex;gap:5px;align-items:center;margin-top:26px;overflow:auto}.pulseControls span{flex:1}.chartWrap{margin-top:12px}.chartWrap svg{width:100%;height:280px;overflow:visible}.gridline{stroke:#21323a;stroke-width:.5}.line{fill:none;stroke:#69c6c9;stroke-width:2;stroke-linecap:round;stroke-dasharray:600;stroke-dashoffset:600;animation:draw 1.6s .4s forwards}.point{fill:#d7a94b;opacity:0;animation:fade .4s 1.5s forwards}.months{display:grid;grid-template-columns:repeat(12,1fr);color:#667b84;font-size:9px;text-align:center}.flow{display:flex;align-items:center;justify-content:space-between;margin:55px 0 25px}.flow div{text-align:center}.flow b{display:block;font-size:clamp(30px,5vw,54px);font-weight:400}.flow span{font-size:9px;letter-spacing:1px;color:#82959d}.flow em{font-style:normal;color:#38515b;font-size:28px}.meter{height:7px;border-radius:10px;background:#203039;overflow:hidden}.meter i{display:block;height:100%;background:#d7a94b;transition:width .8s}.note{font-size:11px;color:#6f848d;line-height:1.5;margin-top:18px}.acceptance{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:35px}.acceptance>div{text-align:center}.miniDots{height:110px;display:flex;flex-wrap:wrap;align-content:flex-end;justify-content:center;gap:4px;padding:10px}.miniDots i{width:7px;height:7px;border-radius:50%;background:#69c6c9}.acceptance b{display:block;font-size:22px}.acceptance span{font-size:10px;color:#81959d}.acceptMedian{text-align:center;margin-top:25px;color:#82969e;font-size:11px}.acceptMedian b{font-size:35px;color:#e8eef0;margin:0 9px;font-weight:400}.composition{margin-top:32px;display:grid;gap:14px}.composition>div{display:grid;grid-template-columns:70px 1fr 35px;gap:12px;align-items:center}.composition span,.composition b{font-size:11px;color:#8ca0a8}.composition>div>div{height:18px;background:#17262d;border-radius:3px;overflow:hidden}.composition i{display:block;height:100%;background:linear-gradient(90deg,#3b7376,#69c6c9);transition:width .8s}.next{margin:0 clamp(14px,4vw,58px) 14px;padding:clamp(28px,5vw,55px);background:#e8ecec;color:#0c171b;border-radius:18px;display:flex;gap:30px;justify-content:space-between;align-items:end}.next h2,.cta h2{font-size:clamp(30px,4vw,50px);letter-spacing:-2px;margin:9px 0}.next p{color:#536268;max-width:720px;line-height:1.5}.actions{display:flex;flex-direction:column;gap:8px;min-width:230px}.actions a,.cta a{padding:13px 17px;border-radius:9px;background:#101b20;color:white;text-decoration:none;font-size:12px}.actions a+ a{background:transparent;color:#15252b;border:1px solid #aab5b9}.cta{text-align:center;padding:80px 20px 90px;background:radial-gradient(circle,#183039,#071014 65%)}.cta p{color:#91a4ac;margin:0 auto 30px;max-width:650px}.cta a{display:inline-block;background:#d7a94b;color:#151515;font-weight:800}.footer{text-align:center;color:#61757d;font-size:10px;padding:18px 20px 35px}.mobileIgnition{display:none}
+@keyframes rise{to{opacity:1;transform:none}}@keyframes pop{to{opacity:.9;transform:scale(1)}}@keyframes draw{to{stroke-dashoffset:0}}@keyframes fade{to{opacity:1}}
+@media(max-width:720px){.topbar{height:58px;padding:0 16px}.brandSub{display:none}.hero{padding:38px 16px 24px}.hero h1{font-size:48px;letter-spacing:-2.5px}.hero h1 span{font-size:.5em}.filters{gap:12px;margin-top:28px}.filter{width:100%}.filter>div{width:100%}.filter button{flex:1;padding:9px 8px;font-size:11px}.stateRow{grid-template-columns:1fr 1fr;margin-top:25px}.stat{padding:17px}.stat b{font-size:30px}.dashboard{display:block;padding:10px}.panel{margin-bottom:10px;min-height:0;padding:22px}.wide{grid-column:auto}.dotField{height:280px}.chartWrap svg{height:210px}.months span:nth-child(even){display:none}.months{grid-template-columns:repeat(6,1fr)}.flow{margin:35px 0 20px}.flow em{font-size:18px}.flow b{font-size:30px}.acceptance{gap:2px}.miniDots{height:90px;padding:4px}.next{margin:10px;display:block}.actions{margin-top:25px}.priceHero b{font-size:58px}.mobileIgnition{display:grid;grid-template-columns:repeat(4,100%);overflow:hidden;margin:25px -16px 0;height:112px;position:relative}.ignitionCard{grid-row:1;grid-column:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;animation:mobileTrip 3.2s ease forwards}.ignitionCard:nth-child(2){animation-delay:.65s}.ignitionCard:nth-child(3){animation-delay:1.3s}.ignitionCard:nth-child(4){animation-delay:1.95s}.ignitionCard b{font-size:43px;font-weight:400;letter-spacing:-2px}.ignitionCard span{font-size:9px;letter-spacing:1.6px;color:#879ba4}.stateRow{margin-top:0}}
+@keyframes mobileTrip{0%{opacity:0;transform:translateY(12px)}12%,35%{opacity:1;transform:none}50%,100%{opacity:0;transform:translateY(-10px)}}
+@media(prefers-reduced-motion:reduce){.stat,.dot,.line,.point,.ignitionCard{animation:none!important;opacity:1!important;transform:none!important}.line{stroke-dashoffset:0}.mobileIgnition{display:none}}
+@media print{.topbar,.filters,.mobileIgnition,.actions,.cta{display:none!important}.page{background:white;color:#111}.hero,.panel,.next{background:white;color:#111;border-color:#ccc}.hero{padding:20px}.dashboard{display:block;padding:0}.panel{break-inside:avoid;margin:0 0 12px;min-height:0}.dotField{height:160px}.panelHead p,.snapshot,.note{color:#555}.footer{color:#555}.line{stroke:#222}.stateRow{background:#ddd;border-color:#ddd}.stat{background:white;color:#111;opacity:1;transform:none}.next{margin:0}}
+
+/* V1.1 — instrument ignition + persistent market context */
+.stickyMarket{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:24px;padding:10px clamp(14px,4vw,58px);background:rgba(7,16,20,.94);border-top:1px solid #1d2b31;border-bottom:1px solid #263941;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.stickyIdentity{min-width:190px;line-height:1.2}.stickyIdentity span{display:block;color:#d7a94b;font-size:10px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}.stickyIdentity b{display:block;color:#dbe5e8;font-size:11px;font-weight:500;margin-top:4px;white-space:nowrap}.stickyFilters{display:flex;align-items:end;gap:10px;min-width:0;overflow-x:auto;scrollbar-width:none}.stickyFilters::-webkit-scrollbar{display:none}.stickyFilters .filter>span{display:none}.stickyFilters .filter>div{border-radius:9px;padding:2px}.stickyFilters .filter button{padding:7px 9px;font-size:10px}
+.stat{opacity:1;transform:none;animation:none;overflow:hidden}.slotValue{display:flex!important;align-items:baseline;height:1em;overflow:hidden;white-space:nowrap;font-variant-numeric:tabular-nums}.slotStatic{display:inline-block}.reel{display:inline-block;height:1em;overflow:hidden;line-height:1em}.reelStrip{display:flex;flex-direction:column;line-height:1em;transform:translateY(0);transition-property:transform;transition-duration:1.05s;transition-timing-function:cubic-bezier(.16,.9,.22,1.12);will-change:transform}.reelStrip i{display:block;height:1em;line-height:1em;font-style:normal;font-weight:inherit}
+@media(max-width:720px){.stickyMarket{padding:8px 10px;display:block}.stickyIdentity{display:flex;align-items:baseline;gap:8px;min-width:0;padding:0 4px 7px}.stickyIdentity span{font-size:9px}.stickyIdentity b{font-size:10px;overflow:hidden;text-overflow:ellipsis}.stickyFilters{gap:6px}.stickyFilters .filter{width:auto;flex:0 0 auto}.stickyFilters .filter>div{width:auto}.stickyFilters .filter button{flex:none;padding:7px 8px}.stateRow{margin-top:25px}.stat{min-height:91px}.stat b{font-size:34px}.mobileIgnition{display:none!important}}
+@media(prefers-reduced-motion:reduce){.reelStrip{transition:none!important}.stickyMarket{backdrop-filter:none;-webkit-backdrop-filter:none}}
+@media print{.stickyMarket{display:none!important}}
+
+
+/* V1.2 — prominent warm instrument bank + crisp reel landing */
+.stateRow{
+  max-width:1180px;
+  min-height:148px;
+  gap:1px;
+  background:#9f8b5e;
+  border-color:#9f8b5e;
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 18px 42px rgba(0,0,0,.18);
+}
+.stateRow .stat{
+  min-height:148px;
+  padding:27px 30px 23px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  background:linear-gradient(145deg,#d8c58f,#c7ad70);
+  color:#0b1519;
+  overflow:hidden;
+}
+.stateRow .stat b{
+  font-size:clamp(52px,5.1vw,72px);
+  line-height:1;
+  font-weight:650;
+  letter-spacing:-3.2px;
+  color:#081216;
+}
+.stateRow .stat > span:last-child{
+  display:block;
+  margin-top:11px;
+  color:#34454b;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:1.65px;
+  text-transform:uppercase;
+}
+.slotValue{
+  height:1em;
+  line-height:1em;
+  align-items:flex-start!important;
+  overflow:hidden;
+}
+.slotStatic,.reel{
+  height:1em;
+  line-height:1em;
+}
+.reelStrip{
+  line-height:1em;
+  transition-duration:1.05s;
+  /* Decelerates firmly to the exact row. The bounce is on the value, not the reel position. */
+  transition-timing-function:cubic-bezier(.16,.82,.22,1);
+}
+.reelStrip i{
+  flex:0 0 1em;
+  height:1em;
+  line-height:1em;
+}
+.slotSettled{
+  animation:instrumentSettle .22s cubic-bezier(.2,.9,.3,1.25) both;
+}
+@keyframes instrumentSettle{
+  0%,55%{transform:translateY(0) scale(1)}
+  78%{transform:translateY(1px) scale(1.018,.985)}
+  100%{transform:translateY(0) scale(1)}
+}
+@media(max-width:720px){
+  .stateRow{min-height:0;border-radius:12px}
+  .stateRow .stat{min-height:124px;padding:20px 18px}
+  .stateRow .stat b{font-size:clamp(44px,13vw,58px);letter-spacing:-2.5px}
+  .stateRow .stat > span:last-child{font-size:9px;margin-top:8px;letter-spacing:1.3px}
+}
+@media(prefers-reduced-motion:reduce){.slotSettled{animation:none!important}}
+@media print{
+  .stateRow{box-shadow:none;background:#bbb;border-color:#bbb}
+  .stateRow .stat{background:#f2f2f2;color:#111}
+  .stateRow .stat b,.stateRow .stat > span:last-child{color:#111}
+}
+
+/* V1.3 — rebuilt reel geometry. The final value is a separate static element,
+   so a reel can never remain visually parked between two rows. */
+.stateRow .slotValue{
+  display:flex!important;
+  align-items:flex-start!important;
+  height:1em!important;
+  min-height:1em;
+  overflow:hidden!important;
+  white-space:nowrap;
+  font-size:clamp(56px,5.4vw,76px)!important;
+  line-height:1!important;
+  color:#081216!important;
+  margin:0!important;
+  font-variant-numeric:tabular-nums;
+}
+.stateRow .slotValue span{
+  margin:0!important;
+  color:inherit!important;
+  text-transform:none!important;
+  letter-spacing:inherit!important;
+  font-size:1em!important;
+  line-height:1!important;
+}
+.stateRow .reel{
+  display:inline-block!important;
+  position:relative;
+  width:.62em;
+  height:1em!important;
+  overflow:hidden!important;
+  flex:0 0 .62em;
+}
+.stateRow .reelStrip{
+  display:flex!important;
+  flex-direction:column;
+  width:100%;
+  margin:0!important;
+  font-size:1em!important;
+  line-height:1!important;
+  will-change:transform;
+  transition-property:transform;
+  transition-duration:1.05s;
+  transition-timing-function:cubic-bezier(.12,.78,.18,1);
+}
+.stateRow .reelStrip i{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:1em!important;
+  min-height:1em!important;
+  flex:0 0 1em!important;
+  margin:0!important;
+  padding:0!important;
+  font:inherit;
+  line-height:1!important;
+  font-style:normal;
+  color:#081216;
+}
+.stateRow .slotStatic{
+  display:inline-block!important;
+  height:1em!important;
+  flex:0 0 auto;
+}
+.stateRow .finalValue{
+  display:block!important;
+  height:1em!important;
+  font:inherit!important;
+  font-weight:650!important;
+  line-height:1!important;
+  color:#081216!important;
+}
+.stateRow .statLabel{
+  display:block!important;
+  margin-top:12px!important;
+  color:#34454b!important;
+  font-size:10px!important;
+  font-weight:800!important;
+  line-height:1.2!important;
+  letter-spacing:1.65px!important;
+  text-transform:uppercase!important;
+}
+@media(max-width:720px){
+  .stateRow .slotValue{font-size:clamp(48px,14vw,62px)!important}
+  .stateRow .statLabel{font-size:9px!important;margin-top:9px!important;letter-spacing:1.25px!important}
+}
+
+/* V1.4 — compact currency notation + value-aware instrument sizing. */
+.stateRow .slotValue{
+  max-width:100%;
+  font-size:clamp(54px,4.8vw,70px)!important;
+  letter-spacing:-2.8px!important;
+}
+.stateRow .slotValue.valueLong{
+  font-size:clamp(48px,4.25vw,62px)!important;
+  letter-spacing:-2.5px!important;
+}
+.stateRow .slotValue.valueXL{
+  font-size:clamp(44px,3.8vw,56px)!important;
+  letter-spacing:-2.2px!important;
+}
+.stateRow .finalValue{max-width:100%;white-space:nowrap}
+@media(max-width:720px){
+  .stateRow .slotValue{font-size:clamp(42px,12vw,56px)!important}
+  .stateRow .slotValue.valueLong{font-size:clamp(38px,10.5vw,50px)!important}
+  .stateRow .slotValue.valueXL{font-size:clamp(34px,9.5vw,46px)!important}
+}
+
+/* V1.5 — clearer buyer questions, Market Direction, and Seller Behavior. */
+.directionSummary{display:flex;align-items:baseline;gap:14px;margin:22px 0 2px;flex-wrap:wrap}.directionSummary span{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:#81969f}.directionSummary b{font-size:clamp(28px,4vw,46px);font-weight:450;letter-spacing:-1.5px}.directionSummary em{font-style:normal;font-size:11px;color:#8fa4ac}.chartGrid{display:grid;grid-template-columns:112px 1fr;gap:16px;align-items:stretch}.yAxis{position:relative;min-height:280px;padding:12px 0 17px 28px;color:#8fa4ac}.yAxisTitle{position:absolute;left:0;top:50%;writing-mode:vertical-rl;transform:translateY(-50%) rotate(180deg);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#93a6ae;white-space:nowrap}.yTicks{height:100%;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;padding-right:4px}.yTicks b{font-size:10px;font-weight:600;font-variant-numeric:tabular-nums;color:#9eb0b7;line-height:1}.sellerToggle{display:inline-flex;margin-top:25px;background:#0d1a20;border:1px solid #22353e;border-radius:10px;padding:4px}.sellerToggle button{border:0;background:transparent;color:#8ea1a9;padding:9px 13px;border-radius:7px;cursor:pointer;font-size:11px}.sellerToggle button.on{background:#d7a94b;color:#111;font-weight:800}.reductions{margin-top:28px;padding-top:22px;border-top:1px solid #24363e;display:grid;gap:9px}.reductions header{display:flex;justify-content:space-between;gap:15px;margin-bottom:4px}.reductions header span{font-size:9px;letter-spacing:1.2px;color:#81959d}.reductions header b{font-size:10px;font-weight:500;color:#a9b9bf}.reductions>div{display:grid;grid-template-columns:92px 1fr 28px;gap:10px;align-items:center}.reductions>div span,.reductions>div b{font-size:10px;color:#8da0a8}.reductions>div>div{height:10px;background:#17262d;border-radius:3px;overflow:hidden}.reductions i{display:block;height:100%;background:#d7a94b;transition:width .7s}.composition>div{grid-template-columns:70px 1fr 72px}.composition b{text-align:right;font-variant-numeric:tabular-nums}.band .barTrack i{min-height:2px}
+@media(max-width:720px){.chartGrid{grid-template-columns:76px 1fr;gap:8px}.yAxis{min-height:210px;padding-left:20px}.yTicks b{font-size:8px}.directionSummary{gap:8px}.directionSummary b{font-size:30px}.directionSummary em{width:100%}.reductions header{display:block}.reductions header b{display:block;margin-top:5px}.composition>div{grid-template-columns:58px 1fr 62px}.composition b{font-size:9px}}
+
+/* V1.6: information-led full-width layout. Keep analytical graphics readable on wide screens. */
+@media(min-width:721px){
+  .wide .bands{max-width:1100px}
+  .wide .priceHero{max-width:1100px}
+  .wide .sellerToggle{max-width:1100px}
+  .wide .acceptance{max-width:1100px}
+  .wide .acceptMedian{max-width:1100px;text-align:left}
+  .wide .reductions{max-width:1100px}
+  .wide .composition{max-width:1100px}
+}
+
+/* V2 — real SearchPV shell + live market-data states */
+.siteHeader{position:relative;z-index:100;min-height:80px;display:flex;align-items:center;gap:18px;padding:10px clamp(16px,4vw,64px);border-bottom:1px solid #1d2b31;background:#050b0e;color:#fff}
+.headerDescriptor{font-size:9px;letter-spacing:2px;color:#758992;line-height:1.35}.headerMenu{margin-left:auto;position:relative;z-index:110}.dataError{max-width:900px;margin-top:22px;padding:12px 14px;border:1px solid rgba(248,113,113,.45);border-radius:10px;background:rgba(127,29,29,.18);color:#fecaca;font-size:12px}.loadingBank{opacity:.72}.availableHistory{font-style:normal;color:#81969f;font-size:9px;font-weight:800;letter-spacing:1.15px;white-space:nowrap}.emptyState{margin-top:28px;padding:24px;border:1px dashed #30444d;border-radius:12px;color:#80949d;font-size:12px;text-align:center}.sellerNote{max-width:900px;margin-top:28px;padding-top:18px;border-top:1px solid #24363e;color:#71858e;font-size:10px;line-height:1.55}.footer a{color:#91a4ae;text-underline-offset:3px}
+@media(max-width:720px){.siteHeader{min-height:70px;padding:8px 12px;gap:10px}.headerDescriptor{display:none}.headerMenu{margin-left:auto}.availableHistory{padding:0 6px}.hero{padding-top:32px}}
+@media print{.siteHeader{display:none!important}.dataError{display:none!important}}
+
+.slotPlaceholder{display:inline-block;min-width:.6em;opacity:0}
+
+.mtdLabel{color:#d9a83e!important;font-weight:800!important}
+
+.countSummary b{font-size:clamp(24px,3vw,38px)}
+.directionSummary em{font-style:normal;font-size:11px;color:#8fa4ac}
+.priorCompare{display:flex;align-items:center;gap:8px;margin:7px 0 4px 0;color:#71868f;font-size:10px}
+.priorCompare i{width:22px;border-top:1.5px dashed #71868f;opacity:.8}
+.priorCompare b{font-size:12px;color:#9aabb2;font-weight:600}
+.priorCompare em{font-style:normal;color:#667b84}
+.priorLine{fill:none;stroke:#71868f;stroke-width:1.15;stroke-dasharray:4 4;opacity:.55;stroke-linecap:round}
+
+/* V2.0.5 calendar-axis alignment */
+.months{position:relative;height:22px;margin-top:3px}
+.months span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
+.months span:first-child{transform:translateX(0)}
+.months span:last-child{transform:translateX(-100%)}
+.priorCompare{margin-top:8px;margin-bottom:2px}
+
+/* V2.0.6 — chart coordinate alignment + post-ignition KPI swaps */
+.chartWrap svg{display:block}
+.line,.priorLine,.gridline{vector-effect:non-scaling-stroke}
+.directionSummary{margin:22px 0 2px}
+.directionSummary span{font-size:10px;letter-spacing:1.2px;color:#8fa4ac}
+.directionSummary em{font-style:normal;font-size:11px;color:#8fa4ac}
+.valueSwap{position:relative;display:block;width:100%;height:1em;overflow:hidden}
+.valueSwapOld,.valueSwapNew{position:absolute;left:0;top:0;display:block;white-space:nowrap;line-height:1em}
+.valueSwapOld{animation:kpiOldUp .42s cubic-bezier(.22,.75,.28,1) forwards}
+.valueSwapNew{transform:translateY(105%);animation:kpiNewUp .42s cubic-bezier(.22,.75,.28,1) forwards}
+@keyframes kpiOldUp{to{transform:translateY(-105%);opacity:.2}}
+@keyframes kpiNewUp{to{transform:translateY(0);opacity:1}}
+@media(prefers-reduced-motion:reduce){
+  .valueSwapOld,.valueSwapNew{animation:none!important;transform:none!important}
+  .valueSwapOld{display:none!important}
+}
+
+/* V2.0.7 — Market Direction year-over-year bars */
+.yoyLegend{display:flex;gap:22px;flex-wrap:wrap;margin:8px 0 10px;color:#7f949c;font-size:10px}
+.yoyLegend span{display:flex;align-items:center;gap:7px}
+.yoyLegend i{display:inline-block;width:9px;height:9px;border-radius:2px}
+.currentSwatch{background:#69c6c9}
+.priorSwatch{background:#526771}
+.barChartGrid{display:grid;grid-template-columns:112px 1fr;gap:16px;align-items:stretch}
+.yoyChart{position:relative;height:300px;margin-top:12px;padding:12px 0 28px}
+.yoyGrid{position:absolute;inset:12px 0 28px;display:flex;flex-direction:column;justify-content:space-between}
+.yoyGrid i{display:block;border-top:1px solid #21323a}
+.yoyGroups{position:absolute;inset:12px 0 0;display:flex;align-items:stretch;justify-content:space-around;gap:5px}
+.yoyGroup{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.yoyBars{height:calc(100% - 28px);width:100%;display:flex;align-items:flex-end;justify-content:center;gap:3px}
+.yoyBars i{display:block;width:min(28%,18px);min-width:5px;border-radius:4px 4px 1px 1px;transition:height .55s cubic-bezier(.22,.75,.28,1)}
+.currentBar{background:#69c6c9}
+.priorBar{background:#526771}
+.yoyGroup>span{height:22px;padding-top:7px;color:#6f848d;font-size:9px;white-space:nowrap}
+.yoyGroup>span.mtdLabel{color:#d7a94b;font-weight:800}
+@media(max-width:700px){
+  .barChartGrid{grid-template-columns:72px 1fr;gap:8px}
+  .yoyChart{height:260px}
+  .yoyBars{gap:2px}
+  .yoyGroup>span{font-size:8px}
+}
+
+/* V2.0.8 — sequential long-range trend + real monthly inventory snapshots */
+.sampleNote{margin:8px 0 4px;padding:8px 10px;border:1px solid #2a3940;border-radius:8px;background:#101a1f;color:#9aaeb6;font-size:10px;line-height:1.4}
+.yoyGroup:has(.yoyBars i:only-child) .yoyBars i{width:min(42%,24px)}
+
+
+/* V2.1 — Market Brief + split Market Trends instruments */
+.marketBrief{max-width:1180px;margin:22px auto 0;padding:0 24px;display:flex;gap:28px;align-items:flex-end}
+.marketBrief>div{flex:1;padding:20px 22px;border-left:2px solid #c79a52;background:linear-gradient(90deg,rgba(199,154,82,.08),transparent)}
+.marketBrief span,.instrumentHead span{display:block;font-size:10px;letter-spacing:.18em;color:#c79a52;font-weight:800}
+.marketBrief p{margin:8px 0 0;max-width:920px;color:#c3cdd1;font-size:14px;line-height:1.65}
+.marketBrief small{white-space:nowrap;color:#73858d;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding-bottom:20px}
+.instrumentBlock{margin-top:22px;padding-top:22px;border-top:1px solid #223139}
+.instrumentBlock:first-of-type{margin-top:14px}
+.instrumentHead{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:16px}
+.instrumentHead h3{margin:5px 0 4px;color:#edf3f5;font-size:20px}
+.instrumentHead p{margin:0;max-width:720px;color:#8fa0a8;font-size:12px;line-height:1.55}
+.inventoryNow{text-align:right;min-width:120px}
+.inventoryNow b{display:block;font-size:30px;line-height:1;color:#e8d3ae;font-variant-numeric:tabular-nums}
+.inventoryNow span{margin-top:5px;color:#82949c;letter-spacing:.08em}
+.inventoryMeta{display:flex;justify-content:space-between;gap:16px;margin:4px 0 12px;color:#82949c;font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+.inventoryMeta em{font-style:normal;color:#a9b8be}
+.inventoryChart{position:relative;height:240px;padding:8px 0 24px}
+.inventoryChart svg{width:100%;height:100%;overflow:visible}
+.inventoryChart line{stroke:#24343b;stroke-width:.35;vector-effect:non-scaling-stroke}
+.inventoryChart path{fill:none;stroke:#d2aa68;stroke-width:2.2;vector-effect:non-scaling-stroke}
+.inventoryChart circle{fill:#d2aa68;stroke:#0d171c;stroke-width:.7;vector-effect:non-scaling-stroke}
+.inventoryDates{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;color:#71848c;font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+@media(max-width:720px){
+  .marketBrief{display:block;padding:0 16px}
+  .marketBrief small{display:block;padding:10px 0 0 22px}
+  .instrumentHead{display:block}
+  .inventoryNow{text-align:left;margin-top:14px}
+  .inventoryMeta{display:block}
+  .inventoryMeta em{display:block;margin-top:5px}
+  .inventoryChart{height:190px}
+}
+
+.inventoryMonths{position:absolute;left:0;right:0;bottom:24px;height:16px;pointer-events:none}
+.inventoryMonths span{position:absolute;transform:translateX(-50%);font-size:9px;line-height:1;color:#71848c;text-transform:uppercase;letter-spacing:.08em}
+
+.fiveYearNote{margin:10px 0 4px;color:#82949c;font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+.fiveYearNote b{color:#d6c29f;font-weight:700}
+
+.yoyGroup>span small{display:block;margin-top:3px;font-size:8px;font-weight:500;color:#6f858e;letter-spacing:.04em}
+.mtdLabel small{color:#9c8350!important}
+
+/* V2.2 — six-instrument cockpit, compact sticky controls, coordinated ignition */
+html{scroll-behavior:smooth}
+.hero{padding-bottom:24px}
+.hero .marketBrief{max-width:1180px;margin:28px 0 0;padding:0;display:block}
+.hero .marketBrief>div{padding:17px 20px}
+.hero .marketBrief p{font-size:13px;line-height:1.58}
+.stickyIdentity b{color:#8fa3ab;font-size:9px;letter-spacing:.08em;text-transform:uppercase}
+.cockpit{padding:24px clamp(14px,4vw,58px) 12px;background:#071014}
+.cockpitHeading{display:flex;align-items:baseline;gap:16px;margin:0 0 12px 2px}
+.cockpitHeading span,.miniHead span{font-size:9px;letter-spacing:1.8px;color:#d7a94b;font-weight:800}
+.cockpitHeading p{margin:0;color:#6f848d;font-size:10px}
+.cockpitGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cockpitCard{height:250px;padding:18px 20px;border:1px solid #20343d;border-radius:15px;background:linear-gradient(145deg,#101c22,#0b151a);color:inherit;text-decoration:none;overflow:hidden;position:relative;transition:transform .18s,border-color .18s,background .18s}
+.cockpitCard:hover{transform:translateY(-2px);border-color:#49616b;background:linear-gradient(145deg,#132229,#0c171c)}
+.miniHead h2{margin:5px 0 0;font-size:20px;letter-spacing:-.6px;color:#edf3f5}
+.cockpitStateRow{margin-top:17px!important;min-height:0!important;height:154px!important;max-width:none!important}
+.cockpitStateRow .stat{min-height:154px!important;padding:18px 16px!important}
+.cockpitStateRow .slotValue{font-size:clamp(32px,3vw,50px)!important}
+.cockpitStateRow .statLabel{font-size:8px!important;letter-spacing:1.1px!important}
+.miniPriceBars,.miniTrendBars{height:155px;margin-top:17px;display:flex;align-items:flex-end;justify-content:space-around;gap:10px;border-bottom:1px solid #294049}
+.miniPriceBars i{width:11%;max-width:44px;background:linear-gradient(#d7a94b,#715927);border-radius:5px 5px 0 0;transform-origin:bottom;animation:cockpitRise .75s cubic-bezier(.22,.75,.28,1) both}
+.miniTrendBars span{height:100%;flex:1;display:flex;align-items:flex-end;justify-content:center;gap:3px}
+.miniTrendBars i{display:block;width:9px;background:#69c6c9;border-radius:3px 3px 0 0;transform-origin:bottom;animation:cockpitRise .8s .15s cubic-bezier(.22,.75,.28,1) both}.miniTrendBars .miniPrior{background:#526771}
+.miniInventory{height:160px;margin-top:10px;position:relative}.miniInventory b{position:absolute;right:4px;top:0;font-size:27px;color:#e8d3ae;font-weight:500}.miniInventory svg{position:absolute;left:0;right:0;bottom:0;width:100%;height:120px;overflow:visible}.miniInventory path{fill:none;stroke:#d2aa68;stroke-width:2;vector-effect:non-scaling-stroke;stroke-dasharray:1000;stroke-dashoffset:1000;animation:cockpitDraw 1.35s .15s ease forwards}
+.miniSeller{height:150px;margin-top:18px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;align-items:end}.miniSeller span{min-height:60px;display:flex;flex-wrap:wrap;align-content:flex-end;justify-content:center;gap:4px;padding:8px;border-bottom:1px solid #294049}.miniSeller i{width:6px;height:6px;border-radius:50%;background:#69c6c9;opacity:0;transform:scale(0);animation:cockpitPop .3s forwards}
+.miniComposition{margin-top:23px;display:grid;gap:11px}.miniComposition div{display:grid;grid-template-columns:54px 1fr;align-items:center;gap:9px}.miniComposition span{font-size:9px;color:#8ca0a8}.miniComposition div:after{content:"";grid-column:2;height:9px;background:#17262d;border-radius:3px;grid-row:1}.miniComposition i{grid-column:2;grid-row:1;z-index:1;display:block;height:9px;background:linear-gradient(90deg,#3b7376,#69c6c9);border-radius:3px;transform-origin:left;animation:cockpitFill .75s both}
+.mobileInstrumentNav{display:none}
+.dashboard{display:block;padding-top:10px}.dashboard .panel{margin-bottom:14px;scroll-margin-top:76px}
+.inventoryNow{position:absolute;right:34px;top:34px}.inventoryFootnote{margin:13px 0 0;color:#738891;font-size:10px;line-height:1.5;font-style:italic}
+.animatedInstrument .barTrack i,.animatedInstrument .yoyBars i,.animatedInstrument .miniDots i,.animatedInstrument .composition i{animation-play-state:paused}
+.animatedInstrument .barTrack i{transform-origin:bottom;transform:scaleY(0);animation:detailRise .72s cubic-bezier(.22,.75,.28,1) forwards}
+.animatedInstrument .yoyBars i{transform-origin:bottom;transform:scaleY(0);animation:detailRise .7s cubic-bezier(.22,.75,.28,1) forwards}
+.animatedInstrument .miniDots i{opacity:0;transform:scale(0);animation:detailPop .32s forwards}
+.animatedInstrument .composition i{transform-origin:left;transform:scaleX(0);animation:detailFill .75s cubic-bezier(.22,.75,.28,1) forwards}
+.animatedInstrument .inventoryChart path{stroke-dasharray:1000;stroke-dashoffset:1000;animation:detailDraw 1.45s .08s ease forwards;animation-play-state:paused}
+.animatedInstrument .inventoryChart circle{opacity:0;animation:detailFade .3s 1.15s forwards;animation-play-state:paused}
+.instrumentVisible .barTrack i,.instrumentVisible .yoyBars i,.instrumentVisible .miniDots i,.instrumentVisible .composition i,.instrumentVisible .inventoryChart path,.instrumentVisible .inventoryChart circle{animation-play-state:running}
+@keyframes cockpitRise{from{transform:scaleY(0)}to{transform:scaleY(1)}}@keyframes cockpitDraw{to{stroke-dashoffset:0}}@keyframes cockpitPop{to{opacity:1;transform:scale(1)}}@keyframes cockpitFill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes detailRise{to{transform:scaleY(1)}}@keyframes detailPop{to{opacity:1;transform:scale(1)}}@keyframes detailFill{to{transform:scaleX(1)}}@keyframes detailDraw{to{stroke-dashoffset:0}}@keyframes detailFade{to{opacity:1}}
+@media(max-width:900px){
+  .cockpitGrid{display:none}.cockpitHeading p{display:none}.cockpit{padding-bottom:4px}
+  .mobileInstrumentNav{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding:2px 0 10px}.mobileInstrumentNav::-webkit-scrollbar{display:none}.mobileInstrumentNav a{flex:0 0 auto;padding:8px 11px;border:1px solid #263a43;border-radius:9px;color:#9aadb5;text-decoration:none;font-size:10px;background:#0d1a20}
+  .dashboard{padding-top:8px}
+}
+@media(max-width:720px){
+  .hero{padding-top:28px}.hero h1{margin-bottom:9px}.hero .marketBrief{margin-top:22px}.hero .marketBrief>div{padding:14px 15px}.hero .marketBrief p{font-size:12px;line-height:1.55}
+  .stickyMarket{padding:8px 10px}.stickyIdentity{justify-content:space-between;align-items:center;padding-bottom:6px}.stickyIdentity b{font-size:8px;margin:0}.stickyFilters{padding-bottom:1px}.stickyFilters .filter button{padding:7px 8px}
+  .cockpitHeading{margin-top:2px}.cockpitHeading span{font-size:9px}
+  .panelHead h2{font-size:30px}.dashboard .panel{scroll-margin-top:112px}
+  .inventoryNow{position:static;text-align:left;margin:15px 0 0}.inventoryFootnote{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.miniPriceBars i,.miniTrendBars i,.miniInventory path,.miniSeller i,.miniComposition i,.animatedInstrument .barTrack i,.animatedInstrument .yoyBars i,.animatedInstrument .miniDots i,.animatedInstrument .composition i,.animatedInstrument .inventoryChart path,.animatedInstrument .inventoryChart circle{animation:none!important;transform:none!important;opacity:1!important;stroke-dashoffset:0!important}}
+@media print{.cockpit{display:none!important}.hero .marketBrief{margin-top:10px}.inventoryFootnote{color:#555}}
+
+/* V2.2.1 — cockpit visibility, consistent snapshot treatment, focus offsets, full inventory draw */
+@media(min-width:721px){
+  .hero{padding:28px clamp(18px,6vw,90px) 20px}
+  .hero h1{font-size:clamp(46px,5.2vw,70px);line-height:.94;margin:10px 0 8px}
+  .hero h1 span{margin-top:6px}
+  .hero .marketBrief{margin-top:16px}
+  .hero .marketBrief>div{padding:12px 18px}
+  .hero .marketBrief p{margin:6px 0 0;font-size:12px;line-height:1.48;max-width:1120px}
+}
+
+/* Cockpit animations wait until the cluster itself is on screen. */
+.cockpit:not(.cockpitVisible) .miniPriceBars i,
+.cockpit:not(.cockpitVisible) .miniTrendBars i,
+.cockpit:not(.cockpitVisible) .miniInventory path,
+.cockpit:not(.cockpitVisible) .miniSeller i,
+.cockpit:not(.cockpitVisible) .miniComposition i{animation-play-state:paused!important}
+.cockpitVisible .miniPriceBars i,
+.cockpitVisible .miniTrendBars i,
+.cockpitVisible .miniInventory path,
+.cockpitVisible .miniSeller i,
+.cockpitVisible .miniComposition i{animation-play-state:running!important}
+
+/* Snapshot belongs to the same dark six-instrument cockpit; the warm bank is reserved for its focused view. */
+.cockpitStateRow{background:#17272e!important;border-color:#29404a!important;box-shadow:none!important}
+.cockpitStateRow .stat{background:linear-gradient(145deg,#132229,#0d191f)!important;color:#eaf1f5!important}
+.cockpitStateRow .stat b,.cockpitStateRow .slotValue,.cockpitStateRow .slotValue span{color:#e8d3ae!important}
+.cockpitStateRow .stat>span:last-child{color:#8298a1!important}
+.detailStateRow{margin-top:28px}
+.snapshotDetail{min-height:330px}
+
+/* Anchor navigation must clear the sticky market selector. */
+.dashboard .panel{scroll-margin-top:88px}
+
+/* Draw the real SVG path length instead of assuming a 1000-unit dash. */
+.animatedInstrument .inventoryChart path{
+  stroke-dasharray:1;
+  stroke-dashoffset:1;
+  animation:detailDrawUnit 1.55s .08s ease forwards;
+  animation-play-state:paused
+}
+.miniInventory path{
+  stroke-dasharray:1!important;
+  stroke-dashoffset:1!important;
+  animation:cockpitDrawUnit 1.35s .15s ease forwards!important;
+  animation-play-state:paused!important
+}
+.cockpitVisible .miniInventory path{animation-play-state:running!important}
+@keyframes detailDrawUnit{to{stroke-dashoffset:0}}
+@keyframes cockpitDrawUnit{to{stroke-dashoffset:0}}
+
+/* V2.2.2 — 3x2 desktop cockpit, visible dark reels, robust inventory reveal */
+@media(min-width:901px){
+  .cockpitGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .cockpitCard{height:174px;padding:13px 15px;border-radius:13px}
+  .miniHead h2{font-size:16px;margin-top:4px}
+  .miniHead span{font-size:8px;letter-spacing:1.45px}
+  .cockpitStateRow{margin-top:10px!important;height:96px!important}
+  .cockpitStateRow .stat{min-height:96px!important;height:96px!important;padding:13px 9px!important}
+  .cockpitStateRow .slotValue{font-size:clamp(24px,2.1vw,34px)!important}
+  .cockpitStateRow .statLabel{font-size:6.5px!important;letter-spacing:.8px!important;margin-top:7px!important}
+  .miniPriceBars,.miniTrendBars{height:101px;margin-top:10px;gap:6px}
+  .miniPriceBars i{max-width:31px}
+  .miniTrendBars i{width:7px}
+  .miniInventory{height:108px;margin-top:4px}
+  .miniInventory b{font-size:22px}
+  .miniInventory svg{height:78px}
+  .miniSeller{height:98px;margin-top:8px;gap:5px}
+  .miniSeller span{min-height:42px;gap:3px;padding:5px}
+  .miniSeller i{width:4px;height:4px}
+  .miniComposition{margin-top:12px;gap:7px}
+  .miniComposition div{grid-template-columns:45px 1fr;gap:7px}
+  .miniComposition span{font-size:8px}
+  .miniComposition div:after,.miniComposition i{height:7px}
+}
+
+/* Reel glyphs must stay champagne while spinning on the dark cockpit bank. */
+.cockpitStateRow .reelStrip i,
+.cockpitStateRow .slotStatic,
+.cockpitStateRow .finalValue{color:#e8d3ae!important}
+
+/* Inventory animation reveals the already-correct line instead of animating its path length. */
+.miniInventory path,
+.animatedInstrument .inventoryChart path{
+  stroke-dasharray:none!important;
+  stroke-dashoffset:0!important;
+  clip-path:inset(0 100% 0 0);
+  animation:inventoryReveal 1.35s .12s cubic-bezier(.22,.75,.28,1) forwards!important;
+}
+.animatedInstrument .inventoryChart path{animation-duration:1.55s!important;animation-play-state:paused!important}
+.miniInventory path{animation-play-state:paused!important}
+.cockpitVisible .miniInventory path,
+.instrumentVisible .inventoryChart path{animation-play-state:running!important}
+@keyframes inventoryReveal{to{clip-path:inset(0 0 0 0)}}
+
+@media(prefers-reduced-motion:reduce){
+  .miniInventory path,.animatedInstrument .inventoryChart path{clip-path:none!important;animation:none!important}
+}
+
+
+/* V2.2.3 — compact Seller Behavior values + cockpit inventory reveal parity */
+/* Reveal the compact chart as a complete SVG viewport, matching the successful
+   detail-chart reveal concept without animating the inventory path itself. */
+.miniInventory path{
+  clip-path:none!important;
+  animation:none!important;
+}
+.miniInventory svg{
+  clip-path:inset(0 100% 0 0);
+  animation:inventoryReveal 1.35s .12s cubic-bezier(.22,.75,.28,1) forwards;
+  animation-play-state:paused;
+}
+.cockpitVisible .miniInventory svg{animation-play-state:running}
+.cockpit:not(.cockpitVisible) .miniInventory svg{animation-play-state:paused!important}
+
+/* The compact Seller Behavior instrument keeps the same four buckets as the
+   focused view, but leaves the median/explanation for the detailed instrument. */
+.miniSeller>span{display:grid!important;grid-template-rows:1fr auto auto;align-content:end;justify-items:center;min-width:0}
+.miniSellerDots{width:100%;min-height:26px;display:flex;flex-wrap:wrap;align-content:flex-end;justify-content:center;gap:3px;padding:0 1px 3px}
+.miniSellerDots i{width:4px;height:4px;border-radius:50%;background:#69c6c9;opacity:0;transform:scale(0);animation:cockpitPop .3s forwards}
+.miniSeller>span>b{font-size:12px;line-height:1;color:#dce8ec;font-weight:650;font-variant-numeric:tabular-nums;margin-top:2px}
+.miniSeller>span>em{font-style:normal;font-size:6.5px;line-height:1.1;color:#718790;margin-top:4px;white-space:nowrap}
+
+@media(min-width:901px){
+  .miniSeller{height:98px;margin-top:8px;align-items:stretch}
+  .miniSeller>span{padding:4px 2px 5px!important;min-height:0!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .miniInventory svg{clip-path:none!important;animation:none!important}
+}
