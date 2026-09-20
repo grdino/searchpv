@@ -568,7 +568,7 @@ function longDate(value: string) {
 }
 
 function metricLabel(metric: PulseMetric) {
-  return metric === "Sold $/m²" ? "Median sold USD / m²" : metric === "Closed sales" ? "Closed sales / month" : metric === "Inventory" ? "Active listings" : "Median days on market";
+  return metric === "Sold $/m²" ? "Median sold USD / m²" : metric === "Closed sales" ? "Closed sales / month" : "Median days on market";
 }
 function metricFormat(metric: PulseMetric, value: number) {
   return metric === "Sold $/m²" ? `$${Math.round(value).toLocaleString()}` : Math.round(value).toLocaleString();
