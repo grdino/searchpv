@@ -1135,7 +1135,7 @@ function SelectedMarketPanel({
   ].join(" · ");
 
   return (
-    <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+    <div id="selected-market" className="mt-4 scroll-mt-24 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
       <div className="text-sm font-bold uppercase tracking-[0.12em] text-slate-900">
         Selected Market
       </div>

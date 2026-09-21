@@ -536,3 +536,19 @@ html{scroll-behavior:smooth}
   .briefMetrics small{display:block;margin-top:5px;font-size:7px;line-height:1.15;white-space:normal}
   .briefContext{margin-top:9px!important;font-size:9px!important;line-height:1.35!important}
 }
+
+/* V2.3.1 — mobile scan speed, graph-entry ignition, sticky market controls */
+@media(max-width:720px){
+  /* The Snapshot already carries the live numbers; keep the SEO-friendly brief desktop-only. */
+  .hero .marketBrief{display:none!important}
+
+  /* Keep the four primary market readings together on a phone. */
+  .detailStateRow{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:1px!important;margin-top:18px!important}
+  .detailStateRow .stat{min-width:0!important;min-height:78px!important;height:78px!important;padding:12px 5px!important}
+  .detailStateRow .slotValue{font-size:clamp(20px,6.2vw,28px)!important;letter-spacing:-1.2px!important;white-space:nowrap!important}
+  .detailStateRow .valueLong,.detailStateRow .valueXL{font-size:clamp(17px,5.2vw,23px)!important}
+  .detailStateRow .statLabel{font-size:6px!important;letter-spacing:.55px!important;line-height:1.15!important;margin-top:6px!important;white-space:normal!important}
+
+  /* This is the persistent working context while the visitor moves through instruments. */
+  .stickyMarket{position:sticky!important;top:0!important;z-index:80!important}
+}

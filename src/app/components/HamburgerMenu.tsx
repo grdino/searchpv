@@ -69,7 +69,7 @@ const reportLinks = [
 type MenuSection = "market-intelligence" | "reports" | null;
 
 function getSectionFromPathname(pathname: string): MenuSection {
-  if (pathname.startsWith("/market-intelligence")) {
+  if (pathname.startsWith("/market-intelligence") || pathname.startsWith("/market/")) {
     return "market-intelligence";
   }
 
@@ -288,6 +288,22 @@ export default function HamburgerMenu() {
                   }}
                 >
                   Market Intelligence Overview
+                </Link>
+
+                <div style={{ padding: "10px 14px 4px", color: "#64748b", fontSize: "10px", fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                  Explore Markets
+                </div>
+                <Link
+                  href="/market/zona-romantica"
+                  onClick={closeMenu}
+                  aria-current={pathname === "/market/zona-romantica" ? "page" : undefined}
+                  style={{
+                    ...subMenuLinkStyle,
+                    color: "#15803d",
+                    ...(pathname === "/market/zona-romantica" ? activeLinkStyle : {}),
+                  }}
+                >
+                  Zona Romántica
                 </Link>
 
                 {marketIntelligenceLinks.map((item) => {
