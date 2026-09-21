@@ -545,9 +545,27 @@ html{scroll-behavior:smooth}
   /* Keep the four primary market readings together on a phone. */
   .detailStateRow{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:1px!important;margin-top:18px!important}
   .detailStateRow .stat{min-width:0!important;min-height:78px!important;height:78px!important;padding:12px 5px!important}
-  .detailStateRow .slotValue{font-size:clamp(20px,6.2vw,28px)!important;letter-spacing:-1.2px!important;white-space:nowrap!important}
-  .detailStateRow .valueLong,.detailStateRow .valueXL{font-size:clamp(17px,5.2vw,23px)!important}
-  .detailStateRow .statLabel{font-size:6px!important;letter-spacing:.55px!important;line-height:1.15!important;margin-top:6px!important;white-space:normal!important}
+  .detailStateRow .slotValue{
+    font-size:clamp(20px,6.2vw,28px)!important;
+    letter-spacing:-1.2px!important;
+    white-space:nowrap!important
+  }
+  .detailStateRow .valueLong,
+  .detailStateRow .valueXL{
+    font-size:clamp(17px,5.2vw,23px)!important
+  }
+  /* Smaller fourth value: Median Sold */
+  .detailStateRow .stat:nth-child(4) .slotValue{
+    font-size:clamp(15px,4.7vw,21px)!important;
+    letter-spacing:-1px!important;
+  }
+  .detailStateRow .statLabel{
+    font-size:6px!important;
+    letter-spacing:.55px!important;
+    line-height:1.15!important;
+    margin-top:6px!important;
+    white-space:normal!important
+  }
 
   /* This is the persistent working context while the visitor moves through instruments. */
   .stickyMarket{position:sticky!important;top:0!important;z-index:80!important}
