@@ -246,11 +246,11 @@ export default function InteractiveMarketDashboard() {
       <section className={styles.hero}>
         <div className={styles.eyebrow}>INTERACTIVE MARKET DASHBOARD</div>
         <h1>Zona Romántica <span>Real Estate Market</span></h1>
-        <p className={styles.snapshot}>MLS Community: Emiliano Zapata · Puerto Vallarta / Centro South</p>
+        <p className={styles.snapshot}>Puerto Vallarta / Centro South / Zona Romántica</p>
         <section className={styles.marketBrief}>
           <div>
             <span>MARKET BRIEF</span>
-            <p>Explore current inventory, closed-sale trends, pricing, seller behavior and market composition for Zona Romántica using the MLS Community of Emiliano Zapata in Puerto Vallarta / Centro South. Adjust the dashboard to compare property type, bedroom count and resale or pre-construction activity.</p>
+            <p>Explore the Zona Romántica real estate market in Puerto Vallarta’s Centro South, including active inventory, closed-sale trends, pricing, seller behavior and bedroom mix. Filter by property type, bedrooms, and resale or pre-construction activity.</p>
           </div>
         </section>
         {error ? <div className={styles.dataError}>{error}</div> : null}
@@ -262,9 +262,25 @@ export default function InteractiveMarketDashboard() {
           <b>{data?.asOf ? `Data through ${longDate(data.asOf)}` : "Loading market data…"}</b>
         </div>
         <div className={styles.stickyFilters}>
-          <Filter label="Property" values={["Condo", "House"]} value={propertyType} setValue={(v) => setPropertyType(v as PropertyType)} />
-          <Filter label="Bedrooms" values={["All", "Studio", "1 BR", "2 BR", "3+ BR"]} value={bedrooms} setValue={(v) => setBedrooms(v as Bedrooms)} />
-          <Filter label="Market" values={["Both", "Resale", "Pre-sale"]} value={segment} setValue={(v) => setSegment(v as Segment)} />
+          <Filter 
+            label="Property" 
+            values={["Condo", "House"]} 
+            value={propertyType} 
+            setValue={(v) => setPropertyType(v as PropertyType)} 
+          />
+          <Filter 
+            label="Bedrooms" 
+            values={["All", "Studio", "1 BR", "2 BR", "3+ BR"]} 
+            value={bedrooms} 
+            setValue={(v) => setBedrooms(v as Bedrooms)} 
+          />
+          <Filter 
+            label="Market" 
+            values={["Both", "Resale", "Pre-sale"]} 
+            value={segment} 
+            setValue={(v) => setSegment(v as Segment)}
+            displayLabels={{ "Pre-sale": "Pre-con" }}
+           />
         </div>
       </div>
 
@@ -292,7 +308,7 @@ export default function InteractiveMarketDashboard() {
           </a>
 
           <a className={styles.cockpitCard} href="#current-inventory">
-            <MiniHead kicker="WHAT'S AVAILABLE NOW?" title="Current Inventory" />
+            <MiniHead kicker="WHAT'S AVAILABLE NOW?" title="Inventory Trend" />
             <div className={styles.miniInventory}><b>{inventoryLast?.active_listing_count ?? "—"}</b><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path pathLength={1} d={inventoryPath}/></svg></div>
           </a>
 
@@ -313,7 +329,7 @@ export default function InteractiveMarketDashboard() {
 
       <section className={styles.dashboard}>
         <AnimatedArticle id="market-snapshot" className={`${styles.panel} ${styles.wide} ${styles.snapshotDetail}`}>
-          <PanelHead kicker="WHAT DOES THE MARKET LOOK LIKE NOW?" title="Market Snapshot" text="A current read on available inventory, pending listings and closed-sale activity for the selected market." />
+          <PanelHead kicker="WHAT DOES THE MARKET LOOK LIKE NOW?" title="Market Snapshot" text="For the selected market." />
           <div data-ignition-target className={`${styles.stateRow} ${styles.detailStateRow} ${loading ? styles.loadingBank : ""}`}>
             <SlotStat value={loading && !data ? null : String(data?.current.active ?? 0)} label="Available" order={0} />
             <SlotStat value={loading && !data ? null : String(data?.current.pending ?? 0)} label="Pending" order={1} />
@@ -323,15 +339,14 @@ export default function InteractiveMarketDashboard() {
         </AnimatedArticle>
 
         <AnimatedArticle id="price-range" className={`${styles.panel} ${styles.wide}`}>
-          <PanelHead kicker="WHAT DOES IT COST?" title="Active Listings by Price Range" text="See how currently available properties are distributed across price ranges. Each bar represents the number of active listings in that range." />
+          <PanelHead kicker="WHAT DOES IT COST?" title="Active Listings by Price Range" text="Active listings by price range." />
           <div data-ignition-target className={styles.bands}>{(data?.priceBands || []).map((row,index) => <div className={styles.band} key={row.label}><div className={styles.barTrack}><i style={{ height: `${18 + 70 * row.count / maxBand}%`, animationDelay:`${index*.08}s` }} /></div><b>{row.count}</b><span>{row.label}</span></div>)}</div>
           {!loading && data?.priceBands.length === 0 ? <Empty /> : null}
         </AnimatedArticle>
 
         <AnimatedArticle id="market-trends" className={`${styles.panel} ${styles.wide}`}>
-          <PanelHead kicker="WHERE IS THIS MARKET GOING?" title="Market Trends" text="Follow closed-sale pricing, transaction volume and market time for the exact market you selected." />
+          <PanelHead kicker="WHERE IS THIS MARKET GOING?" title="Market Trends" text="Closed-sale trends over time." />
           <div className={styles.instrumentBlock}>
-            <div className={styles.instrumentHead}><div><span>MARKET ACTIVITY</span><h3>What has sold</h3></div></div>
             <div className={styles.pulseControls}>
               {(["Sold $/m²", "Closed sales", "DOM"] as PulseMetric[]).map((x) => <button key={x} className={pulse === x ? styles.on : ""} onClick={() => setPulse(x)}>{x}</button>)}
               <span />
@@ -348,19 +363,19 @@ export default function InteractiveMarketDashboard() {
         </AnimatedArticle>
 
         <AnimatedArticle id="current-inventory" className={`${styles.panel} ${styles.wide}`}>
-          <PanelHead kicker="WHAT'S AVAILABLE NOW?" title="Current Inventory" text="Observed active-listing inventory. This history begins when SearchPV started retaining inventory snapshots, so it is not presented as a 12M, 24M or 5Y series." />
+          <PanelHead kicker="WHAT'S AVAILABLE NOW?" title="Inventory Trend" text="" />
           {inventoryLast ? <div className={styles.inventoryNow}><b>{inventoryLast.active_listing_count}</b><span>available now</span></div> : null}
           {inventoryFirst && inventoryLast && inventoryHistory.length > 1 ? <><div className={styles.inventoryMeta}><span>Observed since {longDate(inventoryFirst.snapshot_date)}</span><em>{inventoryFirst.active_listing_count} at first observation → {inventoryLast.active_listing_count} now</em></div><div data-ignition-target className={styles.inventoryChart} role="img" aria-label={`Active inventory from ${longDate(inventoryFirst.snapshot_date)} through ${longDate(inventoryLast.snapshot_date)}`}><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="18" x2="100" y2="18"/><line x1="0" y1="54" x2="100" y2="54"/><line x1="0" y1="90" x2="100" y2="90"/><path pathLength={1} d={inventoryPath}/>{inventoryHistory.map((row,index)=>{const x=index/(inventoryHistory.length-1)*100;const y=90-((Number(row.active_listing_count)-inventoryMin)/inventoryRange)*72;return <circle key={row.snapshot_date} cx={x} cy={y} r="1.15"><title>{longDate(row.snapshot_date)} · {row.active_listing_count} active</title></circle>})}</svg><div className={styles.inventoryMonths}>{inventoryMonthTicks(inventoryHistory).map((tick)=><span key={tick.key} style={{left:`${tick.left}%`}}>{tick.label}</span>)}</div><div className={styles.inventoryDates}><span>{shortDate(inventoryFirst.snapshot_date)}</span><span>{shortDate(inventoryLast.snapshot_date)}</span></div></div><p className={styles.inventoryFootnote}>Pre-construction inventory can change sharply when developers activate, expire, or renew groups of MLS listings.</p></> : <Empty text="Inventory history is not yet available for this selection." />}
         </AnimatedArticle>
 
         <AnimatedArticle id="seller-behavior" className={`${styles.panel} ${styles.wide}`}>
-          <PanelHead kicker="HOW ARE SELLERS NEGOTIATING?" title="Seller Behavior" text="Compare what buyers paid with the seller’s final asking price or the original asking price before reductions." />
+          <PanelHead kicker="HOW ARE SELLERS NEGOTIATING?" title="Seller Behavior" text="Compare what buyers paid with the seller’s final asking price or the original asking price before price changes." />
           <div className={styles.sellerToggle}>{(["Final asking", "Original asking"] as const).map((x) => <button key={x} className={askingBasis === x ? styles.on : ""} onClick={() => setAskingBasis(x)}>{x}</button>)}</div>
-          {seller && data?.sellerBehavior.sampleSize ? <><div data-ignition-target className={styles.acceptance}>{seller.bands.map((row,ri) => <div key={row.label}><div className={styles.miniDots}>{Array.from({ length: Math.min(row.count, 24) }).map((_, i) => <i key={i} style={{animationDelay:`${.05+(ri*24+i)*.012}s`}} />)}</div><b>{row.count}</b><span>{row.label}</span></div>)}</div><div className={styles.acceptMedian}><span>Median transaction</span><b>{seller.median ? `${seller.median.toFixed(1)}%` : "—"}</b><span>of {askingBasis.toLowerCase()} price · {data.sellerBehavior.sampleSize} sales in trailing 12 months</span></div><div className={styles.sellerNote}>Original asking and final asking come from recorded closed-sale history. Observed intermediate price-change history is retained separately and will become more useful as its June 2026+ observation window matures.</div></> : <Empty text="Not enough closed-sale history for this selection." />}
+          {seller && data?.sellerBehavior.sampleSize ? <><div data-ignition-target className={styles.acceptance}>{seller.bands.map((row,ri) => <div key={row.label}><div className={styles.miniDots}>{Array.from({ length: Math.min(row.count, 24) }).map((_, i) => <i key={i} style={{animationDelay:`${.05+(ri*24+i)*.012}s`}} />)}</div><b>{row.count}</b><span>{row.label}</span></div>)}</div><div className={styles.acceptMedian}><span>Median transaction</span><b>{seller.median ? `${seller.median.toFixed(1)}%` : "—"}</b><span>of {askingBasis.toLowerCase()} price · {data.sellerBehavior.sampleSize} sales in trailing 12 months</span></div></> : <Empty text="Not enough closed-sale history for this selection." />}
         </AnimatedArticle>
 
         <AnimatedArticle id="market-composition" className={`${styles.panel} ${styles.wide}`}>
-          <PanelHead kicker="WHAT MAKES UP THE CURRENT MARKET?" title="Market Composition" text="See how today’s available properties are distributed by bedroom count." />
+          <PanelHead kicker="WHAT MAKES UP THE CURRENT MARKET?" title="Market Composition" text="Distribution by bedroom count." />
           <div data-ignition-target className={styles.composition}>{(data?.composition || []).map((row,index) => <div key={row.label}><span>{row.label}</span><div><i style={{ width: `${row.count / maxComposition * 100}%`, animationDelay:`${index*.08}s` }} /></div><b>{row.count} · {compositionTotal ? Math.round(row.count / compositionTotal * 100) : 0}%</b></div>)}</div>
         </AnimatedArticle>
       </section>
@@ -370,15 +385,42 @@ export default function InteractiveMarketDashboard() {
         <div className={styles.actions}><Link href={matchingPropertiesUrl}>Search matching properties →</Link><Link href="/atlas?q=Zona%20Romantica">Explore in Atlas →</Link></div>
       </section>
 
-      <section className={styles.cta}><span>SEARCHPV · PUERTO VALLARTA MARKET INTELLIGENCE</span><h2>We built SearchPV to understand the market this way.</h2><p>Let us put that same attention to detail to work for you when you want personal help.</p><Link href="/contact">Ask about this market →</Link></section>
+      <section className={styles.cta}><span>SEARCHPV · PUERTO VALLARTA MARKET INTELLIGENCE</span><h2>We built SearchPV to help you understand the market.</h2><p>Let us put that same attention to detail to work for you when you want personal help.</p><Link href="/contact">Ask about this market →</Link></section>
 
       <footer className={styles.footer}>SearchPV uses periodic MLS extracts rather than a real-time data feed. Market information is deemed reliable but is not guaranteed. <Link href="/data-methodology">Data &amp; Methodology</Link></footer>
     </main>
   );
 }
 
-function Filter({ label, values, value, setValue }: { label: string; values: string[]; value: string; setValue: (v: string) => void }) {
-  return <div className={styles.filter}><span>{label}</span><div>{values.map((v) => <button key={v} onClick={() => setValue(v)} className={v === value ? styles.selected : ""}>{v}</button>)}</div></div>;
+function Filter({
+  label,
+  values,
+  value,
+  setValue,
+  displayLabels = {},
+}: {
+  label: string;
+  values: string[];
+  value: string;
+  setValue: (v: string) => void;
+  displayLabels?: Record<string, string>;
+}) {
+  return (
+    <div className={styles.filter}>
+      <span>{label}</span>
+      <div>
+        {values.map((v) => (
+          <button
+            key={v}
+            onClick={() => setValue(v)}
+            className={v === value ? styles.selected : ""}
+          >
+            {displayLabels[v] ?? v}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function SlotStat({ value, label, order }: { value: string | null; label: string; order: number }) {
@@ -502,7 +544,7 @@ function AnimatedArticle({ id, className, children }: { id: string; className: s
 }
 
 function PanelHead({ kicker, title, text }: { kicker: string; title: string; text: string }) {
-  return <header className={styles.panelHead}><span>{kicker}</span><h2>{title}</h2><p>{text}</p></header>;
+  return <header className={styles.panelHead}><span>{kicker}</span><h2>{title}</h2>{text ? <p>{text}</p> : null}</header>;
 }
 
 function Empty({ text = "No listings match this selection." }: { text?: string }) {

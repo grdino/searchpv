@@ -545,28 +545,48 @@ html{scroll-behavior:smooth}
   /* Keep the four primary market readings together on a phone. */
   .detailStateRow{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:1px!important;margin-top:18px!important}
   .detailStateRow .stat{min-width:0!important;min-height:78px!important;height:78px!important;padding:12px 5px!important}
-  .detailStateRow .slotValue{
-    font-size:clamp(20px,6.2vw,28px)!important;
-    letter-spacing:-1.2px!important;
-    white-space:nowrap!important
-  }
-  .detailStateRow .valueLong,
-  .detailStateRow .valueXL{
-    font-size:clamp(17px,5.2vw,23px)!important
-  }
-  /* Smaller fourth value: Median Sold */
+  .detailStateRow .slotValue{font-size:clamp(20px,6.2vw,28px)!important;letter-spacing:-1.2px!important;white-space:nowrap!important}
+  .detailStateRow .valueLong,.detailStateRow .valueXL{font-size:clamp(17px,5.2vw,23px)!important}
+  .detailStateRow .statLabel{font-size:6px!important;letter-spacing:.55px!important;line-height:1.15!important;margin-top:6px!important;white-space:normal!important}
+
+  /* This is the persistent working context while the visitor moves through instruments. */
+  .stickyMarket{position:sticky!important;top:0!important;z-index:80!important}
+}
+
+/* V2.3.2 — tighter instrument copy + mobile two-row controls */
+@media(max-width:720px){
+  /* Protect the longest Snapshot value on narrow phones. */
   .detailStateRow .stat:nth-child(4) .slotValue{
     font-size:clamp(15px,4.7vw,21px)!important;
     letter-spacing:-1px!important;
   }
-  .detailStateRow .statLabel{
-    font-size:6px!important;
-    letter-spacing:.55px!important;
-    line-height:1.15!important;
-    margin-top:6px!important;
-    white-space:normal!important
-  }
 
-  /* This is the persistent working context while the visitor moves through instruments. */
-  .stickyMarket{position:sticky!important;top:0!important;z-index:80!important}
+  /* Selection controls: property + market on row one, bedrooms on row two. */
+  .stickyFilters{
+    display:grid!important;
+    grid-template-columns:max-content minmax(0,1fr);
+    grid-template-areas:
+      "property market"
+      "bedrooms bedrooms";
+    gap:6px 8px!important;
+    overflow:visible!important;
+    align-items:center;
+  }
+  .stickyFilters .filter:nth-child(1){grid-area:property}
+  .stickyFilters .filter:nth-child(2){grid-area:bedrooms}
+  .stickyFilters .filter:nth-child(3){grid-area:market}
+  .stickyFilters .filter,
+  .stickyFilters .filter>div{width:auto!important;min-width:0}
+  .stickyFilters .filter:nth-child(2)>div{width:100%!important}
+  .stickyFilters .filter:nth-child(2) button{flex:1!important;min-width:0;padding-left:6px!important;padding-right:6px!important}
+
+  /* Market Trends: metric choices on row one, period choices on row two. */
+  .pulseControls{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:5px!important;
+    overflow:visible!important;
+  }
+  .pulseControls>span{display:none!important}
+  .pulseControls button{width:100%;min-width:0;padding-left:7px;padding-right:7px}
 }
