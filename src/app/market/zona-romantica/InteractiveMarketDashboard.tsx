@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import HamburgerMenu from "@/app/components/HamburgerMenu";
 import SPVBranding from "@/app/components/SPVBranding";
 import styles from "./imd.module.css";
+import { buildMarketListingUrl } from "@/lib/market-dashboard/listing-links";
 
 type PropertyType = "Condo" | "House";
 type Bedrooms = "All" | "Studio" | "1 BR" | "2 BR" | "3+ BR";
@@ -131,6 +132,7 @@ export default function InteractiveMarketDashboard() {
           priorYear,
           isMtd: month === currentMonth,
           sampleSize: currentRow?.closedSales ?? 0,
+          priorSampleSize: priorRow?.closedSales ?? 0,
         };
       });
     }
@@ -207,6 +209,12 @@ export default function InteractiveMarketDashboard() {
   const compositionTotal = data?.composition.reduce((sum, row) => sum + row.count, 0) || 0;
   const dashboardStateUrl = buildDashboardStateUrl(propertyType, bedrooms, segment);
   const matchingPropertiesUrl = buildMatchingPropertiesUrl(propertyType, bedrooms, segment, dashboardStateUrl);
+  const availableListingsUrl = buildMarketListingUrl("zona-romantica", {
+    status: "active",
+    propertyType,
+    bedrooms,
+    segment,
+  });
   const inventoryHistory = data?.history.active || [];
   const inventoryFirst = inventoryHistory[0] || null;
   const inventoryLast = inventoryHistory.at(-1) || null;
@@ -331,7 +339,7 @@ export default function InteractiveMarketDashboard() {
         <AnimatedArticle id="market-snapshot" className={`${styles.panel} ${styles.wide} ${styles.snapshotDetail}`}>
           <PanelHead kicker="WHAT DOES THE MARKET LOOK LIKE NOW?" title="Market Snapshot" text="For the selected market." />
           <div data-ignition-target className={`${styles.stateRow} ${styles.detailStateRow} ${loading ? styles.loadingBank : ""}`}>
-            <SlotStat value={loading && !data ? null : String(data?.current.active ?? 0)} label="Available" order={0} />
+            <SlotStat value={loading && !data ? null : String(data?.current.active ?? 0)} label="Available" order={0} href={availableListingsUrl} />
             <SlotStat value={loading && !data ? null : String(data?.current.pending ?? 0)} label="Pending" order={1} />
             <SlotStat value={loading && !data ? null : String(data?.current.sold12m ?? 0)} label="Sold · 12M" order={2} />
             <SlotStat value={loading && !data ? null : money(data?.current.medianSold12m)} label="Median sold · 12M" order={3} />
@@ -357,7 +365,87 @@ export default function InteractiveMarketDashboard() {
               {period === "12M" ? <div className={styles.yoyLegend}><span><i className={styles.currentSwatch}/>{new Date(`${data.asOf}T00:00:00Z`).getUTCFullYear()}</span><span><i className={styles.priorSwatch}/>{new Date(`${data.asOf}T00:00:00Z`).getUTCFullYear()-1} · same calendar period</span></div> : period === "24M" ? <div className={styles.yoyLegend}><span><i className={styles.currentSwatch}/>Selected quarter</span><span><i className={styles.priorSwatch}/>Same quarter · prior year</span></div> : null}
               {thinSelection ? <div className={styles.sampleNote}>Limited sales history for this selection — monthly results may reflect only a few transactions.</div> : null}
               {fiveYearComparison ? <div className={styles.fiveYearNote}>{fiveYearComparison.currentLabel} is <b>{Math.abs(fiveYearComparison.change).toFixed(1)}% {fiveYearComparison.change >= 0 ? "above" : "below"}</b> {fiveYearComparison.previousLabel}.</div> : null}
-              <div data-ignition-target className={styles.barChartGrid}><div className={styles.yAxis}><span className={styles.yAxisTitle}>{directionMetricLabel(pulse, period)}</span><div className={styles.yTicks}>{barChart.ticks.map((tick) => <b key={tick}>{metricFormat(pulse, tick)}</b>)}</div></div><div className={styles.yoyChart} role="img" aria-label={`${directionMetricLabel(pulse, period)} market activity`}><div className={styles.yoyGrid}><i/><i/><i/><i/><i/></div><div className={styles.yoyGroups}>{trendBars.map((row,index)=><div className={styles.yoyGroup} key={`${row.label}-${index}`}><div className={styles.yoyBars}>{row.prior!==null?<i className={styles.priorBar} style={{height:`${barHeight(row.prior,barChart.max)}%`,animationDelay:`${index*.055}s`}} title={`${row.priorYear}: ${metricFormat(pulse,row.prior)}`}/>:null}{row.current!==null?<i className={styles.currentBar} style={{height:`${barHeight(row.current,barChart.max)}%`,animationDelay:`${.05+index*.055}s`}} title={`${row.label}: ${metricFormat(pulse,row.current)} · ${row.sampleSize ?? 0} sales`}/>:null}</div><span className={row.isMtd?styles.mtdLabel:""}>{row.label}{period==="24M"&&"comparisonYears" in row?<small>{String(row.comparisonYears)}</small>:null}</span></div>)}</div></div></div>
+              <div data-ignition-target className={styles.barChartGrid}>
+                <div className={styles.yAxis}>
+                  <span className={styles.yAxisTitle}>
+                    {directionMetricLabel(pulse, period)}
+                  </span>
+
+                  <div className={styles.yTicks}>
+                    {barChart.ticks.map((tick) => (
+                      <b key={tick}>{metricFormat(pulse, tick)}</b>
+                    ))}
+                  </div>
+                </div>
+
+                <div
+                  className={styles.yoyChart}
+                  role="img"
+                  aria-label={`${directionMetricLabel(pulse, period)} market activity`}
+                >
+                  <div className={styles.yoyGrid}>
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+
+                  <div className={styles.yoyGroups}>
+                    {trendBars.map((row, index) => (
+                      <div
+                        className={styles.yoyGroup}
+                        key={`${row.label}-${index}`}
+                      >
+                        <div className={styles.yoyBars}>
+                          {period === "12M" && "priorSampleSize" in row && row.priorSampleSize === 0 ? (
+                            <b
+                              className={`${styles.zeroValue} ${styles.zeroPrior}`}
+                              title={`${row.priorYear}: 0 closed sales`}
+                            >
+                              0
+                            </b>
+                          ) : row.prior !== null ? (
+                            <i
+                              className={styles.priorBar}
+                              style={{
+                                height: `${barHeight(row.prior, barChart.max)}%`,
+                                animationDelay: `${index * 0.055}s`,
+                              }}
+                              title={`${row.priorYear}: ${metricFormat(pulse, row.prior)}`}
+                            />
+                          ) : null}
+
+                          {row.sampleSize === 0 ? (
+                            <b
+                              className={`${styles.zeroValue} ${styles.zeroCurrent}`}
+                              title={`${row.label}: 0 closed sales`}
+                            >
+                              0
+                            </b>
+                          ) : row.current !== null ? (
+                            <i
+                              className={styles.currentBar}
+                              style={{
+                                height: `${barHeight(row.current, barChart.max)}%`,
+                                animationDelay: `${0.05 + index * 0.055}s`,
+                              }}
+                              title={`${row.label}: ${metricFormat(pulse, row.current)} · ${row.sampleSize ?? 0} sales`}
+                            />
+                          ) : null}
+                        </div>
+
+                        <span className={row.isMtd ? styles.mtdLabel : ""}>
+                          {row.label}
+                          {period === "24M" && "comparisonYears" in row ? (
+                            <small>{String(row.comparisonYears)}</small>
+                          ) : null}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </> : <Empty text="Not enough closed-sale history for this selection yet." />}
           </div>
         </AnimatedArticle>
@@ -423,7 +511,7 @@ function Filter({
   );
 }
 
-function SlotStat({ value, label, order }: { value: string | null; label: string; order: number }) {
+function SlotStat({ value, label, order, href }: { value: string | null; label: string; order: number; href?: string }) {
   const statRef = useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = useState(false);
   const hasIgnited = useRef(false);
@@ -468,8 +556,8 @@ function SlotStat({ value, label, order }: { value: string | null; label: string
   const display = value ?? "";
   const sizeClass = display.length >= 8 ? styles.valueXL : display.length >= 7 ? styles.valueLong : "";
 
-  return (
-    <div ref={statRef} className={styles.stat}>
+  const content = (
+    <>
       <b className={`${styles.slotValue} ${sizeClass} ${settled ? styles.slotSettled : ""}`} aria-label={display || label}>
         {value === null
           ? <span className={styles.slotPlaceholder} aria-hidden="true">&nbsp;</span>
@@ -487,8 +575,22 @@ function SlotStat({ value, label, order }: { value: string | null; label: string
                 )}
       </b>
       <span className={styles.statLabel}>{label}</span>
-    </div>
+    </>
   );
+
+  if (href && value !== null) {
+    return (
+      <a
+        href={href}
+        className={`${styles.stat} ${styles.statLink}`}
+        aria-label={`View ${display} ${label.toLowerCase()} listings`}
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return <div ref={statRef} className={styles.stat}>{content}</div>;
 }
 
 function DigitReel({ digit, delay }: { digit: number; delay: number }) {
