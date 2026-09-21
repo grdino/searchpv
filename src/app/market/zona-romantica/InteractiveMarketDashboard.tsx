@@ -339,7 +339,7 @@ export default function InteractiveMarketDashboard() {
         </AnimatedArticle>
 
         <AnimatedArticle id="price-range" className={`${styles.panel} ${styles.wide}`}>
-          <PanelHead kicker="WHAT DOES IT COST?" title="Active Listings by Price Range" text="Active listings by price range." />
+          <PanelHead kicker="WHAT DOES IT COST?" title="Active Listings by Price Range" text="" />
           <div data-ignition-target className={styles.bands}>{(data?.priceBands || []).map((row,index) => <div className={styles.band} key={row.label}><div className={styles.barTrack}><i style={{ height: `${18 + 70 * row.count / maxBand}%`, animationDelay:`${index*.08}s` }} /></div><b>{row.count}</b><span>{row.label}</span></div>)}</div>
           {!loading && data?.priceBands.length === 0 ? <Empty /> : null}
         </AnimatedArticle>
