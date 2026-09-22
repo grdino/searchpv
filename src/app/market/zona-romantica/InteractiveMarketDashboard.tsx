@@ -157,6 +157,7 @@ export default function InteractiveMarketDashboard() {
           priorYear: year - 1,
           isMtd: i === 3,
           sampleSize: currentRow?.closedSales || 0,
+          priorSampleSize: priorRow?.closedSales || 0,
         };
       });
     }
@@ -211,6 +212,17 @@ export default function InteractiveMarketDashboard() {
   const matchingPropertiesUrl = buildMatchingPropertiesUrl(propertyType, bedrooms, segment, dashboardStateUrl);
   const availableListingsUrl = buildMarketListingUrl("zona-romantica", {
     status: "active",
+    propertyType,
+    bedrooms,
+    segment,
+  });
+  const sold12mUrl = buildSnapshotSold12mUrl(
+    propertyType,
+    bedrooms,
+    segment
+  );
+  const pendingListingsUrl = buildMarketListingUrl("zona-romantica", {
+    status: "pending",
     propertyType,
     bedrooms,
     segment,
@@ -340,15 +352,48 @@ export default function InteractiveMarketDashboard() {
           <PanelHead kicker="WHAT DOES THE MARKET LOOK LIKE NOW?" title="Market Snapshot" text="For the selected market." />
           <div data-ignition-target className={`${styles.stateRow} ${styles.detailStateRow} ${loading ? styles.loadingBank : ""}`}>
             <SlotStat value={loading && !data ? null : String(data?.current.active ?? 0)} label="Available" order={0} href={availableListingsUrl} />
-            <SlotStat value={loading && !data ? null : String(data?.current.pending ?? 0)} label="Pending" order={1} />
-            <SlotStat value={loading && !data ? null : String(data?.current.sold12m ?? 0)} label="Sold · 12M" order={2} />
+            <SlotStat value={loading && !data ? null : String(data?.current.pending ?? 0)} label="Pending" order={1} href={pendingListingsUrl} />
+            <SlotStat value={loading && !data ? null : String(data?.current.sold12m ?? 0)} label="Sold · 12M" order={2} href={sold12mUrl} />
             <SlotStat value={loading && !data ? null : money(data?.current.medianSold12m)} label="Median sold · 12M" order={3} />
           </div>
         </AnimatedArticle>
 
         <AnimatedArticle id="price-range" className={`${styles.panel} ${styles.wide}`}>
           <PanelHead kicker="WHAT DOES IT COST?" title="Active Listings by Price Range" text="" />
-          <div data-ignition-target className={styles.bands}>{(data?.priceBands || []).map((row,index) => <div className={styles.band} key={row.label}><div className={styles.barTrack}><i style={{ height: `${18 + 70 * row.count / maxBand}%`, animationDelay:`${index*.08}s` }} /></div><b>{row.count}</b><span>{row.label}</span></div>)}</div>
+          <div data-ignition-target className={styles.bands}>
+            {(data?.priceBands || []).map((row, index) => {
+              const priceRange = priceRangeFromLabel(row.label);
+
+              const href = buildMarketListingUrl("zona-romantica", {
+                status: "active",
+                propertyType,
+                bedrooms,
+                segment,
+                ...priceRange,
+              });
+
+              return (
+                <a
+                  key={row.label}
+                  href={href}
+                  className={`${styles.band} ${styles.bandLink}`}
+                  aria-label={`View ${row.count} active listings ${row.label}`}
+                >
+                  <div className={styles.barTrack}>
+                    <i
+                      style={{
+                        height: `${18 + 70 * row.count / maxBand}%`,
+                        animationDelay: `${index * 0.08}s`,
+                      }}
+                    />
+                  </div>
+
+                  <b>{row.count}</b>
+                  <span>{row.label}</span>
+                </a>
+              );
+            })}
+          </div>
           {!loading && data?.priceBands.length === 0 ? <Empty /> : null}
         </AnimatedArticle>
 
@@ -392,57 +437,150 @@ export default function InteractiveMarketDashboard() {
                   </div>
 
                   <div className={styles.yoyGroups}>
-                    {trendBars.map((row, index) => (
-                      <div
-                        className={styles.yoyGroup}
-                        key={`${row.label}-${index}`}
-                      >
-                        <div className={styles.yoyBars}>
-                          {period === "12M" && "priorSampleSize" in row && row.priorSampleSize === 0 ? (
-                            <b
-                              className={`${styles.zeroValue} ${styles.zeroPrior}`}
-                              title={`${row.priorYear}: 0 closed sales`}
-                            >
-                              0
-                            </b>
-                          ) : row.prior !== null ? (
-                            <i
-                              className={styles.priorBar}
-                              style={{
-                                height: `${barHeight(row.prior, barChart.max)}%`,
-                                animationDelay: `${index * 0.055}s`,
-                              }}
-                              title={`${row.priorYear}: ${metricFormat(pulse, row.prior)}`}
-                            />
-                          ) : null}
+                    {trendBars.map((row, index) => {
+                      const is12M = period === "12M";
+                      const is24M = period === "24M";
+                      const is5Y = period === "5Y";
 
-                          {row.sampleSize === 0 ? (
-                            <b
-                              className={`${styles.zeroValue} ${styles.zeroCurrent}`}
-                              title={`${row.label}: 0 closed sales`}
-                            >
-                              0
-                            </b>
-                          ) : row.current !== null ? (
-                            <i
-                              className={styles.currentBar}
-                              style={{
-                                height: `${barHeight(row.current, barChart.max)}%`,
-                                animationDelay: `${0.05 + index * 0.055}s`,
-                              }}
-                              title={`${row.label}: ${metricFormat(pulse, row.current)} · ${row.sampleSize ?? 0} sales`}
-                            />
-                          ) : null}
+                      const priorSampleSize =
+                        (is12M || is24M) && "priorSampleSize" in row
+                          ? Number(row.priorSampleSize)
+                          : 0;
+
+                      const quarter =
+                        is24M
+                          ? Number(String(row.label).replace("Q", ""))
+                          : null;
+
+                      const priorHref =
+                        is12M && priorSampleSize > 0
+                          ? buildTrendClosedSalesUrl(
+                              propertyType,
+                              bedrooms,
+                              segment,
+                              row.priorYear,
+                              index + 1,
+                              row.isMtd
+                            )
+                          : is24M && priorSampleSize > 0 && quarter
+                            ? buildQuarterTrendClosedSalesUrl(
+                                propertyType,
+                                bedrooms,
+                                segment,
+                                row.priorYear,
+                                quarter
+                              )
+                            : undefined;
+
+                      const currentHref =
+                        is12M && row.sampleSize > 0
+                          ? buildTrendClosedSalesUrl(
+                              propertyType,
+                              bedrooms,
+                              segment,
+                              row.currentYear,
+                              index + 1,
+                              row.isMtd
+                            )
+                          : is24M && row.sampleSize > 0 && quarter
+                            ? buildQuarterTrendClosedSalesUrl(
+                                propertyType,
+                                bedrooms,
+                                segment,
+                                row.currentYear,
+                                quarter
+                              )
+                            : is5Y && row.sampleSize > 0
+                              ? buildYearTrendClosedSalesUrl(
+                                  propertyType,
+                                  bedrooms,
+                                  segment,
+                                  row.currentYear
+                                )
+                              : undefined;
+
+                      const priorBar = (
+                        <i
+                          className={`${styles.yoyBar} ${styles.priorBar}`}
+                          style={{
+                            height: `${
+                              row.prior === null
+                                ? 0
+                                : barHeight(row.prior, barChart.max)
+                            }%`,
+                          }}
+                        />
+                      );
+
+                      const currentBar = (
+                        <i
+                          className={`${styles.yoyBar} ${styles.currentBar}`}
+                          style={{
+                            height: `${
+                              row.current === null
+                                ? 0
+                                : barHeight(row.current, barChart.max)
+                            }%`,
+                          }}
+                        />
+                      );
+
+                      return (
+                        <div
+                          className={styles.yoyGroup}
+                          key={`${row.label}-${index}`}
+                        >
+                          <div className={styles.yoyBars}>
+                            {is12M && priorSampleSize === 0 ? (
+                              <span
+                                className={`${styles.zeroValue} ${styles.zeroPrior}`}
+                                aria-label={`No closed sales for ${row.label} ${row.priorYear}`}
+                              >
+                                0
+                              </span>
+                            ) : priorHref ? (
+                              <a
+                                href={priorHref}
+                                className={styles.trendBarLink}
+                                title={`View ${priorSampleSize} closed sales`}
+                                aria-label={`View ${priorSampleSize} closed sales for ${row.label} ${row.priorYear}`}
+                              >
+                                {priorBar}
+                              </a>
+                            ) : (
+                              priorBar
+                            )}
+
+                            {is12M && row.sampleSize === 0 ? (
+                              <span
+                                className={`${styles.zeroValue} ${styles.zeroCurrent}`}
+                                aria-label={`No closed sales for ${row.label} ${row.currentYear}`}
+                              >
+                                0
+                              </span>
+                            ) : currentHref ? (
+                              <a
+                                href={currentHref}
+                                className={styles.trendBarLink}
+                                title={`View ${row.sampleSize} closed sales`}
+                                aria-label={`View ${row.sampleSize} closed sales for ${row.label} ${row.currentYear}`}
+                              >
+                                {currentBar}
+                              </a>
+                            ) : (
+                              currentBar
+                            )}
+                          </div>
+
+                          <span className={row.isMtd ? styles.mtdLabel : ""}>
+                            {row.label}
+                            {period === "24M" && "comparisonYears" in row ? (
+                              <small>{String(row.comparisonYears)}</small>
+                            ) : null}
+                          </span>
                         </div>
-
-                        <span className={row.isMtd ? styles.mtdLabel : ""}>
-                          {row.label}
-                          {period === "24M" && "comparisonYears" in row ? (
-                            <small>{String(row.comparisonYears)}</small>
-                          ) : null}
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -459,7 +597,67 @@ export default function InteractiveMarketDashboard() {
         <AnimatedArticle id="seller-behavior" className={`${styles.panel} ${styles.wide}`}>
           <PanelHead kicker="HOW ARE SELLERS NEGOTIATING?" title="Seller Behavior" text="Compare what buyers paid with the seller’s final asking price or the original asking price before price changes." />
           <div className={styles.sellerToggle}>{(["Final asking", "Original asking"] as const).map((x) => <button key={x} className={askingBasis === x ? styles.on : ""} onClick={() => setAskingBasis(x)}>{x}</button>)}</div>
-          {seller && data?.sellerBehavior.sampleSize ? <><div data-ignition-target className={styles.acceptance}>{seller.bands.map((row,ri) => <div key={row.label}><div className={styles.miniDots}>{Array.from({ length: Math.min(row.count, 24) }).map((_, i) => <i key={i} style={{animationDelay:`${.05+(ri*24+i)*.012}s`}} />)}</div><b>{row.count}</b><span>{row.label}</span></div>)}</div><div className={styles.acceptMedian}><span>Median transaction</span><b>{seller.median ? `${seller.median.toFixed(1)}%` : "—"}</b><span>of {askingBasis.toLowerCase()} price · {data.sellerBehavior.sampleSize} sales in trailing 12 months</span></div></> : <Empty text="Not enough closed-sale history for this selection." />}
+          {seller && data?.sellerBehavior.sampleSize ? (
+            <>
+              <div data-ignition-target className={styles.acceptance}>
+                {seller.bands.map((row, ri) => {
+                  const href = buildSellerBehaviorUrl(
+                    propertyType,
+                    bedrooms,
+                    segment,
+                    askingBasis,
+                    row.label
+                  );
+
+                  const content = (
+                    <>
+                      <div className={styles.miniDots}>
+                        {Array.from({ length: Math.min(row.count, 24) }).map(
+                          (_, i) => (
+                            <i
+                              key={i}
+                              style={{
+                                animationDelay: `${0.05 + (ri * 24 + i) * 0.012}s`,
+                              }}
+                            />
+                          )
+                        )}
+                      </div>
+
+                      <b>{row.count}</b>
+                      <span>{row.label}</span>
+                    </>
+                  );
+
+                  return href && row.count > 0 ? (
+                    <a
+                      key={row.label}
+                      href={href}
+                      className={styles.sellerBandLink}
+                      aria-label={`View ${row.count} closed sales at ${row.label} of ${askingBasis.toLowerCase()} price`}
+                    >
+                      {content}
+                    </a>
+                  ) : (
+                    <div key={row.label}>
+                      {content}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className={styles.acceptMedian}>
+                <span>Median transaction</span>
+                <b>{seller.median ? `${seller.median.toFixed(1)}%` : "—"}</b>
+                <span>
+                  of {askingBasis.toLowerCase()} price ·{" "}
+                  {data.sellerBehavior.sampleSize} sales in trailing 12 months
+                </span>
+              </div>
+            </>
+          ) : (
+            <Empty text="Not enough closed-sale history for this selection." />
+          )}
         </AnimatedArticle>
 
         <AnimatedArticle id="market-composition" className={`${styles.panel} ${styles.wide}`}>
@@ -786,4 +984,144 @@ function monthName(value: string) {
 function monthDay(value: string) {
   return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", timeZone: "UTC" })
     .format(new Date(`${value}T00:00:00Z`));
+}
+
+function priceRangeFromLabel(label: string): {
+  minPrice?: number;
+  maxPrice?: number;
+} {
+  switch (label) {
+    case "<$400K":
+      return { maxPrice: 399999.99 };
+
+    case "$400–600K":
+      return { minPrice: 400000, maxPrice: 599999.99 };
+
+    case "$600–800K":
+      return { minPrice: 600000, maxPrice: 799999.99 };
+
+    case "$800K–1M":
+      return { minPrice: 800000, maxPrice: 999999.99 };
+
+    case "$1M+":
+      return { minPrice: 1000000 };
+
+    default:
+      return {};
+  }
+}
+
+function sellerBandKey(label: string) {
+  switch (label) {
+    case "<90%":
+      return "under90";
+    case "90–94%":
+      return "90to94";
+    case "95–99%":
+      return "95to99";
+    case "100%+":
+      return "100plus";
+    default:
+      return null;
+  }
+}
+
+function buildSellerBehaviorUrl(
+  propertyType: PropertyType,
+  bedrooms: Bedrooms,
+  segment: Segment,
+  askingBasis: "Final asking" | "Original asking",
+  label: string
+) {
+  const band = sellerBandKey(label);
+
+  if (!band) return undefined;
+
+  const params = new URLSearchParams({
+    market: "zona-romantica",
+    property: propertyType,
+    bedrooms,
+    segment,
+    basis: askingBasis === "Final asking" ? "final" : "original",
+    band,
+  });
+
+  return `/api/market-closed-sales?${params.toString()}`;
+}
+
+function buildTrendClosedSalesUrl(
+  propertyType: PropertyType,
+  bedrooms: Bedrooms,
+  segment: Segment,
+  year: number,
+  month: number,
+  mtd: boolean
+) {
+  const params = new URLSearchParams({
+    mode: "trend",
+    market: "zona-romantica",
+    property: propertyType,
+    bedrooms,
+    segment,
+    year: String(year),
+    month: String(month),
+    mtd: mtd ? "1" : "0",
+  });
+
+  return `/api/market-closed-sales?${params.toString()}`;
+}
+
+function buildQuarterTrendClosedSalesUrl(
+  propertyType: PropertyType,
+  bedrooms: Bedrooms,
+  segment: Segment,
+  year: number,
+  quarter: number
+) {
+  const params = new URLSearchParams({
+    mode: "trend",
+    market: "zona-romantica",
+    property: propertyType,
+    bedrooms,
+    segment,
+    year: String(year),
+    quarter: String(quarter),
+  });
+
+  return `/api/market-closed-sales?${params.toString()}`;
+}
+
+function buildYearTrendClosedSalesUrl(
+  propertyType: PropertyType,
+  bedrooms: Bedrooms,
+  segment: Segment,
+  year: number
+) {
+  const params = new URLSearchParams({
+    mode: "trend",
+    market: "zona-romantica",
+    property: propertyType,
+    bedrooms,
+    segment,
+    year: String(year),
+    ytd: "1",
+  });
+
+  return `/api/market-closed-sales?${params.toString()}`;
+}
+
+function buildSnapshotSold12mUrl(
+  propertyType: PropertyType,
+  bedrooms: Bedrooms,
+  segment: Segment
+) {
+  const params = new URLSearchParams({
+    mode: "snapshot",
+    market: "zona-romantica",
+    property: propertyType,
+    bedrooms,
+    segment,
+  });
+
+  return `/api/market-closed-sales?${params.toString()}`;
 }
