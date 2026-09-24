@@ -69,7 +69,7 @@ const reportLinks = [
 type MenuSection = "market-intelligence" | "reports" | null;
 
 function getSectionFromPathname(pathname: string): MenuSection {
-  if (pathname.startsWith("/market-intelligence") || pathname.startsWith("/market/")) {
+  if (pathname.startsWith("/market-intelligence") || pathname.startsWith("/market/") || pathname === "/markets") {
     return "market-intelligence";
   }
 
@@ -268,7 +268,7 @@ export default function HamburgerMenu() {
                   : {}),
               }}
             >
-              <span>Market Intelligence Tools</span>
+              <span>Market Intelligence</span>
 
               <span style={arrowStyle}>
                 {marketIntelligenceOpen ? "−" : "+"}
@@ -278,32 +278,28 @@ export default function HamburgerMenu() {
             {marketIntelligenceOpen && (
               <div style={subMenuStyle}>
                 <Link
-                  href="/market-intelligence"
+                  href="/markets"
                   onClick={closeMenu}
-                  style={{
-                    ...sectionOverviewLinkStyle,
-                    ...(pathname === "/market-intelligence"
-                      ? activeLinkStyle
-                      : {}),
-                  }}
-                >
-                  Market Intelligence Overview
-                </Link>
-
-                <div style={{ padding: "10px 14px 4px", color: "#64748b", fontSize: "10px", fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                  Explore Markets
-                </div>
-                <Link
-                  href="/market/zona-romantica"
-                  onClick={closeMenu}
-                  aria-current={pathname === "/market/zona-romantica" ? "page" : undefined}
+                  aria-current={pathname === "/markets" ? "page" : undefined}
                   style={{
                     ...subMenuLinkStyle,
                     color: "#15803d",
-                    ...(pathname === "/market/zona-romantica" ? activeLinkStyle : {}),
+                    ...(pathname === "/markets" ? activeLinkStyle : {}),
                   }}
                 >
-                  Zona Romántica
+                  <span style={{ display: "block" }}>Market Dashboards</span>
+                  <span
+                    style={{
+                      display: "block",
+                      marginTop: "2px",
+                      color: "#64748b",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    Explore individual markets
+                  </span>
                 </Link>
 
                 {marketIntelligenceLinks.map((item) => {
