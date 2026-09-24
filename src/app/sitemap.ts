@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
+import { MARKET_DASHBOARDS } from "@/lib/market-dashboard/listing-links";
 
 const BASE_URL = "https://searchpv.com";
 
@@ -85,6 +86,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "yearly",
       priority: 0.2,
     },
+
+    // Market Dashboards — only explicitly reviewed/published canonical pages.
+    {
+      url: `${BASE_URL}/markets`,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    ...Object.values(MARKET_DASHBOARDS)
+      .filter((market) => market.published && market.indexable)
+      .map((market) => ({
+        url: `${BASE_URL}/market/${market.slug}`,
+        changeFrequency: "weekly" as const,
+        priority: 0.9,
+      })),
 
     // Market Intelligence
     {

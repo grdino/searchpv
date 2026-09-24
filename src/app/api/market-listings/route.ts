@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-
 import { buildIdxUrl } from "@/lib/idx";
-import {
-  DEFAULT_PROPERTY_SEARCH_FILTERS,
-  type PropertySearchFilters,
-} from "@/lib/property-search/filters";
-import { getPropertySearchPageData } from "@/lib/property-search/service";
+import { createClient } from "@/lib/supabase/server";
 import {
   MARKET_DASHBOARDS,
   type DashboardBedrooms,
@@ -23,69 +18,45 @@ export async function GET(request: NextRequest) {
   const propertyType = parsePropertyType(search.get("property"));
   const bedrooms = parseBedrooms(search.get("bedrooms"));
   const segment = parseSegment(search.get("segment"));
+  if (!market || !status || !propertyType || !bedrooms || !segment) return NextResponse.json({ error: "Invalid market listing selection." }, { status: 400 });
 
-  if (!market || !status || !propertyType || !bedrooms || !segment) {
-    return NextResponse.json({ error: "Invalid market listing selection." }, { status: 400 });
+  const geos = market.geographies.length ? market.geographies : [market.geography];
+  if (!geos.every(g => g.zone === geos[0].zone && g.area === geos[0].area)) {
+    return NextResponse.json({ error: "Multi-area market listing selection is not supported yet." }, { status: 400 });
   }
 
-  const filters: PropertySearchFilters = {
-    ...DEFAULT_PROPERTY_SEARCH_FILTERS,
-    zone: market.geography.zone,
-    area: market.geography.area,
-    community: market.geography.community,
-    propertyType: propertyType === "Condo" ? "condos" : "houses",
-    market: segment === "Resale" ? "resale" : segment === "Pre-sale" ? "pre_construction" : "all",
-    ...bedroomFilters(bedrooms),
-    minPrice: parseOptionalNumber(search.get("minPrice")),
-    maxPrice: parseOptionalNumber(search.get("maxPrice")),
-  };
+  const supabase = await createClient();
+  const table = status === "active" ? "active_listing" : "pending_listing";
+  let query: any = supabase.from(table).select("mls")
+    .eq("zone_name", geos[0].zone)
+    .eq("area_name", geos[0].area)
+    .in("community_name", geos.map(g => g.community))
+    .eq("prprty_type", propertyType === "Condo" ? "Condos" : "Houses");
 
-  try {
-    const { summary } = await getPropertySearchPageData(filters);
-    const listingIds = status === "active" ? summary.activeListingIds : summary.pendingListingIds;
+  const bedroom = bedroomSegment(bedrooms);
+  if (bedroom) query = query.eq("bedroom_segment", bedroom);
+  if (segment !== "Both") query = query.eq("market_segment", segment === "Resale" ? "resale" : "pre_construction");
+  const minPrice = parseOptionalNumber(search.get("minPrice"));
+  const maxPrice = parseOptionalNumber(search.get("maxPrice"));
+  if (minPrice !== null) query = query.gte("current_price", minPrice);
+  if (maxPrice !== null) query = query.lte("current_price", maxPrice);
 
-    if (!listingIds) {
-      const fallback = new URL(`/market/${market.slug}`, request.url);
-      fallback.searchParams.set("property", propertyType);
-      fallback.searchParams.set("bedrooms", bedrooms);
-      fallback.searchParams.set("segment", segment);
-      fallback.hash = "market-snapshot";
-      return NextResponse.redirect(fallback);
-    }
-
-    return NextResponse.redirect(buildIdxUrl(listingIds));
-  } catch (error) {
+  const { data, error } = await query;
+  if (error) {
     console.error("Market listing redirect failed", error);
     return NextResponse.json({ error: "Unable to load matching listings." }, { status: 500 });
   }
+  const ids = (data || []).map((r: any) => String(r.mls)).filter(Boolean);
+  if (!ids.length) {
+    const fallback = new URL(`/market/${market.slug}`, request.url);
+    fallback.searchParams.set("property", propertyType); fallback.searchParams.set("bedrooms", bedrooms); fallback.searchParams.set("segment", segment); fallback.hash = "market-snapshot";
+    return NextResponse.redirect(fallback);
+  }
+  return NextResponse.redirect(buildIdxUrl(ids.join(",")));
 }
-
-function parseStatus(value: string | null): DashboardListingStatus | null {
-  return value === "active" || value === "pending" ? value : null;
-}
-
-function parsePropertyType(value: string | null): DashboardPropertyType | null {
-  return value === "Condo" || value === "House" ? value : null;
-}
-
-function parseBedrooms(value: string | null): DashboardBedrooms | null {
-  return value === "All" || value === "Studio" || value === "1 BR" || value === "2 BR" || value === "3+ BR" ? value : null;
-}
-
-function parseSegment(value: string | null): DashboardSegment | null {
-  return value === "Both" || value === "Resale" || value === "Pre-sale" ? value : null;
-}
-
-function bedroomFilters(value: DashboardBedrooms): Pick<PropertySearchFilters, "minBeds" | "maxBeds"> {
-  if (value === "Studio") return { minBeds: 0, maxBeds: 0 };
-  if (value === "1 BR") return { minBeds: 1, maxBeds: 1 };
-  if (value === "2 BR") return { minBeds: 2, maxBeds: 2 };
-  if (value === "3+ BR") return { minBeds: 3, maxBeds: null };
-  return { minBeds: null, maxBeds: null };
-}
-
-function parseOptionalNumber(value: string | null): number | null {
-  if (value === null || value === "") return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
-}
+function parseStatus(v:string|null):DashboardListingStatus|null{return v==="active"||v==="pending"?v:null}
+function parsePropertyType(v:string|null):DashboardPropertyType|null{return v==="Condo"||v==="House"?v:null}
+function parseBedrooms(v:string|null):DashboardBedrooms|null{return v==="All"||v==="Studio"||v==="1 BR"||v==="2 BR"||v==="3+ BR"?v:null}
+function parseSegment(v:string|null):DashboardSegment|null{return v==="Both"||v==="Resale"||v==="Pre-sale"?v:null}
+function bedroomSegment(v:DashboardBedrooms){return v==="Studio"?"0br":v==="1 BR"?"1br":v==="2 BR"?"2br":v==="3+ BR"?"3br_plus":null}
+function parseOptionalNumber(v:string|null){if(v===null||v==="")return null;const n=Number(v);return Number.isFinite(n)&&n>=0?n:null}

@@ -1,18 +1,25 @@
 import type { Metadata } from "next";
-import InteractiveMarketDashboard from "./InteractiveMarketDashboard";
 import { Suspense } from "react";
 
+import { MARKET_DASHBOARDS } from "@/lib/market-dashboard/listing-links";
+import InteractiveMarketDashboard from "../[marketSlug]/InteractiveMarketDashboard";
+
+const market = MARKET_DASHBOARDS["zona-romantica"];
+
 export const metadata: Metadata = {
-  title: "Zona Romántica Real Estate Market | SearchPV",
-  description:
-    "Explore active inventory, closed sales, pricing, seller behavior and market direction for Zona Romántica in Puerto Vallarta.",
+  title: `${market.title} | SearchPV`,
+  description: market.description,
   robots: { index: false, follow: false },
 };
 
+/**
+ * Compatibility shim for the existing published URL during regression testing.
+ * It renders the same generic market engine used by /market/[marketSlug].
+ */
 export default function ZonaRomanticaMarketPage() {
   return (
     <Suspense fallback={null}>
-      <InteractiveMarketDashboard />
+      <InteractiveMarketDashboard market={market} />
     </Suspense>
   );
 }

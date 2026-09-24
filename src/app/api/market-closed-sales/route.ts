@@ -43,6 +43,9 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = await createClient();
+  const geographies = market.geographies.length ? market.geographies : [market.geography];
+  const sameZoneArea = geographies.every((g) => g.zone === geographies[0].zone && g.area === geographies[0].area);
+  if (!sameZoneArea) return NextResponse.json({ error: "Multi-area closed-sale selection is not supported yet." }, { status: 400 });
 
   /*
    * Determine the same data-through date used by the dashboard.
@@ -50,9 +53,9 @@ export async function GET(request: NextRequest) {
   let snapshotQuery = supabase
     .from("closed_listing")
     .select("market_snapshot_date")
-    .eq("zone_name", market.geography.zone)
-    .eq("area_name", market.geography.area)
-    .eq("community_name", market.geography.community)
+    .eq("zone_name", geographies[0].zone)
+    .eq("area_name", geographies[0].area)
+    .in("community_name", geographies.map((g) => g.community))
     .eq(
       "property_type_segment",
       propertyType === "Condo" ? "condos" : "houses"
@@ -135,9 +138,9 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("closed_listing")
       .select("mls")
-      .eq("zone_name", market.geography.zone)
-      .eq("area_name", market.geography.area)
-      .eq("community_name", market.geography.community)
+      .eq("zone_name", geographies[0].zone)
+      .eq("area_name", geographies[0].area)
+      .in("community_name", geographies.map((g) => g.community))
       .eq(
         "property_type_segment",
         propertyType === "Condo" ? "condos" : "houses"
@@ -223,9 +226,9 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from("closed_listing")
     .select(`mls,${ratioField}`)
-    .eq("zone_name", market.geography.zone)
-    .eq("area_name", market.geography.area)
-    .eq("community_name", market.geography.community)
+    .eq("zone_name", geographies[0].zone)
+    .eq("area_name", geographies[0].area)
+    .in("community_name", geographies.map((g) => g.community))
     .eq(
       "property_type_segment",
       propertyType === "Condo" ? "condos" : "houses"
@@ -348,6 +351,7 @@ async function handleTrendDrilldown({
   mtd: boolean;
   ytd: boolean;
 }) {
+  const geographies = market.geographies.length ? market.geographies : [market.geography];
   const yearNumber = Number(year);
   const quarterNumber = quarter ? Number(quarter) : null;
   const monthNumber = month ? Number(month) : null;
@@ -461,9 +465,9 @@ async function handleTrendDrilldown({
   let query = supabase
     .from("closed_listing")
     .select("mls")
-    .eq("zone_name", market.geography.zone)
-    .eq("area_name", market.geography.area)
-    .eq("community_name", market.geography.community)
+    .eq("zone_name", geographies[0].zone)
+    .eq("area_name", geographies[0].area)
+    .in("community_name", geographies.map((g) => g.community))
     .eq(
       "property_type_segment",
       propertyType === "Condo" ? "condos" : "houses"
