@@ -1,15 +1,12 @@
 import { supabase } from "@/lib/supabase";
-
 export type BuyerRegion = "all" | "pv" | "nayarit";
 export type BuyerPropertyType = "all" | "condos" | "houses";
-
 export type BuyerExplorerCriteria = {
   maxPrice: number;
   propertyType: BuyerPropertyType;
   minBeds: number;
   region: BuyerRegion;
 };
-
 type ListingRow = {
   zone_name: string | null;
   area_name: string | null;
@@ -21,7 +18,6 @@ type ListingRow = {
   current_price: number | null;
   mls: string | number | null;
 };
-
 export type BuyerAreaResult = {
   name: string;
   areaName: string | null;
@@ -32,19 +28,18 @@ export type BuyerAreaResult = {
   preconstructionDevelopmentCount: number;
   preconstructionListingCount: number;
   rawListingCount: number;
+  medianPrice: number | null;
   totalChoices: number;
   tier: "more" | "some" | "limited";
   longitude: number | null;
   latitude: number | null;
 };
-
 export type BuyerExplorerDistributionBucket = {
   label: string;
   min: number;
   max: number | null;
   communityCount: number;
 };
-
 export type BuyerExplorerResult = {
   areas: BuyerAreaResult[];
   resaleCount: number;
@@ -57,27 +52,24 @@ export type BuyerExplorerResult = {
   tierCounts: { more: number; some: number; limited: number };
   distribution: BuyerExplorerDistributionBucket[];
 };
-
 export async function getBuyerExplorerResult(
   criteria: BuyerExplorerCriteria,
 ): Promise<BuyerExplorerResult> {
   const pageSize = 1000;
   const rows: ListingRow[] = [];
-
   for (let from = 0; ; from += pageSize) {
     let query = supabase
       .from("current_search_listing")
       .select(
         "zone_name,area_name,community_name,development_name,listing_status,market_segment,preconstruction_fl,current_price,mls",
       )
+      .eq("market_segment", "resale") // NEW
       .lte("current_price", criteria.maxPrice)
       .gte("beds", criteria.minBeds)
       .range(from, from + pageSize - 1);
-
     if (criteria.propertyType !== "all") {
       query = query.eq("property_type_segment", criteria.propertyType);
     }
-
     if (criteria.region === "pv") {
       query = query.ilike("zone_name", "%Puerto Vallarta%");
     } else if (criteria.region === "nayarit") {
@@ -85,24 +77,20 @@ export async function getBuyerExplorerResult(
         "zone_name.ilike.%Nayarit%,zone_name.ilike.%RN%",
       );
     }
-
     const { data, error } = await query;
     if (error) {
       throw new Error(`Unable to load Buyer Explorer data: ${error.message}`);
     }
-
     const page = (data ?? []) as ListingRow[];
     rows.push(...page);
     if (page.length < pageSize) break;
   }
-
   // For the combined market, keep the scope to the two markets SearchPV serves.
   const scoped = rows.filter((row) => {
     if (criteria.region !== "all") return true;
     const zone = (row.zone_name ?? "").toLowerCase();
     return zone.includes("puerto vallarta") || zone.includes("nayarit") || zone === "pv" || zone === "rn";
   });
-
   const groups = new Map<string, {
     name: string;
     areaName: string | null;
@@ -114,16 +102,14 @@ export async function getBuyerExplorerResult(
     preconDevelopments: Set<string>;
     preconstructionListingCount: number;
     rawListingCount: number;
+    prices: number[];
   }>();
-
   const allPreconDevelopments = new Set<string>();
   let resaleCount = 0;
   let preconstructionListingCount = 0;
-
   for (const row of scoped) {
     const name = clean(row.community_name) ?? clean(row.area_name);
     if (!name) continue;
-
     const key = `${row.zone_name ?? ""}|${row.area_name ?? ""}|${name}`;
     const group = groups.get(key) ?? {
       name,
@@ -136,10 +122,20 @@ export async function getBuyerExplorerResult(
       preconDevelopments: new Set<string>(),
       preconstructionListingCount: 0,
       rawListingCount: 0,
+      prices: [],
     };
-
     group.rawListingCount += 1;
 
+    const price = Number(row.current_price);
+
+      if (
+        row.listing_status === "active" &&
+        row.current_price !== null &&
+        Number.isFinite(price) &&
+        price > 0
+      ) {
+        group.prices.push(price);
+      }
     // Buyer Explorer measures distinct high-level choices, not raw MLS rows.
     // Any named development counts once within a community, regardless of
     // resale/pre-construction status or how many matching units it contains.
@@ -149,7 +145,6 @@ export async function getBuyerExplorerResult(
       ? `development:${normalize(development)}`
       : `listing:${String(row.mls ?? `unknown-${group.rawListingCount}`)}`;
     group.optionKeys.add(choiceKey);
-
     const isPrecon = row.preconstruction_fl === true || row.market_segment === "pre_construction";
     if (isPrecon) {
       group.preconstructionListingCount += 1;
@@ -163,13 +158,10 @@ export async function getBuyerExplorerResult(
       group.resaleCount += 1;
       resaleCount += 1;
     }
-
     if (row.listing_status === "active") group.activeCount += 1;
     if (row.listing_status === "pending") group.pendingCount += 1;
-
     groups.set(key, group);
   }
-
   const ranked = [...groups.values()]
     .map((group) => ({
       ...group,
@@ -177,7 +169,6 @@ export async function getBuyerExplorerResult(
     }))
     .filter((group) => group.totalChoices > 0)
     .sort((a, b) => b.totalChoices - a.totalChoices || b.resaleCount - a.resaleCount);
-
   // V4: availability bands adapt to the distribution of THIS search.
   // Availability bands scale to the strongest community in this search.
   // This keeps the labels meaningful across broad and restrictive searches:
@@ -185,7 +176,6 @@ export async function getBuyerExplorerResult(
   const maxChoices = ranked[0]?.totalChoices ?? 0;
   const moreMin = Math.max(2, Math.ceil(maxChoices * 0.40));
   const someMin = Math.max(2, Math.min(moreMin - 1, Math.ceil(maxChoices * 0.15)));
-
   const areas: BuyerAreaResult[] = ranked.map((group) => {
     const tier: BuyerAreaResult["tier"] =
       group.totalChoices >= moreMin
@@ -193,7 +183,6 @@ export async function getBuyerExplorerResult(
         : group.totalChoices >= someMin
           ? "some"
           : "limited";
-
     return {
       name: group.name,
       areaName: group.areaName,
@@ -204,13 +193,13 @@ export async function getBuyerExplorerResult(
       preconstructionDevelopmentCount: group.preconDevelopments.size,
       preconstructionListingCount: group.preconstructionListingCount,
       rawListingCount: group.rawListingCount,
+      medianPrice: median(group.prices),
       totalChoices: group.totalChoices,
       tier,
       longitude: null,
       latitude: null,
     };
   });
-
   // V6: resolve representative SearchPV geography points only for the
   // communities that are actually shown in the three result columns.
   // This keeps Get Your Bearings lightweight while grounding markers in
@@ -220,7 +209,6 @@ export async function getBuyerExplorerResult(
     ...areas.filter((area) => area.tier === "some").slice(0, 6),
     ...areas.filter((area) => area.tier === "limited").slice(0, 6),
   ];
-
   await Promise.all(visibleAreas.map(async (area) => {
     const { data, error } = await supabase.rpc("resolve_geography", {
       p_search: area.name,
@@ -228,14 +216,12 @@ export async function getBuyerExplorerResult(
       p_limit: 10,
     });
     if (error || !Array.isArray(data)) return;
-
     const candidates = data as Array<{
       canonical_nm: string | null;
       longitude_nb: number | string | null;
       latitude_nb: number | string | null;
       hierarchy_js: unknown;
     }>;
-
     const normalizedName = normalize(area.name);
     const match = candidates.find((candidate) =>
       candidate.canonical_nm && normalize(candidate.canonical_nm) === normalizedName &&
@@ -243,7 +229,6 @@ export async function getBuyerExplorerResult(
     ) ?? candidates.find((candidate) =>
       candidate.canonical_nm && normalize(candidate.canonical_nm) === normalizedName
     ) ?? candidates[0];
-
     const longitude = Number(match?.longitude_nb);
     const latitude = Number(match?.latitude_nb);
     if (Number.isFinite(longitude) && Number.isFinite(latitude)) {
@@ -251,13 +236,11 @@ export async function getBuyerExplorerResult(
       area.latitude = latitude;
     }
   }));
-
   const tierCounts = {
     more: areas.filter((area) => area.tier === "more").length,
     some: areas.filter((area) => area.tier === "some").length,
     limited: areas.filter((area) => area.tier === "limited").length,
   };
-
   return {
     areas,
     resaleCount,
@@ -271,7 +254,6 @@ export async function getBuyerExplorerResult(
     distribution: buildDistribution(areas.map((area) => area.totalChoices)),
   };
 }
-
 function buildDistribution(counts: number[]): BuyerExplorerDistributionBucket[] {
   const specs = [
     { label: "20+", min: 20, max: null },
@@ -282,7 +264,6 @@ function buildDistribution(counts: number[]): BuyerExplorerDistributionBucket[] 
     { label: "2–3", min: 2, max: 3 },
     { label: "1", min: 1, max: 1 },
   ];
-
   return specs.map((spec) => ({
     ...spec,
     communityCount: counts.filter((count) =>
@@ -290,7 +271,6 @@ function buildDistribution(counts: number[]): BuyerExplorerDistributionBucket[] 
     ).length,
   }));
 }
-
 function hierarchyMentions(
   hierarchy: unknown,
   areaName: string | null,
@@ -301,12 +281,21 @@ function hierarchyMentions(
   const expected = [areaName, zoneName].filter(Boolean).map((value) => normalize(String(value)));
   return expected.length === 0 || expected.some((value) => text.includes(value));
 }
-
 function normalize(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
-
 function clean(value: string | null): string | null {
   const result = value?.trim();
   return result ? result : null;
+}
+
+function median(values: number[]): number | null {
+  if (values.length === 0) return null;
+
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+
+  return sorted.length % 2 === 1
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
 }
