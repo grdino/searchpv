@@ -52,6 +52,16 @@ const reports = [
     iconColor: "#1e40af",
     inDevelopment: false,
   },
+  {
+  title: "Market Dashboards",
+  description:
+    "Explore individual markets with inventory, closed-sale trends, pricing, seller behavior, and market composition.",
+  href: "/markets",
+  Icon: ChartLine,
+  iconBackground: "#e0e7ff",
+  iconColor: "#7aca38",
+  inDevelopment: false,
+},
 /*
   {
     title: "Price Reductions",
