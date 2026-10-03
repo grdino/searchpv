@@ -56,7 +56,7 @@ export default async function BuyerExplorerPage({ searchParams }: { searchParams
             </Field>
             <Field label="Region">
               <select name="region" defaultValue={criteria.region} className={controlClass}>
-                <option value="all">PV + Riviera Nayarit</option><option value="pv">Puerto Vallarta</option><option value="nayarit">Riviera Nayarit</option>
+                <option value="all">All</option><option value="pv">Puerto Vallarta</option><option value="nayarit">Riviera Nayarit</option>
               </select>
             </Field>
             <input type="hidden" name="go" value="1" />
@@ -177,6 +177,6 @@ function areaSearchHref(row: { zoneName: string|null; areaName: string|null; nam
 function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="block"><span className="mb-1.5 block text-xs font-black uppercase tracking-[0.12em] text-slate-500">{label}</span>{children}</label>; }
 const controlClass = "min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold outline-none transition focus:border-teal-500 focus:bg-white";
 function first(value: string|string[]|undefined) { return Array.isArray(value) ? value[0] : value; }
-function parseCriteria(params: Params): BuyerExplorerCriteria { const price = Number(first(params.maxPrice)); const beds = Number(first(params.minBeds)); const pt = first(params.propertyType); const region = first(params.region); return { maxPrice: Number.isFinite(price) && price > 0 ? price : 500000, minBeds: Number.isFinite(beds) && beds >= 0 ? beds : 2, propertyType: pt === "houses" || pt === "all" ? pt : "condos", region: region === "pv" || region === "nayarit" ? region : "all" }; }
+function parseCriteria(params: Params): BuyerExplorerCriteria { const price = Number(first(params.maxPrice)); const beds = Number(first(params.minBeds)); const pt = first(params.propertyType); const region = first(params.region); return { maxPrice: Number.isFinite(price) && price > 0 ? price : 500000, minBeds: Number.isFinite(beds) && beds >= 0 ? beds : 2, propertyType: pt === "houses" || pt === "all" ? pt : "condos", region: region === "pv" || region === "nayarit" ? region : "pv" }; }
 function money(value: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value); }
 function propertyLabel(value: BuyerPropertyType) { return value === "condos" ? "Condo" : value === "houses" ? "House" : "Condo or House"; }
