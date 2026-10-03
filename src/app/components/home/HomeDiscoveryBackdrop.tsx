@@ -23,9 +23,12 @@ import {
 
   useEffect,
 
+  useRef,
+
   useState,
 
   type ComponentType,
+  type RefObject,
 
 } from "react";
 
@@ -204,6 +207,48 @@ const HOME_HERO_IMAGES = [
 ];
 
 
+
+/*
+ * Destination timeline measured against the final 23.8-second home-hero.mp4.
+ * The first three seconds of each six-second scene feature its artwork/map.
+ * During the following camera travel, a click selects the approaching area.
+ * The final travel (21–23.8s) leads back to Zona Romántica as the video loops.
+ * Adjust these thresholds if the MP4 is re-edited.
+ */
+const HERO_VIDEO_TIMELINE = [
+  { start: 0, sceneId: "zona-romantica" },
+  { start: 3, sceneId: "marina-vallarta" },
+  { start: 9, sceneId: "nuevo-nayarit" },
+  { start: 15, sceneId: "conchas-chinas" },
+  { start: 21, sceneId: "zona-romantica" },
+] as const;
+
+const HERO_SLIDESHOW_SCENES = [
+  "zona-romantica",
+  "marina-vallarta",
+  "nuevo-nayarit",
+  "conchas-chinas",
+] as const;
+
+const HERO_SCENE_LABELS: Record<string, string> = {
+  "zona-romantica": "Zona Romántica",
+  "marina-vallarta": "Marina Vallarta",
+  "nuevo-nayarit": "Nuevo Nayarit",
+  "conchas-chinas": "Conchas Chinas",
+};
+
+function atlasSceneHref(sceneId: string) {
+  return `/atlas?discoverScene=${encodeURIComponent(sceneId)}`;
+}
+
+function sceneAtVideoTime(time: number) {
+  let sceneId: string = HERO_VIDEO_TIMELINE[0].sceneId;
+  for (const scene of HERO_VIDEO_TIMELINE) {
+    if (time >= scene.start) sceneId = scene.sceneId;
+    else break;
+  }
+  return sceneId;
+}
 
 export default function HomeDiscoveryBackdrop() {
 
@@ -416,25 +461,42 @@ export default function HomeDiscoveryBackdrop() {
 
 
 function DiscoveryBanner() {
-  const atlasUrl = "/atlas?atlasArea=Zona%20Rom%C3%A1ntica";
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [currentScene, setCurrentScene] = useState<string>("zona-romantica");
+
+  // The href also stays current for keyboard, context-menu, and new-tab use.
+  // timeupdate is only for that accessible link destination; the normal click
+  // reads currentTime directly to avoid selecting a stale scene.
+  function handleVideoTimeUpdate() {
+    setCurrentScene(sceneAtVideoTime(videoRef.current?.currentTime ?? 0));
+  }
+
+  const sceneId = HERO_MODE === "video"
+    ? currentScene
+    : HERO_SLIDESHOW_SCENES[activeIndex];
+  const atlasUrl = atlasSceneHref(sceneId);
 
   return (
     <Link
       href={atlasUrl}
-      aria-label="Explore Zona Romántica on the interactive Atlas map"
+      aria-label={`Explore ${HERO_SCENE_LABELS[sceneId]} on the interactive Atlas map`}
       onClick={(event) => {
-        // Match the full navigation used by the existing Explore the Map card.
-        // Leave modifier-key clicks to the browser (e.g. open in new tab).
+        // Preserve browser modifier clicks and open-in-new-tab behavior.
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
-        window.location.assign(atlasUrl);
+        const clickedScene = HERO_MODE === "video"
+          ? sceneAtVideoTime(videoRef.current?.currentTime ?? 0)
+          : HERO_SLIDESHOW_SCENES[activeIndex];
+        // Match the full navigation used by the existing Explore the Map card.
+        window.location.assign(atlasSceneHref(clickedScene));
       }}
       className="group relative block aspect-[2.8/1] w-full cursor-pointer overflow-hidden rounded-[24px] border border-white/90 bg-white/70 shadow-[0_12px_36px_rgba(15,23,42,.12)] transition-shadow hover:shadow-[0_16px_44px_rgba(15,23,42,.20)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-700 md:rounded-[28px]"
     >
       {HERO_MODE === "video" ? (
-        <VideoHero />
+        <VideoHero videoRef={videoRef} onTimeUpdate={handleVideoTimeUpdate} />
       ) : (
-        <SlideshowHero />
+        <SlideshowHero activeIndex={activeIndex} setActiveIndex={setActiveIndex} />
       )}
 
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-slate-950/5" />
@@ -448,7 +510,7 @@ function DiscoveryBanner() {
 
 /* VIDEO HERO — currently active. The poster also serves as a fallback. */
 
-function VideoHero() {
+function VideoHero({ videoRef, onTimeUpdate }: { videoRef: RefObject<HTMLVideoElement | null>; onTimeUpdate: () => void }) {
 
   const [reduceMotion, setReduceMotion] = useState(true);
 
@@ -493,6 +555,8 @@ function VideoHero() {
   return (
 
     <video
+      ref={videoRef}
+      onTimeUpdate={onTimeUpdate}
 
       autoPlay
 
@@ -522,9 +586,7 @@ function VideoHero() {
 
 /* ORIGINAL SLIDESHOW — retained and selectable via HERO_MODE above. */
 
-function SlideshowHero() {
-
-  const [activeIndex, setActiveIndex] = useState(0);
+function SlideshowHero({ activeIndex, setActiveIndex }: { activeIndex: number; setActiveIndex: React.Dispatch<React.SetStateAction<number>> }) {
 
 
 
