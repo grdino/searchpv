@@ -208,6 +208,7 @@ export default function HamburgerMenu() {
             Explore The Map
           </Link>
 
+{/*
           <Link
             href="/atlas/discover"
             onClick={closeMenu}
@@ -222,7 +223,7 @@ export default function HamburgerMenu() {
 
 
 
-{/*
+
           <Link
             href="/ask-searchpv"
             onClick={closeMenu}

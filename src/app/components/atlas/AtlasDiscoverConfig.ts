@@ -133,7 +133,7 @@ export const ATLAS_DISCOVER_SEQUENCE: AtlasDiscoverSceneConfig[] = [
     popularArea: {
       footprintKey: "lifestyle-conchas-chinas",
       displayName: "Conchas Chinas",
-      boundaryKys: [475],
+      boundaryKys: [474, 475],
     },
     image: "/atlas/discover/conchas-chinas.png",
     copy: {
