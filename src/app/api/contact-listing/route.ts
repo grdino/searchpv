@@ -12,6 +12,17 @@ export async function POST(request: Request) {
     const resend = new Resend(apiKey);
     const formData = await request.formData();
 
+    // Honeypot — real users should never fill this in.
+    // Silently redirect bots to the normal thank-you page.
+    const website = String(formData.get("website") ?? "").trim();
+
+    if (website) {
+      return NextResponse.redirect(
+        new URL("/contact-listing/thanks", request.url),
+        303,
+      );
+    }
+
     const name = String(formData.get("name") ?? "")
       .replace(/[\r\n]/g, " ")
       .trim();
@@ -26,18 +37,38 @@ export async function POST(request: Request) {
 
     const message = String(formData.get("message") ?? "").trim();
 
-    if (!name || !contact) {
+    // Required fields.
+    if (!name || !contact || !message) {
       return NextResponse.json(
         {
           success: false,
-          error: "Name and contact information are required.",
+          error: "Name, contact information, and message are required.",
         },
         { status: 400 },
       );
     }
 
-    const contactIsEmail =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
+    // Limit field sizes.
+    if (
+      name.length > 100 ||
+      contact.length > 254 ||
+      mls.length > 50 ||
+      message.length > 5000
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid form submission.",
+        },
+        { status: 400 },
+      );
+    }
+
+    // Determine whether the contact information is an email address.
+    // If so, use it as Reply-To. Otherwise it is treated as a
+    // phone/WhatsApp number.
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const contactIsEmail = emailPattern.test(contact);
 
     const { data, error } = await resend.emails.send({
       from: `${name} via SearchPV IDX <contact@searchpv.com>`,
@@ -56,7 +87,7 @@ Contact: ${contact}
 MLS #: ${mls || "Not specified"}
 
 Message:
-${message || "No message provided"}
+${message}
       `.trim(),
     });
 

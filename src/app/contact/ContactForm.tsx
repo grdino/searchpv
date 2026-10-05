@@ -31,6 +31,7 @@ export default function ContactForm() {
         phone: formData.get("phone"),
         whatsapp: formData.get("whatsapp"),
         message: formData.get("message"),
+        website: formData.get("website"),
         replyMethod,
       }),
     });
@@ -48,6 +49,27 @@ export default function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-7">
+      {/* Honeypot - hidden from real users */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: "-10000px",
+          width: "1px",
+          height: "1px",
+          overflow: "hidden",
+        }}
+      >
+        <label htmlFor="contact-website">Website</label>
+        <input
+          id="contact-website"
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+        />
+      </div>
+
       <Field label="Name" name="name" required />
 
       <fieldset>
@@ -89,6 +111,7 @@ export default function ContactForm() {
           optional={replyMethod !== "email"}
           placeholder="you@example.com"
         />
+
         <Field
           label="WhatsApp"
           name="whatsapp"
@@ -97,6 +120,7 @@ export default function ContactForm() {
           optional={replyMethod !== "whatsapp"}
           placeholder="WhatsApp number"
         />
+
         <Field
           label="Phone"
           name="phone"
@@ -111,6 +135,7 @@ export default function ContactForm() {
         <span className="text-sm font-bold text-slate-800">
           What can we help with? *
         </span>
+
         <textarea
           name="message"
           rows={7}
@@ -136,7 +161,8 @@ export default function ContactForm() {
 
       {sent && (
         <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
-          Thanks — your message has been sent. We&apos;ll reply using the contact method you selected.
+          Thanks — your message has been sent. We&apos;ll reply using the
+          contact method you selected.
         </p>
       )}
 
@@ -202,7 +228,9 @@ function Field({
         {label}
         {required ? " *" : ""}
         {optional ? (
-          <span className="ml-1 font-normal text-slate-400">(optional)</span>
+          <span className="ml-1 font-normal text-slate-400">
+            (optional)
+          </span>
         ) : null}
       </span>
 

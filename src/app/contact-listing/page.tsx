@@ -82,6 +82,27 @@ export default async function ContactListingPage({
         >
           <input type="hidden" name="mls" value={mls} />
 
+          {/* Honeypot - hidden from real users */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: "-10000px",
+              width: "1px",
+              height: "1px",
+              overflow: "hidden",
+            }}
+          >
+            <label htmlFor="listing-website">Website</label>
+            <input
+              id="listing-website"
+              name="website"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+            />
+          </div>
+
           {mls && (
             <div
               style={{
