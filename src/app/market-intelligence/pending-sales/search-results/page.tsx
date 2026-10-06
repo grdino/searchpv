@@ -278,8 +278,12 @@ export default async function PendingSalesSearchResultsPage({
                   )}
 
                   <Th>Original Price</Th>
-                  <Th>Price Changes</Th>
-                  <Th>Total Change</Th>
+                  <Th>
+                    <div>Price Change</div>
+                    <div className="mt-0.5 text-[10px] font-normal normal-case tracking-normal text-slate-400">
+                      Original → current
+                    </div>
+                  </Th>
                 </tr>
               </thead>
 
@@ -329,10 +333,6 @@ export default async function PendingSalesSearchResultsPage({
                     </Td>
 
                     <Td>
-                      {formatNumber(row.price_changes)}
-                    </Td>
-
-                    <Td>
                       {formatSignedPercent(
                         row.price_change_percent
                       )}
@@ -343,7 +343,7 @@ export default async function PendingSalesSearchResultsPage({
                 {rows.length === 0 && (
                   <tr>
                     <td
-                      colSpan={13}
+                      colSpan={12}
                       className="px-4 py-10 text-center text-slate-500"
                     >
                       No pending MLS listings were found for the

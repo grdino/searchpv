@@ -723,8 +723,12 @@ export default async function ActiveListingsPage({
                   href={tableSortHref("dom")}
                 />
 
-                <Th>Price Changes</Th>
-                <Th>Change</Th>
+                <Th>
+                  <div>Price Change</div>
+                  <div className="mt-0.5 text-[10px] font-normal normal-case tracking-normal text-slate-400">
+                    Original → current
+                  </div>
+                </Th>
               </tr>
             </thead>
 
@@ -732,7 +736,7 @@ export default async function ActiveListingsPage({
               {listings.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={12}
+                    colSpan={11}
                     className="bg-white px-4 py-10 text-center text-slate-500"
                   >
                     No active listings match the selected filters.
@@ -771,7 +775,6 @@ export default async function ActiveListingsPage({
                     <Td>{formatMoney(listing.current_price)}</Td>
                     <Td>{formatMoney(listing.price_per_sqft)}</Td>
                     <Td>{formatNumber(listing.dom)}</Td>
-                    <Td>{formatNumber(listing.price_changes)}</Td>
                     <Td>
                       {formatSignedPercent(
                         listing.price_change_percent
