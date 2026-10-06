@@ -144,25 +144,34 @@ export default function InteractiveMarketDashboard({ market }: { market: MarketD
       });
     }
 
-    // 24M uses transaction-level quarterly aggregates from the API.
-    // Each quarter is compared with the same quarter one year earlier.
+    // 24M shows the latest eight quarters (24 months).
+    // Each displayed quarter is compared with the same quarter one year earlier.
     if (period === "24M") {
-      const byQuarter = new Map((data.history.soldQuarterly ?? []).map((row) => [row.key, row]));
-      return Array.from({ length: 4 }, (_, i) => {
-        const endQuarter = Math.floor(currentMonth / 3);
-        const d = new Date(Date.UTC(currentYear, (endQuarter - (3 - i)) * 3, 1));
+      const byQuarter = new Map(
+        (data.history.soldQuarterly ?? []).map((row) => [row.key, row])
+      );
+
+      const endQuarter = Math.floor(currentMonth / 3);
+
+      return Array.from({ length: 8 }, (_, i) => {
+        const d = new Date(
+          Date.UTC(currentYear, (endQuarter - (7 - i)) * 3, 1)
+        );
+
         const year = d.getUTCFullYear();
         const quarter = Math.floor(d.getUTCMonth() / 3) + 1;
+
         const currentRow = byQuarter.get(`${year}-Q${quarter}`);
         const priorRow = byQuarter.get(`${year - 1}-Q${quarter}`);
+
         return {
           label: `Q${quarter}`,
-          comparisonYears: `${year} / ${year - 1}`,
+          comparisonYears: `${year - 1} / ${year}`,
           current: aggregateMetricValue(currentRow, pulse),
           prior: aggregateMetricValue(priorRow, pulse),
           currentYear: year,
           priorYear: year - 1,
-          isMtd: i === 3,
+          isMtd: i === 7,
           sampleSize: currentRow?.closedSales || 0,
           priorSampleSize: priorRow?.closedSales || 0,
         };
@@ -464,7 +473,7 @@ export default function InteractiveMarketDashboard({ market }: { market: MarketD
               {(["12M", "24M", "5Y"] as Period[]).map((x) => <button key={x} className={period === x ? styles.on : ""} onClick={() => setPeriod(x)}>{x}</button>)}
             </div>
             {barChart && data?.asOf ? <>
-              <div className={styles.directionSummary}><span>{directionMetricLabel(pulse, period)}</span>{period === "12M" ? <em>Current month through {monthDay(data.asOf)}</em> : period === "24M" ? <em>Latest four quarters compared with the same quarters one year earlier</em> : <em>Five calendar years · {new Date(`${data.asOf}T00:00:00Z`).getUTCFullYear()} YTD through {monthDay(data.asOf)}</em>}</div>
+              <div className={styles.directionSummary}><span>{directionMetricLabel(pulse, period)}</span>{period === "12M" ? <em>Current month through {monthDay(data.asOf)}</em> : period === "24M" ? <em>Latest eight quarters compared with the same quarters one year earlier</em> : <em>Five calendar years · {new Date(`${data.asOf}T00:00:00Z`).getUTCFullYear()} YTD through {monthDay(data.asOf)}</em>}</div>
               {period === "12M" ? <div className={styles.yoyLegend}><span><i className={styles.currentSwatch}/>{new Date(`${data.asOf}T00:00:00Z`).getUTCFullYear()}</span><span><i className={styles.priorSwatch}/>{new Date(`${data.asOf}T00:00:00Z`).getUTCFullYear()-1} · same calendar period</span></div> : period === "24M" ? <div className={styles.yoyLegend}><span><i className={styles.currentSwatch}/>Selected quarter</span><span><i className={styles.priorSwatch}/>Same quarter · prior year</span></div> : null}
               {thinSelection ? <div className={styles.sampleNote}>Limited sales history for this selection — monthly results may reflect only a few transactions.</div> : null}
               {fiveYearComparison ? <div className={styles.fiveYearNote}>{fiveYearComparison.currentLabel} is <b>{Math.abs(fiveYearComparison.change).toFixed(1)}% {fiveYearComparison.change >= 0 ? "above" : "below"}</b> {fiveYearComparison.previousLabel}.</div> : null}
@@ -594,7 +603,7 @@ export default function InteractiveMarketDashboard({ market }: { market: MarketD
                           key={`${row.label}-${index}`}
                         >
                           <div className={styles.yoyBars}>
-                            {is12M && priorSampleSize === 0 ? (
+                            {(is12M || is24M) && priorSampleSize === 0 ? (
                               <span
                                 className={`${styles.zeroValue} ${styles.zeroPrior}`}
                                 aria-label={`No closed sales for ${row.label} ${row.priorYear}`}
@@ -614,7 +623,7 @@ export default function InteractiveMarketDashboard({ market }: { market: MarketD
                               priorBar
                             )}
 
-                            {is12M && row.sampleSize === 0 ? (
+                            {(is12M || is24M) && row.sampleSize === 0 ? (
                               <span
                                 className={`${styles.zeroValue} ${styles.zeroCurrent}`}
                                 aria-label={`No closed sales for ${row.label} ${row.currentYear}`}
