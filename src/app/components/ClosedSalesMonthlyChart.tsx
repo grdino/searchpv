@@ -79,11 +79,11 @@ export default function ClosedSalesMonthlyChart({
             }
           >
           Each month compares the prior year with the most recent 12 months.
-          Current-month results are compared through{" "}
+          The current month is month-to-date through{" "}
           <span className="font-semibold">
             {formatMonthDay(effectiveDate)}
           </span>
-          .
+          ; prior-year months show full-month results.
         </p>
 
         <div
@@ -334,10 +334,6 @@ function buildMonthlyBuckets(
     const comparisonBucket = bucketMap.get(comparisonKey);
 
     if (!comparisonBucket) return;
-
-    if (comparisonBucket.isCurrentMonth && soldDay > currentDay) {
-      return;
-    }
 
     previousMlsSets.get(comparisonBucket.key)?.add(mls);
   });

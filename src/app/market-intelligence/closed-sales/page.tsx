@@ -128,31 +128,19 @@ export default async function ClosedSalesPage({
   const selectedAreaUnit = getAreaUnit(params.areaUnit);
 
   /*
-  * Get the newest available data snapshot before resolving
-  * the default closed-sale date range.
+  * Get the newest available data snapshot globally.
+  * This anchors all preset reporting periods to the same
+  * SearchPV data-current-as-of date, regardless of filters.
   */
-  let snapshotDateQuery = supabase
+  const {
+    data: snapshotDateRows,
+    error: snapshotDateError,
+  } = await supabase
     .from("closed_listing_list")
     .select("data_current_as_of")
     .not("data_current_as_of", "is", null)
     .order("data_current_as_of", { ascending: false })
     .limit(1);
-
-  snapshotDateQuery = applyFilters(snapshotDateQuery, {
-    selectedMarket,
-    selectedPropertyType,
-    selectedZone,
-    selectedArea,
-    selectedCommunity,
-    selectedDevelopment,
-    selectedStartDate: "",
-    selectedEndDate: "",
-  });
-
-  const {
-    data: snapshotDateRows,
-    error: snapshotDateError,
-  } = await snapshotDateQuery;
 
   const rawSnapshotDate =
     snapshotDateRows?.[0]?.data_current_as_of;
