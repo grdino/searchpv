@@ -9,6 +9,7 @@ import { buildIdxUrl } from "@/lib/idx";
 import { supabase } from "@/lib/supabase";
 
 import PrintButton from "./PrintButton";
+import ShareButton from "./ShareButton";
 
 export const dynamic = "force-dynamic";
 
@@ -67,20 +68,41 @@ type ComparisonRow = {
 
 type UnitRow = { mls: number; unit_id?: string | null; unit?: string | null };
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const { mls } = await params;
 
-  const pageUrl = `https://searchpv.com/property-comparison/${mls}`;
+  const pageUrl =
+    `https://searchpv.com/property-comparison/${mls}`;
+
+  const title = `How MLS ${mls} Compares | SearchPV`;
+
+  const description =
+    `See how MLS ${mls} compares with similar current listings and recent sales in the Puerto Vallarta and Riviera Nayarit real estate market.`;
 
   return {
-    title: `How MLS ${mls} Compares`,
-    description: `A factual comparison of MLS ${mls} with similar current listings and recent sales.`,
+    title,
+    description,
     alternates: {
       canonical: pageUrl,
     },
     robots: {
       index: false,
       follow: true,
+    },
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: "SearchPV",
+      type: "website",
+      locale: "en_US",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
     },
   };
 }
@@ -172,6 +194,7 @@ export default async function PropertyComparisonPage({ params, searchParams }: P
               <Link href={returnUrl} className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-amber-300">
                 ← Return to listing
               </Link>
+              <ShareButton mls={mls} />
               <PrintButton />
             </div>
           </div>
