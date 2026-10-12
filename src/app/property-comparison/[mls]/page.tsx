@@ -4,8 +4,6 @@ import Link from "next/link";
 
 import { notFound } from "next/navigation";
 
-
-
 import Header from "@/app/components/Header";
 
 import HamburgerMenu from "@/app/components/HamburgerMenu";
@@ -16,18 +14,13 @@ import { buildIdxUrl } from "@/lib/idx";
 
 import { supabase } from "@/lib/supabase";
 
-
-
 import PrintButton from "./PrintButton";
 
 import ShareButton from "./ShareButton";
+
 import UnitsToggle from "./UnitsToggle";
 
-
-
 export const dynamic = "force-dynamic";
-
-
 
 type PageProps = {
 
@@ -36,8 +29,6 @@ type PageProps = {
   searchParams: Promise<{ return?: string }>;
 
 };
-
-
 
 type SubjectListing = {
 
@@ -74,8 +65,6 @@ type SubjectListing = {
   snapshot_date: string;
 
 };
-
-
 
 type ComparisonRow = {
 
@@ -133,11 +122,7 @@ type ComparisonRow = {
 
 };
 
-
-
 type UnitRow = { mls: number; unit_id?: string | null; unit?: string | null };
-
-
 
 export async function generateMetadata({
 
@@ -147,23 +132,15 @@ export async function generateMetadata({
 
   const { mls } = await params;
 
-
-
   const pageUrl =
 
     `https://searchpv.com/property-comparison/${mls}`;
 
-
-
   const title = `How MLS ${mls} Compares | SearchPV`;
-
-
 
   const description =
 
     `See how MLS ${mls} compares with similar current listings and recent sales in the Puerto Vallarta and Riviera Nayarit real estate market.`;
-
-
 
   return {
 
@@ -215,15 +192,11 @@ export async function generateMetadata({
 
 }
 
-
-
 export default async function PropertyComparisonPage({ params, searchParams }: PageProps) {
 
   const [{ mls: rawMls }, query] = await Promise.all([params, searchParams]);
 
   if (!/^\d+$/.test(rawMls)) notFound();
-
-
 
   const mls = Number(rawMls);
 
@@ -251,8 +224,6 @@ export default async function PropertyComparisonPage({ params, searchParams }: P
 
   ]);
 
-
-
   if (subjectResponse.error || comparisonResponse.error) {
 
     throw new Error(subjectResponse.error?.message || comparisonResponse.error?.message);
@@ -260,8 +231,6 @@ export default async function PropertyComparisonPage({ params, searchParams }: P
   }
 
   if (!subjectResponse.data) notFound();
-
-
 
   const subject = subjectResponse.data as SubjectListing;
 
@@ -271,11 +240,9 @@ export default async function PropertyComparisonPage({ params, searchParams }: P
 
   const closedRows = credible(rows, "recent_sales");
 
-  const currentPositionRows = localMarketRows(currentRows);
+  const currentPositionRows = physicalMarketRows(currentRows);
 
-  const closedPositionRows = localMarketRows(closedRows);
-
-
+  const closedPositionRows = physicalMarketRows(closedRows);
 
   const currentMlsNumbers = [mls, ...currentRows.map((row) => row.comp_mls)];
 
@@ -319,8 +286,6 @@ export default async function PropertyComparisonPage({ params, searchParams }: P
 
   ]);
 
-
-
   const unitByMls = new Map<number, string>();
 
   for (const row of [
@@ -339,19 +304,20 @@ export default async function PropertyComparisonPage({ params, searchParams }: P
 
   }
 
-
-
   const returnUrl = safeIdxReturnUrl(query.return) ?? buildIdxUrl(String(mls));
-
-
 
   return (
 
     <main className="min-h-screen bg-slate-50 text-slate-950">
+
       <style>{`
+
         .comparison-imperial { display: none; }
+
         html[data-comparison-units="imperial"] .comparison-metric { display: none; }
+
         html[data-comparison-units="imperial"] .comparison-imperial { display: inline; }
+
       `}</style>
 
       <section className="bg-slate-950 px-4 py-8 text-white md:px-8 md:py-10 print:bg-white print:px-0 print:py-4 print:text-slate-950">
@@ -410,8 +376,6 @@ export default async function PropertyComparisonPage({ params, searchParams }: P
 
       </section>
 
-
-
       <div className="mx-auto max-w-7xl px-4 py-7 md:px-8">
 
         <SubjectCard subject={subject} unit={unitByMls.get(mls) ?? null} />
@@ -422,15 +386,13 @@ export default async function PropertyComparisonPage({ params, searchParams }: P
 
         <ComparisonSection title="Recent Sales" description="Comparable closed sales from the past 12 months, extended to 18 months only when recent evidence is limited." rows={closedRows} unitByMls={unitByMls} showUnits={subject.property_type_segment === "condos"} subjectCommunity={subject.community_name} />
 
-
-
         <section className="mt-10 rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-600">
 
           <h2 className="font-bold text-slate-950">What this comparison can—and cannot—show</h2>
 
           <p className="mt-2">
 
-            SearchPV selects similar listings from MLS location, property type, market type, bedrooms, bathrooms, interior size and available property attributes. Price is shown but is never used to select or rank a comparable.
+            SearchPV selects similar listings from MLS location, property type, market type, bedrooms, bathrooms, interior size and available property attributes. Price is not used to rank direct physical comparisons. When no same-bedroom property is available in the subject development, one different-bedroom unit may be included for building-specific pricing context. That representative unit is selected from the middle of the eligible building price range.
 
           </p>
 
@@ -451,8 +413,6 @@ export default async function PropertyComparisonPage({ params, searchParams }: P
   );
 
 }
-
-
 
 function SubjectCard({ subject, unit: suppliedUnit }: { subject: SubjectListing; unit: string | null }) {
 
@@ -475,8 +435,6 @@ function SubjectCard({ subject, unit: suppliedUnit }: { subject: SubjectListing;
               Subject
 
             </span>
-
-
 
             <StatusBadge status={subject.listing_status} />
 
@@ -524,8 +482,6 @@ function SubjectCard({ subject, unit: suppliedUnit }: { subject: SubjectListing;
 
 }
 
-
-
 function MarketPosition({ subject, currentRows, closedRows }: { subject: SubjectListing; currentRows: ComparisonRow[]; closedRows: ComparisonRow[] }) {
 
   const currentPrice = median(currentRows.map((row) => row.comp_price));
@@ -541,8 +497,6 @@ function MarketPosition({ subject, currentRows, closedRows }: { subject: Subject
   const soldPsm = median(closedRows.map((row) => row.comp_price_per_sqm));
 
   const soldRatio = median(closedRows.map((row) => row.sold_to_final_list_pct));
-
-
 
   return (
 
@@ -576,8 +530,6 @@ function MarketPosition({ subject, currentRows, closedRows }: { subject: Subject
 
   />
 
-
-
   <PositionCard
 
     label={<UnitValue metric="Price per m²" imperial="Price per ft²" />}
@@ -598,8 +550,6 @@ function MarketPosition({ subject, currentRows, closedRows }: { subject: Subject
 
   />
 
-
-
   <PositionCard
 
     label="Interior size"
@@ -619,8 +569,6 @@ function MarketPosition({ subject, currentRows, closedRows }: { subject: Subject
     info="Compares this property's interior area with the median interior area of the selected local Active and Pending listings."
 
   />
-
-
 
   <PositionCard
 
@@ -644,8 +592,6 @@ function MarketPosition({ subject, currentRows, closedRows }: { subject: Subject
 
 </div>
 
-
-
 <div className="mt-5 border-t border-amber-200 pt-5">
 
   <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">
@@ -653,8 +599,6 @@ function MarketPosition({ subject, currentRows, closedRows }: { subject: Subject
     Recent-sale context
 
   </h3>
-
-
 
   <div className="mt-3 grid gap-3 sm:grid-cols-3">
 
@@ -669,8 +613,6 @@ function MarketPosition({ subject, currentRows, closedRows }: { subject: Subject
       info="Compares this property's current asking price with the median sold price of the selected local recent sales. This is a direct comparison only; no adjustments are made for differences between properties."
 
     />
-
-
 
     <PositionCard
 
@@ -691,8 +633,6 @@ function MarketPosition({ subject, currentRows, closedRows }: { subject: Subject
       info="Compares this property’s current asking price per unit of interior area with the median sold price per unit of the selected local recent sales."
 
     />
-
-
 
     <PositionCard
 
@@ -724,8 +664,6 @@ function MarketPosition({ subject, currentRows, closedRows }: { subject: Subject
 
 }
 
-
-
 function ComparisonSection({ title, description, rows, unitByMls, showUnits, subjectCommunity }: { title: string; description: string; rows: ComparisonRow[]; unitByMls: Map<number, string>; showUnits: boolean; subjectCommunity: string | null }) {
 
   const hasCloseLocalMatch = rows.some((row) =>
@@ -743,8 +681,6 @@ function ComparisonSection({ title, description, rows, unitByMls, showUnits, sub
   const hasNearbyContext = rows.some((row) => !isLocalRow(row));
 
   const showMixedContextNotice = !hasCloseLocalMatch && hasLocalContext && hasNearbyContext;
-
-
 
   return (
 
@@ -782,7 +718,7 @@ function ComparisonSection({ title, description, rows, unitByMls, showUnits, sub
 
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
 
-          {rows.map((row) => <CandidateCard key={`${row.comparison_section}-${row.comp_mls}`} row={row} unit={showUnits ? unitByMls.get(row.comp_mls) ?? null : null} subjectCommunity={subjectCommunity} />)}
+          {rows.map((row, index) => <CandidateCard key={`${row.comparison_section}-${row.comp_mls}`} row={row} unit={showUnits ? unitByMls.get(row.comp_mls) ?? null : null} subjectCommunity={subjectCommunity} displayRank={index + 1} />)}
 
         </div>
 
@@ -794,9 +730,7 @@ function ComparisonSection({ title, description, rows, unitByMls, showUnits, sub
 
 }
 
-
-
-function CandidateCard({ row, unit, subjectCommunity }: { row: ComparisonRow; unit: string | null; subjectCommunity: string | null }) {
+function CandidateCard({ row, unit, subjectCommunity, displayRank }: { row: ComparisonRow; unit: string | null; subjectCommunity: string | null; displayRank: number }) {
 
   const isClosed = row.comparison_section === "recent_sales";
 
@@ -810,7 +744,14 @@ function CandidateCard({ row, unit, subjectCommunity }: { row: ComparisonRow; un
 
         <div>
 
-          <div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-slate-950 px-2.5 py-1 text-xs font-black text-white">#{row.diagnostic_rank}</span><ContextBadge row={row} subjectCommunity={subjectCommunity} /><QualityBadge quality={row.match_quality} /></div>
+          <div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-slate-950 px-2.5 py-1 text-xs font-black text-white">#{displayRank}</span><ContextBadge row={row} subjectCommunity={subjectCommunity} />{row.comp_beds !== row.subject_beds &&
+            !(row.limitation_codes ?? []).includes("NOT_SAME_COMPARISON_DEVELOPMENT") ? (
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                Building context
+              </span>
+            ) : (
+              <QualityBadge quality={row.match_quality} />
+            )}</div>
 
           <h3 className="mt-3 text-lg font-black">{row.comp_development_name || `MLS #${row.comp_mls}`}{unit ? ` · Unit ${unit}` : ""}</h3>
 
@@ -820,11 +761,7 @@ function CandidateCard({ row, unit, subjectCommunity }: { row: ComparisonRow; un
 
             <span className="mx-1 text-slate-400">·</span>
 
-
-
             <StatusBadge status={row.comp_status} />
-
-
 
             {row.comp_community_name && (
 
@@ -890,73 +827,87 @@ function CandidateCard({ row, unit, subjectCommunity }: { row: ComparisonRow; un
 
 }
 
+function credible(
 
+  rows: ComparisonRow[],
 
-function credible(rows: ComparisonRow[], section: ComparisonRow["comparison_section"]) {
+  section: ComparisonRow["comparison_section"]
 
-  const eligible = rows.filter(
+) {
 
-    (row) => row.comparison_section === section && row.match_quality !== "omit"
+  const eligible = rows
+
+    .filter(
+
+      (row) =>
+
+        row.comparison_section === section &&
+
+        row.match_quality !== "omit"
+
+    )
+
+    .sort((a, b) => a.diagnostic_rank - b.diagnostic_rank);
+
+  const isBuildingContext = (row: ComparisonRow) =>
+
+    row.comp_beds !== row.subject_beds &&
+
+    !(row.limitation_codes ?? []).includes(
+
+      "NOT_SAME_COMPARISON_DEVELOPMENT"
+
+    );
+
+  const buildingContext = eligible.find(isBuildingContext);
+
+  // Direct physical matches come first.
+
+  const exactBedrooms = eligible.filter(
+
+    (row) => row.comp_beds === row.subject_beds
 
   );
 
-  const local = eligible.filter(isLocalRow);
+  const selected = exactBedrooms.slice(
 
-  const nearby = eligible.filter((row) => !isLocalRow(row));
+    0,
 
-  const hasCloseLocalMatch = local.some(
-
-    (row) => row.comp_beds === row.subject_beds && Math.abs(row.size_difference_pct) <= 20
+    buildingContext ? 4 : 5
 
   );
 
-
-
-  if (hasCloseLocalMatch || local.length === 0 || nearby.length === 0) {
-
-    return eligible.slice(0, 5);
-
-  }
-
-
-
-  /*
-
-   * When the community has no close physical match, show both sides of the
-
-   * evidence: up to three local pricing references and two nearby physical
-
-   * references. Neither group is represented as an adjusted valuation.
-
-   */
-
-  const selected = [...local.slice(0, 3), ...nearby.slice(0, 2)];
-
-  const selectedMls = new Set(selected.map((row) => row.comp_mls));
-
-
+  // Fill remaining space with the best available alternatives.
 
   for (const row of eligible) {
 
-    if (selected.length >= 5) break;
+    if (selected.length >= (buildingContext ? 4 : 5)) break;
 
-    if (!selectedMls.has(row.comp_mls)) {
+    if (
+
+      !isBuildingContext(row) &&
+
+      !selected.some((item) => item.comp_mls === row.comp_mls)
+
+    ) {
 
       selected.push(row);
-
-      selectedMls.add(row.comp_mls);
 
     }
 
   }
 
+  // Reserve one slot for development pricing context.
 
+  if (buildingContext) {
 
-  return selected;
+    selected.push(buildingContext);
+
+  }
+
+  return selected.slice(0, 5);
 
 }
-
-
 
 function isLocalRow(row: ComparisonRow) {
 
@@ -968,7 +919,14 @@ function isLocalRow(row: ComparisonRow) {
 
 }
 
-
+function physicalMarketRows(rows: ComparisonRow[]) {
+  const local = localMarketRows(rows);
+  const exactBedrooms = local.filter((row) => row.comp_beds === row.subject_beds);
+  if (exactBedrooms.length > 0) return exactBedrooms;
+  return local.filter((row) =>
+    (row.limitation_codes ?? []).includes("NOT_SAME_COMPARISON_DEVELOPMENT")
+  );
+}
 
 /*
 
@@ -990,8 +948,6 @@ function localMarketRows(rows: ComparisonRow[]) {
 
     );
 
-
-
     return (
 
       !expandedBeyondCommunity ||
@@ -1003,8 +959,6 @@ function localMarketRows(rows: ComparisonRow[]) {
   });
 
 }
-
-
 
 function PositionCard({
 
@@ -1040,8 +994,6 @@ function PositionCard({
 
         </p>
 
-
-
         <details className="searchpv-info relative print:hidden">
 
           <summary
@@ -1058,8 +1010,6 @@ function PositionCard({
 
           </summary>
 
-
-
           <div className="searchpv-info-popup">
 
             {info}
@@ -1070,15 +1020,11 @@ function PositionCard({
 
       </div>
 
-
-
       <p className="mt-1 text-lg font-black text-slate-950">
 
         {value}
 
       </p>
-
-
 
       <p className="mt-1 text-xs leading-5 text-slate-500">
 
@@ -1091,8 +1037,6 @@ function PositionCard({
   );
 
 }
-
-
 
 function Fact({
 
@@ -1118,8 +1062,6 @@ function Fact({
 
       </p>
 
-
-
       <div className="mt-1 font-bold">{value}</div>
 
     </div>
@@ -1128,13 +1070,9 @@ function Fact({
 
 }
 
-
-
 function StatusBadge({ status }: { status: string }) {
 
   const normalized = status.toLowerCase();
-
-
 
   const style =
 
@@ -1152,8 +1090,6 @@ function StatusBadge({ status }: { status: string }) {
 
           : "bg-slate-100 text-slate-700";
 
-
-
   return (
 
     <span
@@ -1170,8 +1106,6 @@ function StatusBadge({ status }: { status: string }) {
 
 }
 
-
-
 function QualityBadge({ quality }: { quality: ComparisonRow["match_quality"] }) {
 
   const style = quality === "strong" ? "bg-emerald-100 text-emerald-800" : quality === "good" ? "bg-sky-100 text-sky-800" : "bg-amber-100 text-amber-900";
@@ -1180,17 +1114,24 @@ function QualityBadge({ quality }: { quality: ComparisonRow["match_quality"] }) 
 
 }
 
-
-
 function ContextBadge({ row, subjectCommunity }: { row: ComparisonRow; subjectCommunity: string | null }) {
+  const isBuildingContext =
+    row.comp_beds !== row.subject_beds &&
+    !(row.limitation_codes ?? []).includes("NOT_SAME_COMPARISON_DEVELOPMENT");
+
+  if (isBuildingContext) {
+    return (
+      <span className="rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-bold text-cyan-800">
+        Same building · Different bedroom count
+      </span>
+    );
+  }
 
   const local = isLocalRow(row);
 
   const hasPhysicalDifference =
 
     row.comp_beds !== row.subject_beds || Math.abs(row.size_difference_pct) > 20;
-
-
 
   const label = !local
 
@@ -1202,8 +1143,6 @@ function ContextBadge({ row, subjectCommunity }: { row: ComparisonRow; subjectCo
 
       : "Local comparable";
 
-
-
   const style = !local
 
     ? "bg-violet-100 text-violet-800"
@@ -1214,13 +1153,9 @@ function ContextBadge({ row, subjectCommunity }: { row: ComparisonRow; subjectCo
 
       : "bg-emerald-100 text-emerald-800";
 
-
-
   return <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${style}`}>{label}</span>;
 
 }
-
-
 
 function median(values: Array<number | null>) {
 
@@ -1240,8 +1175,6 @@ function median(values: Array<number | null>) {
 
 }
 
-
-
 function relativeText(subject: number, comparison: number | null) {
 
   if (comparison === null || comparison === 0) return "Insufficient data";
@@ -1253,8 +1186,6 @@ function relativeText(subject: number, comparison: number | null) {
   return `${formatNumber(Math.abs(difference), 1)}% ${difference > 0 ? "above" : "below"}`;
 
 }
-
-
 
 function dayDifferenceText(subject: number, comparison: number | null) {
 
@@ -1268,11 +1199,7 @@ function dayDifferenceText(subject: number, comparison: number | null) {
 
 }
 
-
-
 function sampleText(count: number, singular: string) { return `${count} ${singular}${count === 1 ? "" : "s"}`; }
-
-
 
 function safeIdxReturnUrl(value?: string) {
 
@@ -1288,19 +1215,15 @@ function safeIdxReturnUrl(value?: string) {
 
 }
 
-
-
 function cleanUnit(value: string | null) {
 
   const unit = value?.replace(/\s+/g, " ").trim();
 
-  if (!unit || /^(?:n\/?a|none|null|unknown|0|-|--)$/i.test(unit)) return null;
+  if (!unit || ["n/a", "na", "none", "null", "unknown", "0", "-", "--"].includes(unit.toLowerCase())) return null;
 
   return unit;
 
 }
-
-
 
 function limitationText(code: string) {
 
@@ -1332,20 +1255,24 @@ function limitationText(code: string) {
 
 }
 
-
-
 function UnitValue({ metric, imperial }: { metric: React.ReactNode; imperial: React.ReactNode }) {
+
   return <><span className="comparison-metric">{metric}</span><span className="comparison-imperial">{imperial}</span></>;
+
 }
 
 const SQFT_PER_SQM = 10.76391041671;
 
 function formatArea(value: number | null) {
+
   return <UnitValue metric={`${formatNumber(value)} m²`} imperial={`${formatNumber(value === null ? null : value * SQFT_PER_SQM)} ft²`} />;
+
 }
 
 function formatPricePerArea(value: number | null) {
+
   return <UnitValue metric={`${formatMoney(value)}/m²`} imperial={`${formatMoney(value === null ? null : value / SQFT_PER_SQM)}/ft²`} />;
+
 }
 
 function formatMoney(value: number | null) {
@@ -1356,8 +1283,6 @@ function formatMoney(value: number | null) {
 
 }
 
-
-
 function formatNumber(value: number | null, maximumFractionDigits = 0) {
 
   if (value === null || !Number.isFinite(Number(value))) return "—";
@@ -1365,8 +1290,6 @@ function formatNumber(value: number | null, maximumFractionDigits = 0) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits }).format(Number(value));
 
 }
-
-
 
 function formatDate(value: string | null) {
 
@@ -1380,14 +1303,18 @@ function formatDate(value: string | null) {
 
 }
 
-
-
 function formatDistance(value: number | null) {
+
   if (value === null || !Number.isFinite(Number(value))) return "Distance unavailable";
+
   const metric = value < 1000 ? `${formatNumber(value)} m away` : `${formatNumber(value / 1000, 1)} km away`;
+
   const feet = value * 3.280839895;
+
   const imperial = feet < 5280 ? `${formatNumber(feet)} ft away` : `${formatNumber(feet / 5280, 1)} mi away`;
+
   return <UnitValue metric={metric} imperial={imperial} />;
+
 }
 
 function formatSizeDifference(value: number) {
@@ -1397,8 +1324,6 @@ function formatSizeDifference(value: number) {
   return `${formatNumber(Math.abs(Number(value)), 1)}% ${Number(value) >= 0 ? "larger" : "smaller"}`;
 
 }
-
-
 
 function formatSigned(value: number) { return value > 0 ? `+${formatNumber(value)}` : formatNumber(value); }
 
