@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { Declaration, Inventory, Item } from "@/lib/seller-declarations/model";
-import { createDeclaration, saveDeclaration, uploadDeclarationPhoto, photoUrls, exportDeclaration, translateInventoryItem } from "./actions";
+import { createDeclaration, deleteDraftDeclaration, saveDeclaration, uploadDeclarationPhoto, photoUrls, exportDeclaration, translateInventoryItem } from "./actions";
 
 const input = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm disabled:bg-slate-100";
 const button = "rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50";
@@ -124,7 +124,7 @@ export default function Editor({ initial }: { initial: Declaration[] }) {
   const locked = record?.status === "final";
   return <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
     <aside className="rounded-2xl border border-slate-200 bg-white p-4 self-start">
-      <button className={button + " w-full bg-slate-950 !text-white"} disabled={busy} onClick={() => void run(async () => { await persist(); await open(await createDeclaration()); })}>+ New declaration</button>
+      <button className="w-full rounded-lg border border-slate-950 bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50" disabled={busy} onClick={() => void run(async () => { await persist(); await open(await createDeclaration()); })}>+ New declaration</button>
       <p className="my-4 text-xs text-slate-500">Your private declarations · Drafts save automatically</p>
       <div className="max-h-[65vh] space-y-2 overflow-auto">{records.map(r => <button key={r.id} disabled={busy} className={"w-full rounded-lg border p-3 text-left " + (r.id === record?.id ? "border-sky-600 bg-sky-50" : "border-slate-200")} onClick={() => void run(() => open(r))}>
         <span className="block text-sm font-semibold">{r.content.address || "Untitled property"}</span><span className="text-xs text-slate-500">Rev. {r.revision} · {r.status === "final" ? "Finalized" : "Draft"} · {r.content.date}</span>
@@ -138,6 +138,20 @@ export default function Editor({ initial }: { initial: Declaration[] }) {
           <div className="flex flex-wrap gap-2">
             {!locked && <button className={button} disabled={busy} onClick={() => void run(async () => { await persist(); setMessage("Saved."); })}>Save</button>}
             <button className={button} disabled={busy} onClick={() => void run(async () => { await persist(); const result = await exportDeclaration(current.current!.id, current.current!.version, false); remember(result.record); setDownload(result.url); })}>{locked ? "Download PDF" : "Preview draft PDF"}</button>
+            {!locked && <button className={button + " !border-red-300 !text-red-700"} disabled={busy || saving} onClick={() => {
+              const name = current.current?.content.address.trim() || "Untitled property";
+              if (!window.confirm('Delete the draft for "' + name + '"? This cannot be undone. Finalized revisions will be preserved.')) return;
+              void run(async () => {
+                await persist();
+                const draft = current.current;
+                if (!draft || draft.status !== "draft") throw Error("Only drafts can be deleted.");
+                await deleteDraftDeclaration(draft.id, draft.version);
+                current.current = null; changed.current = false;
+                setRecord(null); setDirty(false); setRoomId(""); setUrls({}); setDownload(""); setDictation(""); setDictationPhoto("");
+                setRecords(old => old.filter(r => r.id !== draft.id));
+                setMessage('Draft deleted: ' + name);
+              });
+            }}>Delete draft</button>}
             {locked ? <button className={button} disabled={busy} onClick={() => void run(async () => { await open(await createDeclaration(record.id)); })}>Create revision</button> :
               <button className={button + " !bg-slate-950 !text-white"} disabled={busy || !content.reviewed} onClick={() => {
                 if (!window.confirm("Finalize this revision? It will become read only. Later changes require a new revision.")) return;

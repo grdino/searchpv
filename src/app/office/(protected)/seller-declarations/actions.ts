@@ -41,6 +41,13 @@ export async function saveDeclaration(id: string, version: number, content: Inve
   if (!data) throw Error("This declaration changed in another window or was finalized. Reload before continuing.");
   return data as Declaration;
 }
+export async function deleteDraftDeclaration(id: string, version: number): Promise<void> {
+  const { db, user } = await context();
+  const { data, error } = await db.from("seller_declaration").delete()
+    .eq("id", id).eq("owner_id", user.user_id).eq("version", version).eq("status", "draft").select("id").maybeSingle();
+  fail(error);
+  if (!data) throw Error("This draft changed, was finalized, or is no longer available. Reopen it before deleting.");
+}
 export async function uploadDeclarationPhoto(form: FormData): Promise<{ path: string; url: string }> {
   const { db, user } = await context();
   const file = form.get("photo");
