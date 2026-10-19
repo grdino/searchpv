@@ -10,6 +10,12 @@ type PageProps = {
 };
 
 const APP_PRESENTATION = {
+  seller_declarations: {
+    eyebrow: "Property Inventory",
+    description: "Room photos, inclusions and exclusions, and bilingual seller declarations.",
+    className: "border-sky-200 bg-sky-50",
+    eyebrowClassName: "text-sky-700",
+  },
   listing_comparison: {
     eyebrow: "Market Position",
     description:
@@ -104,15 +110,7 @@ export default async function OfficePage({ searchParams }: PageProps) {
             );
           })}
 
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6">
-            <h2 className="text-lg font-bold text-slate-950">Property Inventory</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Mobile inventory and property-transfer packages.
-            </p>
-            <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-amber-700">
-              Coming next
-            </p>
-          </div>
+
         </section>
       </div>
     </main>

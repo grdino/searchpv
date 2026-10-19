@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createOfficeClient } from "@/lib/supabase/office-server";
 
 export const OFFICE_APP_KEYS = [
+  "seller_declarations",
   "listing_comparison",
   "agency_rankings",
   "agent_rankings",
