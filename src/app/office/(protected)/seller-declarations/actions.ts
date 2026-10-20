@@ -4,6 +4,7 @@ import { requireOfficeAppAccess } from "@/lib/office-auth";
 import { createOfficeClient } from "@/lib/supabase/office-server";
 import { BUCKET, emptyInventory, validateInventory, type Declaration, type Inventory } from "@/lib/seller-declarations/model";
 import { buildDeclarationPdf } from "@/lib/seller-declarations/pdf";
+import { MAX_PHOTO_BYTES } from "@/lib/seller-declarations/photo-limits";
 import { translationError } from "@/lib/seller-declarations/translation-error";
 
 async function context() {
@@ -51,7 +52,7 @@ export async function deleteDraftDeclaration(id: string, version: number): Promi
 export async function uploadDeclarationPhoto(form: FormData): Promise<{ path: string; url: string }> {
   const { db, user } = await context();
   const file = form.get("photo");
-  if (!(file instanceof File) || file.type !== "image/jpeg" || file.size > 750000 || !file.size) throw Error("Upload a compressed JPEG smaller than 750 KB.");
+  if (!(file instanceof File) || file.type !== "image/jpeg" || file.size > MAX_PHOTO_BYTES || !file.size) throw Error("Upload a compressed JPEG no larger than 300 KB.");
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (bytes[0] !== 255 || bytes[1] !== 216) throw Error("Invalid JPEG.");
   const path = user.user_id + "/" + randomUUID() + ".jpg";
@@ -89,7 +90,7 @@ export async function exportDeclaration(id: string, version: number, finalize: b
   }
   const bytes = buildDeclarationPdf(record.content, record.revision, images, !finalize);
   if (bytes.byteLength > 25000000) throw Error("PDF exceeds 25 MB. Reduce the number of photos.");
-  const path = user.user_id + "/" + randomUUID() + ".pdf";
+  const path = user.user_id + (finalize ? "/final/" : "/preview/") + randomUUID() + ".pdf";
   const uploaded = await db.storage.from(BUCKET).upload(path, bytes, { contentType: "application/pdf", upsert: false });
   fail(uploaded.error);
   if (finalize) {

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { MAX_PHOTO_BYTES, MAX_PHOTO_EDGE } from "@/lib/seller-declarations/photo-limits";
 import type { Declaration, Inventory, Item } from "@/lib/seller-declarations/model";
 import { createDeclaration, deleteDraftDeclaration, saveDeclaration, uploadDeclarationPhoto, photoUrls, exportDeclaration, translateInventoryItem } from "./actions";
 
@@ -11,14 +12,16 @@ async function compress(file: File): Promise<Blob> {
   const url = URL.createObjectURL(file);
   try {
     const image = new Image(); image.src = url; await image.decode();
-    const scale = Math.min(1, 1600 / Math.max(image.width, image.height));
     const canvas = document.createElement("canvas");
-    canvas.width = Math.round(image.width * scale); canvas.height = Math.round(image.height * scale);
-    const ctx = canvas.getContext("2d"); if (!ctx) throw Error("Photo processing is unavailable.");
-    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-    for (const quality of [0.8, 0.65, 0.5, 0.35]) {
-      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, "image/jpeg", quality));
-      if (blob && blob.size <= 750000) return blob;
+    for (const edge of [MAX_PHOTO_EDGE, 1000, 800, 640]) {
+      const scale = Math.min(1, edge / Math.max(image.width, image.height));
+      canvas.width = Math.max(1, Math.round(image.width * scale)); canvas.height = Math.max(1, Math.round(image.height * scale));
+      const ctx = canvas.getContext("2d"); if (!ctx) throw Error("Photo processing is unavailable.");
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      for (const quality of [0.78, 0.68, 0.58, 0.48, 0.38]) {
+        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, "image/jpeg", quality));
+        if (blob && blob.size <= MAX_PHOTO_BYTES) return blob;
+      }
     }
     throw Error("Photo could not be compressed. Try a smaller image.");
   } catch (e) { throw e instanceof Error ? e : Error("Cannot read this photo. Try JPEG or PNG."); }
