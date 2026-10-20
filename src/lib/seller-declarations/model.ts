@@ -1,3 +1,4 @@
+import { isDeclarationPhotoPath } from "./photo-filename";
 export type Room = { id: string; es: string; en: string };
 export type Photo = { id: string; roomId: string; path: string };
 export type Item = { id: string; roomId: string; es: string; en: string; status: "" | "included" | "excluded"; notesEs: string; notesEn: string; photoIds: string[] };
@@ -22,7 +23,7 @@ export function validateInventory(value: unknown, owner: string, final = false):
   const rooms = new Set(v.rooms.map(r => r.id));
   const photos = new Map(v.photos.map(p => [p.id, p]));
   for (const r of v.rooms) if (!str(r.es, 120) || !str(r.en, 120)) throw Error("Invalid room name.");
-  for (const p of v.photos) if (!rooms.has(p.roomId) || !str(p.path, 200) || !new RegExp("^" + owner + "/[0-9a-f-]{36}\\.jpg$").test(p.path)) throw Error("Invalid photo reference.");
+  for (const p of v.photos) if (!rooms.has(p.roomId) || !str(p.path, 200) || !isDeclarationPhotoPath(p.path, owner)) throw Error("Invalid photo reference.");
   for (const i of v.items) {
     if (!rooms.has(i.roomId) || !str(i.es) || !str(i.en) || !str(i.notesEs) || !str(i.notesEn) || !["", "included", "excluded"].includes(i.status) ||
       !Array.isArray(i.photoIds) || i.photoIds.length > 100 || new Set(i.photoIds).size !== i.photoIds.length ||

@@ -105,6 +105,8 @@ export default function Editor({ initial }: { initial: Declaration[] }) {
   }
   async function addPhoto(file: File) {
     const blob = await compress(file); const data = new FormData(); data.set("photo", blob, "photo.jpg");
+    const photoRoom = current.current?.content.rooms.find(r => r.id === roomId);
+    data.set("roomName", photoRoom?.en.trim() || photoRoom?.es.trim() || "Room");
     const uploaded = await uploadDeclarationPhoto(data);
     const id = crypto.randomUUID();
     setUrls(old => ({ ...old, [uploaded.path]: uploaded.url }));

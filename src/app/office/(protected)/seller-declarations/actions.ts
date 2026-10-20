@@ -4,6 +4,7 @@ import { requireOfficeAppAccess } from "@/lib/office-auth";
 import { createOfficeClient } from "@/lib/supabase/office-server";
 import { BUCKET, emptyInventory, validateInventory, type Declaration, type Inventory } from "@/lib/seller-declarations/model";
 import { buildDeclarationPdf } from "@/lib/seller-declarations/pdf";
+import { photoFilename } from "@/lib/seller-declarations/photo-filename";
 import { MAX_PHOTO_BYTES } from "@/lib/seller-declarations/photo-limits";
 import { translationError } from "@/lib/seller-declarations/translation-error";
 
@@ -52,10 +53,12 @@ export async function deleteDraftDeclaration(id: string, version: number): Promi
 export async function uploadDeclarationPhoto(form: FormData): Promise<{ path: string; url: string }> {
   const { db, user } = await context();
   const file = form.get("photo");
+  const roomName = form.get("roomName") ?? "";
+  if (typeof roomName !== "string" || roomName.length > 120) throw Error("Invalid room name.");
   if (!(file instanceof File) || file.type !== "image/jpeg" || file.size > MAX_PHOTO_BYTES || !file.size) throw Error("Upload a compressed JPEG no larger than 300 KB.");
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (bytes[0] !== 255 || bytes[1] !== 216) throw Error("Invalid JPEG.");
-  const path = user.user_id + "/" + randomUUID() + ".jpg";
+  const path = user.user_id + "/" + photoFilename(roomName, randomUUID());
   const { error } = await db.storage.from(BUCKET).upload(path, bytes, { contentType: "image/jpeg", upsert: false });
   fail(error);
   const signed = await db.storage.from(BUCKET).createSignedUrl(path, 3600);
