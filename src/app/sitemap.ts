@@ -197,40 +197,71 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
     });
 
-  const { data: developments } = await supabase
-    .from("development_snapshot")
-    .select(
-      [
-        "zone_slug",
-        "area_slug",
-        "community_slug",
-        "development_slug",
-        "snapshot_date",
-        "active_count",
-        "pending_count",
-        "sales_12mo",
-      ].join(", ")
-    )
-    .eq("market_segment", "all")
-    .eq("property_type_segment", "all")
-    .returns<DevelopmentRow[]>();
+    // Only include published and reviewed development profiles.
+    const { data: publishedProfiles, error: profileError } = await supabase
+      .from("development_profile")
+      .select("development_slug")
+      .eq("profile_status", "published")
+      .eq("content_status", "reviewed")
+      .eq("is_published", true);
 
-  developments
-    ?.filter(hasMarketActivity)
-    .forEach((development) => {
+    if (profileError) {
+      throw new Error(
+        `Unable to load published development profiles: ${profileError.message}`
+      );
+    }
+
+    const publishedSlugs = new Set(
+      (publishedProfiles ?? []).map((profile) => profile.development_slug)
+    );
+
+    const { data: developments, error: developmentError } = await supabase
+      .from("development_snapshot")
+      .select(
+        [
+          "zone_slug",
+          "area_slug",
+          "community_slug",
+          "development_slug",
+          "snapshot_date",
+          "active_count",
+          "pending_count",
+          "sales_12mo",
+        ].join(", ")
+      )
+      .eq("market_segment", "all")
+      .eq("property_type_segment", "all")
+      .returns<DevelopmentRow[]>();
+
+    if (developmentError) {
+      throw new Error(
+        `Unable to load development snapshots: ${developmentError.message}`
+      );
+    }
+
+    const addedDevelopmentUrls = new Set<string>();
+
+    for (const development of developments ?? []) {
+      if (!publishedSlugs.has(development.development_slug)) continue;
+
+      const url =
+        `${BASE_URL}/markets/${development.zone_slug}` +
+        `/areas/${development.area_slug}` +
+        `/communities/${development.community_slug}` +
+        `/developments/${development.development_slug}`;
+
+      if (addedDevelopmentUrls.has(url)) continue;
+      addedDevelopmentUrls.add(url);
+
       urls.push({
-        url:
-          `${BASE_URL}/markets/${development.zone_slug}` +
-          `/areas/${development.area_slug}` +
-          `/communities/${development.community_slug}` +
-          `/developments/${development.development_slug}`,
+        url,
         ...(asDate(development.snapshot_date)
           ? { lastModified: asDate(development.snapshot_date) }
           : {}),
         changeFrequency: "weekly",
         priority: 0.8,
       });
-    });
+    }
 
     const twelveMonthsAgo = new Date();
     twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
