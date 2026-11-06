@@ -28,14 +28,6 @@ type CommunityRow = MarketActivityRow & {
   snapshot_date: string | null;
 };
 
-type DevelopmentRow = MarketActivityRow & {
-  zone_slug: string;
-  area_slug: string;
-  community_slug: string;
-  development_slug: string;
-  snapshot_date: string | null;
-};
-
 type ClosedSaleRow = {
   mls: string | number;
   sold_date: string | null;
@@ -197,10 +189,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
     });
 
-    // Only include published and reviewed development profiles.
+    // Development pages — only published and reviewed profiles.
     const { data: publishedProfiles, error: profileError } = await supabase
       .from("development_profile")
-      .select("development_slug")
+      .select(
+        "zone_slug, area_slug, community_slug, development_slug"
+      )
       .eq("profile_status", "published")
       .eq("content_status", "reviewed")
       .eq("is_published", true);
@@ -211,53 +205,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       );
     }
 
-    const publishedSlugs = new Set(
-      (publishedProfiles ?? []).map((profile) => profile.development_slug)
-    );
-
-    const { data: developments, error: developmentError } = await supabase
-      .from("development_snapshot")
-      .select(
-        [
-          "zone_slug",
-          "area_slug",
-          "community_slug",
-          "development_slug",
-          "snapshot_date",
-          "active_count",
-          "pending_count",
-          "sales_12mo",
-        ].join(", ")
-      )
-      .eq("market_segment", "all")
-      .eq("property_type_segment", "all")
-      .returns<DevelopmentRow[]>();
-
-    if (developmentError) {
-      throw new Error(
-        `Unable to load development snapshots: ${developmentError.message}`
-      );
-    }
-
     const addedDevelopmentUrls = new Set<string>();
 
-    for (const development of developments ?? []) {
-      if (!publishedSlugs.has(development.development_slug)) continue;
+    for (const profile of publishedProfiles ?? []) {
+      if (
+        !profile.zone_slug ||
+        !profile.area_slug ||
+        !profile.community_slug ||
+        !profile.development_slug
+      ) {
+        throw new Error("Published development profile has missing geographic fields");
+      }
 
       const url =
-        `${BASE_URL}/markets/${development.zone_slug}` +
-        `/areas/${development.area_slug}` +
-        `/communities/${development.community_slug}` +
-        `/developments/${development.development_slug}`;
+        `${BASE_URL}/markets/${profile.zone_slug}` +
+        `/areas/${profile.area_slug}` +
+        `/communities/${profile.community_slug}` +
+        `/developments/${profile.development_slug}`;
 
       if (addedDevelopmentUrls.has(url)) continue;
       addedDevelopmentUrls.add(url);
 
       urls.push({
         url,
-        ...(asDate(development.snapshot_date)
-          ? { lastModified: asDate(development.snapshot_date) }
-          : {}),
         changeFrequency: "weekly",
         priority: 0.8,
       });
