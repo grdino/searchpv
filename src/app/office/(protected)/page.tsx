@@ -35,6 +35,13 @@ const APP_PRESENTATION = {
     description: "Maintain geographic entities, aliases, coordinates, and hierarchy.",
     className: "border-slate-200 bg-white",
   },
+  development_management: {
+    eyebrow: "Property Profiles",
+    description:
+      "Manage development information, amenities, neighborhood details, photographs, and SEO content.",
+    className: "border-sky-200 bg-sky-50",
+    eyebrowClassName: "text-sky-700",
+  },
   saved_analytics: {
     eyebrow: "Engagement",
     description:

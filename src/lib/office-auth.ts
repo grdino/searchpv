@@ -9,6 +9,7 @@ export const OFFICE_APP_KEYS = [
   "agent_rankings",
   "geography",
   "saved_analytics",
+  "development_management",
 ] as const;
 
 export type OfficeAppKey = (typeof OFFICE_APP_KEYS)[number];

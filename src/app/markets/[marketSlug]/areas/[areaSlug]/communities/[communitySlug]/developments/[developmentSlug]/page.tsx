@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import Header from "@/app/components/Header";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
@@ -7,7 +8,8 @@ import { buildIdxUrl } from "@/lib/idx";
 import MainSloganBranding from "@/app/components/MainSloganBranding";
 import ToggleMetricCard from "@/app/components/ToggleMetricCard";
 import MetricCard from "@/app/components/MetricCard";
-import NearbySection from "@/app/components/NearbySection"
+import NearbySection from "@/app/components/NearbySection";
+import DevelopmentPhotoGallery from "@/app/components/DevelopmentPhotoGallery";
 
 type MarketSegment = "all" | "pre_construction" | "resale";
 type PropertyTypeSegment = "all" | "condos" | "houses";
@@ -315,6 +317,18 @@ export default async function DevelopmentPage({
     .eq("development_slug", routeParams.developmentSlug)
     .maybeSingle();
 
+  const { data: developmentPhotos, error: photosError } = await supabase
+  .from("development_photo")
+  .select(
+    "development_photo_id, development_profile_id, storage_path, caption, alt_text, display_order, is_primary"
+  )
+  .eq(
+    "development_profile_id",
+    profileData?.development_profile_id ?? -1
+  )
+  .order("is_primary", { ascending: false })
+  .order("display_order", { ascending: true });
+
   const { data: drilldownRows, error: drilldownError } = await supabase
     .from("development_listing_drilldown")
     .select("*")
@@ -351,6 +365,7 @@ export default async function DevelopmentPage({
         error ||
         drilldownError ||
         profileError ||
+        photosError ||
         nearbyRollupError ||
         nearbyPlacesError
       ) {
@@ -358,7 +373,12 @@ export default async function DevelopmentPage({
       <main className="min-h-screen p-8">
         <p className="text-red-600">Error loading development data.</p>
         <pre className="mt-4 text-sm">
-          {error?.message ?? drilldownError?.message ?? profileError?.message}
+          {error?.message ??
+            drilldownError?.message ??
+            profileError?.message ??
+            photosError?.message ??
+            nearbyRollupError?.message ??
+            nearbyPlacesError?.message}
         </pre>
       </main>
     );
@@ -366,6 +386,10 @@ export default async function DevelopmentPage({
 
   const row = data as DevelopmentSnapshot | null;
   const profile = profileData as DevelopmentProfile | null;
+
+  if (!row && !profile) {
+    notFound();
+  }
 
   const drilldownRowsTyped =
     (drilldownRows ?? []) as DevelopmentListingDrilldown[];
@@ -500,24 +524,28 @@ const placeJsonLd = {
               {zoneName} &gt; {areaName} &gt; {communityName}
             </p>
 
-            <p
-              style={{
-                marginTop: "18px",
-                fontSize: "14px",
-                color: "#cbd5e1",
-              }}
-            >
-              Data Current As Of: {snapshotDate}
-            </p>
+            {row && (
+              <>
+                <p
+                style={{
+                  marginTop: "18px",
+                  fontSize: "14px",
+                  color: "#cbd5e1",
+                }}
+              >
+                Data Current As Of: {snapshotDate}
+              </p>
 
-            <DevelopmentSelectors
-              marketSlug={routeParams.marketSlug}
-              areaSlug={routeParams.areaSlug}
-              communitySlug={routeParams.communitySlug}
-              developmentSlug={routeParams.developmentSlug}
-              selectedMarket={selectedMarket}
-              selectedPropertyType={selectedPropertyType}
-            />
+              <DevelopmentSelectors
+                marketSlug={routeParams.marketSlug}
+                areaSlug={routeParams.areaSlug}
+                communitySlug={routeParams.communitySlug}
+                developmentSlug={routeParams.developmentSlug}
+                selectedMarket={selectedMarket}
+                selectedPropertyType={selectedPropertyType}
+              />
+            </>
+          )}
           </div>
         </div>
       </section>
@@ -536,13 +564,30 @@ const placeJsonLd = {
         />
       )}
 
+      {developmentPhotos && developmentPhotos.length > 0 && (
+        <DevelopmentPhotoGallery
+          photos={developmentPhotos}
+          developmentName={developmentName}
+        />
+      )}
+
+      <div className="mx-auto max-w-6xl px-4 md:px-8">
+        <DevelopmentProfileSection
+          developmentName={developmentName}
+          communityName={communityName}
+          areaName={areaName}
+          profile={profile}
+        />
+      </div>
+
       {!row ? (
         <section className="mx-auto max-w-6xl px-4 py-10 md:px-8">
           <div className="rounded-xl bg-white p-8 shadow">
-            <h2 className="text-xl font-bold">No data available</h2>
+            <h2 className="text-xl font-bold">Market Statistics Unavailable</h2>
             <p className="mt-2 text-slate-600">
-              There are no {developmentName} records for this combination of
-              filters.
+              MLS market statistics are not currently available for {developmentName}.
+              The development information and photographs above are available for
+              reference.
             </p>
           </div>
         </section>
@@ -733,13 +778,6 @@ const placeJsonLd = {
             avgSoldPriceFt2={row.avg_sold_price_ft2 ?? null}
             soldAvgDom={row.sold_avg_dom_12mo ?? null}
             manualInsight={profile?.searchpv_insights}
-          />
-
-          <DevelopmentProfileSection
-            developmentName={developmentName}
-            communityName={communityName}
-            areaName={areaName}
-            profile={profile}
           />
 
           <NearbySection
