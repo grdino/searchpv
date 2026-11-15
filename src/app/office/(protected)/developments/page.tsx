@@ -412,14 +412,27 @@ export default async function DevelopmentManagementPage({
                 </p>
               </div>
 
-              <Link
-                href={`/office/developments?q=${encodeURIComponent(
-                  searchQuery,
-                )}`}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Close
-              </Link>
+              <div className="flex flex-wrap items-center gap-3">
+                {selectedDevelopment.is_published && (
+                  <a
+                    href={`/markets/${selectedDevelopment.zone_slug}/areas/${selectedDevelopment.area_slug}/communities/${selectedDevelopment.community_slug}/developments/${selectedDevelopment.development_slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800"
+                  >
+                    See Public Page ↗
+                  </a>
+                )}
+
+                <Link
+                  href={`/office/developments?q=${encodeURIComponent(
+                    searchQuery,
+                  )}`}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Close
+                </Link>
+              </div>
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
